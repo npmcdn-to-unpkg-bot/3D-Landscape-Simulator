@@ -1,0 +1,119 @@
+<head>
+    <script src="https://code.jquery.com/jquery-3.1.0.min.js" integrity="sha256-cCueBR6CsyA4/9szpPfrX3s49M9vUU5BgtiJj06wt/s=" crossorigin="anonymous"></script>
+    <script>
+        function create_post() {
+            $("#results_table").empty()
+            $("#results_loading").html("<img src='{{STATIC_URL}}img/spinner.gif'>")
+            var scenario=$("input[name=scenario]:checked").val()
+            $.ajax({
+                url: "", // the endpoint (for a specific view configured in urls.conf /view_name/)
+                type: "POST", // http method
+                data: {scenario: scenario, initial_conditions_data: initial_conditions_data},
+
+                // handle a successful response
+                success: function (json) {
+                    $("#results_loading").empty()
+                    response = JSON.parse(json)
+                    results = JSON.parse(response["results_json"])
+                    $("#results_header").html("<h3>State and Transition Results:</h3>")
+                    $.each(results, function(key,value) {
+                        console.log(key + ": " + value);
+                        $("results_table").find("tr:gt(0)").remove();
+                        $('#results_table').append('<tr><td>' + key + '</td><td>' + value + '%</td></tr>');
+                    });
+
+                },
+                 // handle a non-successful response
+                error : function(xhr,errmsg,err) {
+                    $('#results').html("<div class='alert-box alert radius' data-alert>Oops! We have encountered an error: "+errmsg+
+                        " <a href='#' class='close'>&times;</a></div>"); // add the error to the dom
+                    console.log(xhr.status + ": " + xhr.responseText); // provide a bit more info about the error to the console
+                }
+            });
+        }
+
+    </script>
+
+</head>
+<body>
+<h3>Management Scenario:</h3>
+<form method="post">
+    <input type="radio" name="scenario" value="10" checked>Current Management </br>
+    <input type="radio" name="scenario" value="188">No Management </br>
+    <input type="radio" name="scenario" value="190">Minimum Management </br>
+    <input type="radio" name="scenario" value="191">Double Current Management Budget</br>
+</form>
+
+<div id="results">
+    <div id="results_header"></div>
+    <div id="results_loading"></div>
+    <table id="results_table"><tr></tr></table>
+</div>
+
+<h3>Initial Conditions:</h3>
+  <p>
+    <input type="file" id="files" name="file" />
+    <span class="readBytesButtons">
+      <!--
+      <button data-startbyte="0" data-endbyte="4">1-5</button>
+      <button data-startbyte="5" data-endbyte="14">6-15</button>
+      <button data-startbyte="6" data-endbyte="7">7-8</button>
+      -->
+       <button>Load</button>
+      <input id="run_button" style="display:none" type="button" value="Run" onclick=create_post()>
+    </span>
+
+    <div id="byte_range" style="display:none"></div>
+    <div id="byte_content" style="display:block"></div>
+    <script>
+      function readBlob(opt_startByte, opt_stopByte) {
+
+        var files = document.getElementById('files').files;
+        if (!files.length) {
+          alert('Please select a file!');
+          return;
+        }
+
+        var file = files[0];
+        var start = parseInt(opt_startByte) || 0;
+        var stop = parseInt(opt_stopByte) || file.size - 1;
+
+        var reader = new FileReader();
+
+        // If we use onloadend, we need to check the readyState.
+        reader.onloadend = function(evt) {
+          if (evt.target.readyState == FileReader.DONE) { // DONE == 2
+            //document.getElementById('byte_content').textContent = evt.target.result;
+            //document.getElementById('byte_range').textContent =
+                ['Read bytes: ', start + 1, ' - ', stop + 1,
+                 ' of ', file.size, ' byte file'].join('');
+            //json_string = JSON.stringify(eval("(" + evt.target.result + ")"));
+            //json = JSON.parse(json_string);
+            initial_conditions_data=evt.target.result
+            $("#initial_conditions_div").html(initial_conditions_data.replace(/\n/g,"<br>"))
+            $("#run_button").show()
+          }
+        };
+
+        var blob = file.slice(start, stop + 1);
+        reader.readAsBinaryString(blob);
+      }
+
+      document.querySelector('.readBytesButtons').addEventListener('click', function(evt) {
+        if (evt.target.tagName.toLowerCase() == 'button') {
+          var startByte = evt.target.getAttribute('data-startbyte');
+          var endByte = evt.target.getAttribute('data-endbyte');
+          readBlob(startByte, endByte);
+        }
+      }, false);
+    </script>
+    <script>
+        jQuery("input#files").change(function () {
+            //alert(jQuery(this).val())
+        });
+    </script>
+
+    <div id="initial_conditions_div"></div>
+
+</body>
+
