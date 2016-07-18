@@ -21,8 +21,15 @@ from django.views.decorators.csrf import csrf_exempt
 @csrf_exempt
 def index(request):
     st_scenario=str(request.POST.get('scenario'))
-    if st_scenario == "None":
+    feature_id=request.POST.get('feature_id')
+
+    if feature_id:
+        context=get_initial_conditions(feature_id)
+        return HttpResponse(context)
+
+    elif st_scenario == "None":
         return render(request, 'index.html')
+
     else:
         initial_conditions_data=request.POST.get('initial_conditions_data')
         context=run_st_sim(st_scenario,initial_conditions_data)
@@ -87,4 +94,15 @@ def run_st_sim(st_scenario,initial_conditions_data):
 
     return HttpResponse(json.dumps(context))
 
+
+def get_initial_conditions(feature_id):
+
+    reader=csv.reader(open('static/st_sim/initial_conditions/' + feature_id + ".csv"))
+    reader.next()
+
+    context={
+        'results_json':results_json
+    }
+
+    return HttpResponse(json.dumps(context))
 
