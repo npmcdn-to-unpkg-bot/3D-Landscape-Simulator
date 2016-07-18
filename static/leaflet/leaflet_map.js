@@ -12,29 +12,40 @@ counties.on('click', function (e) {
     var top = e.layer._bounds._northEast.lat
     var left = e.layer._bounds._southWest.lng
     var right = e.layer._bounds._northEast.lng
-    var feature_id = e.layer.feature.properties.NAME
-
-    //alert("Top, Bottom, Left, Right: (" + top + "," + bottom  + "," + left + "," + right +")")
+    feature_id = e.layer.feature.properties.NAME
 
     var user_wkt = "POINT(" + e.latlng.lng + " " + e.latlng.lat + ")";
-    //alert("Click event at: " + user_wkt )
 
     $("#load_button").trigger('click')
 
-    load_initial_conditions(feature_id)
+    create_post(feature_id)
 
 });
 
+// Could be used to get initial conditions out of file
+/*
 function load_initial_conditions(feature_id){
-    $.ajax({
-    url:'',
-    type: "POST", // http method
-    data: {feature_id: feature_id},
-    success: function (data){
-        alert(data)
-      //parse your data here
-      //you can split into lines using data.split('\n')
-      //an use regex functions to effectively parse it
-    }
-  });
+     $.ajax({
+        type: "GET",
+        url: "static/st_sim/initial_conditions/" + feature_id + ".csv",
+        dataType: "text",
+        success: function(data) {processData(data);}
+     });
 }
+
+function processData(allText) {
+    var allTextLines = allText.split(/\r\n|\n/);
+    var headers = allTextLines[0].split(',');
+    initial_conditions_data = [];
+
+    alert(allTextLines)
+    $.each(initial_conditions_data, function(n,elem){
+            $.each(elem, function(n,value) {
+                    $("#initial_conditions").append(value + ",")
+                }
+            );
+            $("#initial_conditions").append("<br>")
+        }
+    )
+}
+*/

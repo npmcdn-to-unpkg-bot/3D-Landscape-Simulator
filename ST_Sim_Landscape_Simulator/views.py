@@ -20,33 +20,21 @@ from django.views.decorators.csrf import csrf_exempt
 @gzip_page
 @csrf_exempt
 def index(request):
+
     st_scenario=str(request.POST.get('scenario'))
-    feature_id=request.POST.get('feature_id')
 
-    if feature_id:
-        context=get_initial_conditions(feature_id)
-        return HttpResponse(context)
-
-    elif st_scenario == "None":
+    if st_scenario == "None":
         return render(request, 'index.html')
 
     else:
-        initial_conditions_data=request.POST.get('initial_conditions_data')
-        context=run_st_sim(st_scenario,initial_conditions_data)
+        feature_id=request.POST.get('feature_id')
+        context=run_st_sim(st_scenario,feature_id)
         return HttpResponse(context)
 
 
-def run_st_sim(st_scenario,initial_conditions_data):
+def run_st_sim(st_scenario,feature_id):
 
-    print initial_conditions_data
-
-    st_initial_conditions_file="F:/Projects2/OSU_BLM_Sagebrush2016/Tasks/Web_Applications/Landscape_Simulator/3D_Landscape_Simulator/Sagebrush/static/st_sim/initial_conditions/initial_conditions_temp.csv"
-
-    st_initial_conditions_file_handle=open(st_initial_conditions_file,'w')
-    for line in initial_conditions_data:
-        st_initial_conditions_file_handle.write(line)
-
-    st_initial_conditions_file_handle.close()
+    st_initial_conditions_file="F:/Projects2/OSU_BLM_Sagebrush2016/Tasks/Web_Applications/Landscape_Simulator/3D_Landscape_Simulator/Sagebrush/static/st_sim/initial_conditions/" + feature_id + ".csv"
 
     st_exe="F:/Projects2/OSU_BLM_Sagebrush2016/Tasks/Web_Applications/Landscape_Simulator/3D_Landscape_Simulator/Sagebrush/static/deps/st_sim/syncrosim-linux-1-0-24-x64/SyncroSim.Console.exe"
     st_library_path="F:/Projects2/OSU_BLM_Sagebrush2016/Tasks/Web_Applications/Landscape_Simulator/3D_Landscape_Simulator/Sagebrush/static/st_sim/libraries"
@@ -87,18 +75,6 @@ def run_st_sim(st_scenario,initial_conditions_data):
     sorted_dict=OrderedDict(sorted(rounded_dict.items(), key=lambda t: t[0]))
     results_json=json.dumps(sorted_dict)
     print results_json
-
-    context={
-        'results_json':results_json
-    }
-
-    return HttpResponse(json.dumps(context))
-
-
-def get_initial_conditions(feature_id):
-
-    reader=csv.reader(open('static/st_sim/initial_conditions/' + feature_id + ".csv"))
-    reader.next()
 
     context={
         'results_json':results_json
