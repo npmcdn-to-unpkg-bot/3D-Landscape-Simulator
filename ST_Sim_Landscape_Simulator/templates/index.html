@@ -1,116 +1,28 @@
 <head>
-    <style>
-    body {
-        color:#444343;
-    }
 
-    #header {
-        position:absolute;
-        top:0px;
-        right:0px;
-        left:0px;
-        width:100%;
-        font-weight:bold;
-        height:50px;
-        background-color: #E9E9E9;
-        font-size:18px;
-        padding-left:10px;
-        line-height:45px;
-    }
-
-    #contents {
-        top:50px;
-        width:100%;
-        position:relative
-    }
-
-    #input {
-        position:relative;
-        width:20%;
-        float:left;
-    }
-
-    #map {
-        position:relative;
-        height: 79%;
-        width:59%;
-        top:20px;
-        float:left
-    }
-
-    #output {
-        position:relative;
-        width:19%;
-        float:right;
-        padding-right:10px
-    }
-
-    #results_loading {
-        margin-left: auto;
-        margin-right: auto;
-        text-align: center;
-        position: relative;
-        width:100%;
-        top:50px;
-    }
-
-    #results_table th {
-        background-color: #0092D1;
-        height: 30px;
-        color: #FFF;
-        font-weight: bold;
-        letter-spacing: 2px;
-    }
-
-    .sub_th{
-        background-color:#DDDDDD;
-        font-weight:bold;
-        text-align:center;
-    }
-
-    </style>
-
+    <!-- Leaflet -->
     <link rel="stylesheet" href="https://npmcdn.com/leaflet@1.0.0-rc.1/dist/leaflet.css" />
     <script src="https://npmcdn.com/leaflet@1.0.0-rc.1/dist/leaflet.js"></script>
 
     <!-- geoJSON file -->
     <script src="{{STATIC_URL}}json/Sagebrush_Reporting_Units_Counties_2_Simplify.json"></script>
 
+    <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.1.0.min.js" integrity="sha256-cCueBR6CsyA4/9szpPfrX3s49M9vUU5BgtiJj06wt/s=" crossorigin="anonymous"></script>
+
+    <!-- JQuery Slider -->
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+    <script src="//code.jquery.com/jquery-1.10.2.js"></script>
+    <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+
+    <!-- General Javascript Functions -->
+    <script src="{{STATIC_URL}}js/general_js.js"></script>
+
+    <!-- General CSS -->
+    <link rel="stylesheet" href="{{STATIC_URL}}css/base.css" />
+
     <script>
-        function create_post(feature_id) {
-            //$("#results_table").empty()
-            $("#results_loading").html("<img src='{{STATIC_URL}}img/spinner.gif'>")
-            var scenario=$("input[name=scenario]:checked").val()
-            $.ajax({
-                url: "", // the endpoint (for a specific view configured in urls.conf /view_name/)
-                type: "POST", // http method
-                data: {'scenario': scenario, 'feature_id': feature_id},
-
-                // handle a successful response
-                success: function (json) {
-                    $("#results_loading").empty()
-                    response = JSON.parse(json)
-                    results = JSON.parse(response["results_json"])
-                    var scenario_label = $("input:checked + label").text();
-                    $("#results_table").append("<tr><th colspan='3'>County: " + feature_id + "</th></tr>");
-                    $("#results_table").append("<tr><td class='sub_th' colspan='3'>" + scenario_label + "</td></tr>");
-                    $.each(results, function(key,value) {
-                        console.log(key + ": " + value);
-                        $("results_table").find("tr:gt(0)").remove();
-                        $('#results_table').append('<tr><td>' + key + '</td><td>' + value + '%</td></tr>');
-                    });
-
-                },
-                 // handle a non-successful response
-                error : function(xhr,errmsg,err) {
-                    $('#results').html("<div class='alert-box alert radius' data-alert>Oops! We have encountered an error: "+errmsg+
-                        " <a href='#' class='close'>&times;</a></div>"); // add the error to the dom
-                    console.log(xhr.status + ": " + xhr.responseText); // provide a bit more info about the error to the console
-                }
-            });
-        }
-
+        static_url={{STATIC_URL}};
     </script>
 
 </head>
@@ -120,29 +32,116 @@
 
     <div id="contents">
         <div id="input">
-            <h3>Management Scenario:</h3>
-            <form method="post">
-                <input type="radio" name="scenario" value="10" checked><label for="10">Current Management </label><br>
-                <input type="radio" name="scenario" value="188"><label for="188">No Management </label><br>
-                <input type="radio" name="scenario" value="190"><label for="190">Minimum Management </label><br>
-                <input type="radio" name="scenario" value="191"><label for="191">Double Current Management Budget</label><br>
-            </form>
+            <div class="steps">1. Select a County</div>
+            <div id="selected_features"></div>
+            <!--<table style="width:100%" id="initial_conditions_table"><tr></tr></table>-->
+            <div style="display:none" id="input_initial_veg">
+                <div class="steps">2. Specify Initial Vegetation Cover</div>
+                <table id="sliderTable">
+                     <tr>
+                         <td>
+                             <p>
+                                 <label for="amount_veg1"><span class="imageOverlayLink">Basin Big Sagebrush Upland</span>
+                                 <input style="width:50px;border:0" type="text" id="veg1_label" class="current_slider_setting" readonly >
+                                 </label>
+                             </p>
+                                <div class="slider_bars" id="veg1_slider"></div>
+                         </td>
+                     </tr>
+                     <tr>
+                         <td>
+                             <p>
+                                 <label for="amount_veg2"><span class="imageOverlayLink">Curleaf Mountain Mahogany</span></label>
+                                 <input style="width:50px;border:0" type="text" id="veg2_label" class="current_slider_setting" readonly>
+                             </p>
+
+                             <div class="slider_bars" id="veg2_slider"></div>
+                         </td>
+                     </tr>
+                    <tr>
+                        <td>
+                            <p>
+                                <label for="amount_veg3"><span class="imageOverlayLink">Low Sagebrush</span></label>
+                                <input style="width:50px;border:0" type="text" id="veg3_label" class="current_slider_setting" readonly>
+                            </p>
+
+                            <div class="slider_bars" id="veg3_slider"></div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <p>
+                                <label for="amount_veg4"><span class="imageOverlayLink">Montane Sagebrush Upland</span></label>
+                                <input style="width:50px;border:0" type="text" id="veg4_label" class="current_slider_setting" readonly>
+                            </p>
+
+                            <div class="slider_bars" id="veg4_slider"></div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <p>
+                                <label for="amount_veg5"><span class="imageOverlayLink">Montane Sagebrush Upland With Trees</span></label>
+                                <input style="width:50px;border:0" type="text" id="veg5_label" class="current_slider_setting" readonly>
+                            </p>
+
+                            <div class="slider_bars" id="veg5_slider"></div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <p>
+                                <label for="amount_veg6"><span class="imageOverlayLink">Western Juniper Woodland & Savannah</span></label>
+                                <input style="width:50px;border:0" type="text" id="veg6_label" class="current_slider_setting" readonly>
+                            </p>
+
+                            <div class="slider_bars" id="veg6_slider"></div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <p>
+                                <label for="amount_veg7"><span class="imageOverlayLink">Wyoming and Basin Big Sagebrush Upland</span></label>
+                                <input style="width:50px;border:0" type="text" id="veg7_label" class="current_slider_setting" readonly>
+                            </p>
+
+                            <div class="slider_bars" id="veg7_slider"></div>
+                        </td>
+                    </tr>
+                </table>
+                <div id="total_input_percent_div">Total Percent Cover: <div id="total_input_percent">0</div></div>
+            </div>
+
+
+            <div></div>
+            <div style="display:none" id="input_management_scenario">
+                <div class="steps">3.&nbsp;Choose a Management Scenario</div>
+                <form method="post">
+                    <input type="radio" name="scenario" value="10" checked><label for="10" title="Treatments focus on thinning of trees in areas that are encroached by pinion and juniper.">Current Management </label><br>
+                    <input type="radio" name="scenario" value="188"><label for="188" title="No management actions take place in this scenario.">No Management </label><br>
+                    <input type="radio" name="scenario" value="190"><label for="190" title="Treatments focus on thinning of trees in areas that are encroached by pinion and juniper. Only treatements are in the montane upland sagebrush stratum (200 ac/year).">Minimum Management </label><br>
+                    <input type="radio" name="scenario" value="191"><label for="191" title="Treatments focus on thinning of trees in areas that are encroached by pinion and juniper with an additional 450 acres per year of focusing on late seral reference sites to prevent tree encroachment in these areas.">Double Current Management Budget</label><br>
+                </form>
+                <div id="initial_conditions"></div>
+                <!--<button id="run_button" style="display:none">Run</button>-->
+
+                <input id="run_button" style="display:none" value="Run Model" class="my-button my-button-ok" type="submit">
+            </div>
+
         </div>
 
         <div id="map"></div>
+
         <script src="{{STATIC_URL}}leaflet/leaflet_map.js"></script>
 
-
-        <div id="output">
-            <div id="initial_conditions"></div>
-            <h3>ST Sim Model Results:</h3>
+        <div id="output" style="display:none">
             <div id="results">
+                <div id="running_st_sim">Running ST-Sim...</div>
                 <div id="results_header"></div>
                 <table id="results_table"><tr></tr></table>
                 <div id="results_loading"></div>
             </div>
         </div>
-
 
      </div>
 

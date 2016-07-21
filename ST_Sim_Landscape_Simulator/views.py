@@ -27,14 +27,28 @@ def index(request):
         return render(request, 'index.html')
 
     else:
-        feature_id=request.POST.get('feature_id')
-        context=run_st_sim(st_scenario,feature_id)
+        veg_slider_values=request.POST.get('veg_slider_values')
+        veg_slider_values_dict=json.loads(veg_slider_values)
+
+        # for csv initial conditions
+        # feature_id=request.POST.get('feature_id')
+        # context=run_st_sim(st_scenario,feature_id)
+        context=run_st_sim(st_scenario,veg_slider_values_dict)
         return HttpResponse(context)
 
+#def run_st_sim(st_scenario,feature_id): # for csv initial conditions
+def run_st_sim(st_scenario,veg_slider_values_dict):
 
-def run_st_sim(st_scenario,feature_id):
+    #st_initial_conditions_file="F:/Projects2/OSU_BLM_Sagebrush2016/Tasks/Web_Applications/Landscape_Simulator/3D_Landscape_Simulator/Sagebrush/static/st_sim/initial_conditions/" + feature_id + ".csv"
+    st_initial_conditions_file="F:/Projects2/OSU_BLM_Sagebrush2016/Tasks/Web_Applications/Landscape_Simulator/3D_Landscape_Simulator/Sagebrush/static/st_sim/initial_conditions/temp.csv"
 
-    st_initial_conditions_file="F:/Projects2/OSU_BLM_Sagebrush2016/Tasks/Web_Applications/Landscape_Simulator/3D_Landscape_Simulator/Sagebrush/static/st_sim/initial_conditions/" + feature_id + ".csv"
+    # Only for user defined initial conditions
+    st_initial_conditions_file_handle=open(st_initial_conditions_file,'w')
+    st_initial_conditions_file_handle.write('StratumID,StateClassID,RelativeAmount\n')
+    for key,value in veg_slider_values_dict.iteritems():
+        st_initial_conditions_file_handle.write(key+",Ann Gr Mono:Open,"+str(value) +"\n")
+
+    st_initial_conditions_file_handle.close()
 
     st_exe="F:/Projects2/OSU_BLM_Sagebrush2016/Tasks/Web_Applications/Landscape_Simulator/3D_Landscape_Simulator/Sagebrush/static/deps/st_sim/syncrosim-linux-1-0-24-x64/SyncroSim.Console.exe"
     st_library_path="F:/Projects2/OSU_BLM_Sagebrush2016/Tasks/Web_Applications/Landscape_Simulator/3D_Landscape_Simulator/Sagebrush/static/st_sim/libraries"
@@ -81,4 +95,3 @@ def run_st_sim(st_scenario,feature_id):
     }
 
     return HttpResponse(json.dumps(context))
-
