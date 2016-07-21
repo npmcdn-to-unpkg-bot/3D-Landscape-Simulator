@@ -117,10 +117,10 @@
             <div style="display:none" id="input_management_scenario">
                 <div class="steps">3.&nbsp;Choose a Management Scenario</div>
                 <form method="post">
-                    <input type="radio" name="scenario" value="10" checked><label for="10" title="Treatments focus on thinning of trees in areas that are encroached by pinion and juniper.">Current Management </label><br>
-                    <input type="radio" name="scenario" value="188"><label for="188" title="No management actions take place in this scenario.">No Management </label><br>
-                    <input type="radio" name="scenario" value="190"><label for="190" title="Treatments focus on thinning of trees in areas that are encroached by pinion and juniper. Only treatements are in the montane upland sagebrush stratum (200 ac/year).">Minimum Management </label><br>
-                    <input type="radio" name="scenario" value="191"><label for="191" title="Treatments focus on thinning of trees in areas that are encroached by pinion and juniper with an additional 450 acres per year of focusing on late seral reference sites to prevent tree encroachment in these areas.">Double Current Management Budget</label><br>
+                    <input type="radio" name="scenario" value="10" checked><label for="10" class="scenario_radio_label" id="Treatments focus on thinning of trees in areas that are encroached by pinion and juniper.">Current Management </label><br>
+                    <input type="radio" name="scenario" value="188"><label for="188" class="scenario_radio_label" id="No management actions take place in this scenario.">No Management </label><br>
+                    <input type="radio" name="scenario" value="190"><label for="190" class="scenario_radio_label" id="Treatments focus on thinning of trees in areas that are encroached by pinion and juniper. Only treatements are in the montane upland sagebrush stratum (200 ac/year).">Minimum Management </label><br>
+                    <input type="radio" name="scenario" value="191"><label for="191" class="scenario_radio_label" id="Treatments focus on thinning of trees in areas that are encroached by pinion and juniper with an additional 450 acres per year of focusing on late seral reference sites to prevent tree encroachment in these areas.">Double Current Management Budget</label><br>
                 </form>
                 <div id="initial_conditions"></div>
                 <!--<button id="run_button" style="display:none">Run</button>-->
@@ -144,6 +144,13 @@
         </div>
 
      </div>
+
+    <!-- HIDDEN / POP-UP DIV -->
+    <div id="pop-up">
+        <h3></h3>
+        <p>
+        </p>
+    </div>
 
 </body>
 

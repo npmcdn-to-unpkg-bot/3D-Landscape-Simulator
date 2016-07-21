@@ -1,5 +1,28 @@
 $(document).ready(function() {
     $(".current_slider_setting").val(0);
+
+    $(".scenario_radio_label").hover(function(e) {
+        var moveLeft = 50;
+        var moveDown = -20;
+        $(this).css("background-color", "#DBDBDB");
+        $("div#pop-up").css("width", "280");
+        $("div#pop-up").html(this.id);
+        $('div#pop-up').show();
+
+        $('.scenario_radio_label').mousemove(function(e) {
+          $("div#pop-up").css('top', e.pageY + moveDown).css('left', e.pageX + moveLeft);
+        });
+
+      //On mouse out
+    },function(e){
+            $('div#pop-up').hide()
+            $(this).css("background-color", "white");
+        }
+    );
+});
+
+$('.scenario_radio_label').mousemove(function(e) {
+    $("div#pop-up").css('top', e.pageY + moveDown).css('left', e.pageX + moveLeft);
 });
 
 // Get initial conditions out of CSV file
@@ -61,7 +84,9 @@ function run_st_sim(feature_id) {
             var response = JSON.parse(json)
             var results_data_json = JSON.parse(response["results_json"])
             var scenario_label = $("input:checked + label").text();
-            $("#results_table").append("<tr><th colspan='3'>County: " + feature_id + "</th></tr>");
+            if (typeof previous_feature_id == "undefined" || previous_feature_id != feature_id) {
+                $("#results_table").append("<tr><th colspan='3'>County: " + feature_id + "</th></tr>");
+            }
             $("#results_table").append("<tr><td class='sub_th' colspan='3'>Scenario: " + scenario_label + "</td></tr>");
             $.each(results_data_json, function(key,value) {
                 //console.log(key + ": " + value);
@@ -72,6 +97,7 @@ function run_st_sim(feature_id) {
             $("#running_st_sim").html("ST-Sim Model Results")
 
             createWebGL(results_data_json)
+            previous_feature_id=feature_id
 
         },
 
@@ -255,3 +281,4 @@ function total_percent_action(value){
     }
 
 }
+
