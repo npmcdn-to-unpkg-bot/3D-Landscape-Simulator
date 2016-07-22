@@ -49,10 +49,21 @@ body {
 	margin-left: 0px;
 }
 
-#selected_features{
-    margin-top:10px;
-    margin-bottom:10px;
-    margin-left:10px;
+#selected_features {
+	margin-top: 10px;
+	margin-bottom: 10px;
+	padding: 4px;
+	margin-right: 10px;
+	border-radius: 5px;
+    background:white
+    transition:background-color 0.5s ease;
+}
+
+.highlight_selected{
+    background:#1EBA36;
+}
+.remove_highlight_selected{
+    background:white
 }
 
 .steps {
@@ -139,7 +150,7 @@ label, td{
     background-color:#DDDDDD;
     font-weight:bold;
     text-align:center;
-    height:30px;
+    height:25px;
 }
 
 #run_button {
@@ -150,8 +161,14 @@ label, td{
 	height: 74px;
 }
 
+.disabled {
+    background-color: #d7d7d7 !important;
+    cursor: not-allowed !important;
+    color: #cbcbcb !important;
+    text-shadow: none !important;
+}
+
 .my-button {
-	box-shadow: 0 0 15px #2B72D5;
 	border-radius: 4px;
 	color: #FFF;
 	font-weight: bold;
