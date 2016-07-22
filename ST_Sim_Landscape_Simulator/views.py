@@ -2,6 +2,7 @@ import os
 import csv
 import json
 
+from django.conf import settings
 from collections import OrderedDict
 
 #Two decimal places when dumping to JSON
@@ -16,6 +17,8 @@ from django.db import connection
 from django.views.decorators.gzip import gzip_page
 
 from django.views.decorators.csrf import csrf_exempt
+
+static_files_dir = settings.STATICFILES_DIRS[0]
 
 @gzip_page
 @csrf_exempt
@@ -39,8 +42,8 @@ def index(request):
 #def run_st_sim(st_scenario,feature_id): # for csv initial conditions
 def run_st_sim(st_scenario,veg_slider_values_dict):
 
-    #st_initial_conditions_file="F:/Projects2/OSU_BLM_Sagebrush2016/Tasks/Web_Applications/Landscape_Simulator/3D_Landscape_Simulator/Sagebrush/static/st_sim/initial_conditions/" + feature_id + ".csv"
-    st_initial_conditions_file="F:/Projects2/OSU_BLM_Sagebrush2016/Tasks/Web_Applications/Landscape_Simulator/3D_Landscape_Simulator/Sagebrush/static/st_sim/initial_conditions/user_defined_temp.csv"
+    #st_initial_conditions_file=static_files_dir + "/static/st_sim/initial_conditions/" + feature_id + ".csv"
+    st_initial_conditions_file=static_files_dir + "/st_sim/initial_conditions/user_defined_temp.csv"
 
     # Only for user defined initial conditions. Write initial conditions slider values to csv.
     st_initial_conditions_file_handle=open(st_initial_conditions_file,'w')
@@ -50,8 +53,8 @@ def run_st_sim(st_scenario,veg_slider_values_dict):
 
     st_initial_conditions_file_handle.close()
 
-    st_exe="F:/Projects2/OSU_BLM_Sagebrush2016/Tasks/Web_Applications/Landscape_Simulator/3D_Landscape_Simulator/Sagebrush/static/deps/st_sim/syncrosim-linux-1-0-24-x64/SyncroSim.Console.exe"
-    st_library_path="F:/Projects2/OSU_BLM_Sagebrush2016/Tasks/Web_Applications/Landscape_Simulator/3D_Landscape_Simulator/Sagebrush/static/st_sim/libraries"
+    st_exe=static_files_dir + "/deps/st_sim/syncrosim-linux-1-0-24-x64/SyncroSim.Console.exe"
+    st_library_path=static_files_dir + "/st_sim/libraries"
     st_library_file="ST-Sim-Sample-V3-0-24.ssim"
     st_library=st_library_path+os.sep+st_library_file
 
@@ -65,7 +68,7 @@ def run_st_sim(st_scenario,veg_slider_values_dict):
     st_model_output_sid=str(os.system(st_exe + " " + st_run_model_command))
     print st_model_output_sid
 
-    st_model_results_dir=r"F:\Projects2\OSU_BLM_Sagebrush2016\Tasks\Web_Applications\Landscape_Simulator\3D_Landscape_Simulator\Sagebrush\static\st_sim\model_results"
+    st_model_results_dir=static_files_dir + "/st_sim/model_results"
 
     st_model_output_file="stateclass-summary-" +str(st_model_output_sid)+ ".csv"
 
