@@ -1,4 +1,11 @@
-var map = L.map('map').setView([39,-113], 5);
+var map = L.map('map', {
+        zoomControl: false
+    }
+).setView([39,-113], 5);
+
+L.control.zoom({
+     position:'topright'
+}).addTo(map);
 
 var OpenStreetMap=L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', { attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a>' }).addTo(map);
 

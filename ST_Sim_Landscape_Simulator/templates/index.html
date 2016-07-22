@@ -15,11 +15,13 @@
     <script src="//code.jquery.com/jquery-1.10.2.js"></script>
     <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
 
+
     <!-- General Javascript Functions -->
     <script src="{{STATIC_URL}}js/general_js.js"></script>
 
-    <!-- General CSS -->
+    <!-- My CSS -->
     <link rel="stylesheet" href="{{STATIC_URL}}css/base.css" />
+    <link href="{{STATIC_URL}}css/buttons.css" rel="stylesheet" type="text/css" />
 
     <script>
         static_url={{STATIC_URL}};
@@ -126,7 +128,15 @@
 
         </div>
 
-        <div id="map"></div>
+        <div id="button_container">
+            <!--data-persist="true" keeps the current tab active on page refresh-->
+            <ul id="button_list" class="buttons" data-persist="false" style="visibility:hidden;">
+                <li id="map_button"><a onclick="activate_map()">2D</a></li>
+                <li id="scene_button"><a onclick="activate_scene()">3D</a></li>
+            </ul>
+                <div id="map"></div>
+                <div id="scene" style="display:none"><canvas id="scene_canvas"></canvas></div>
+        </div>
 
         <script src="{{STATIC_URL}}leaflet/leaflet_map.js"></script>
 
@@ -142,11 +152,7 @@
      </div>
 
     <!-- HIDDEN / POP-UP DIV -->
-    <div id="pop-up">
-        <h3></h3>
-        <p>
-        </p>
-    </div>
+    <div id="pop-up"></div>
 
 </body>
 

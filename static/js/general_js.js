@@ -35,7 +35,7 @@ $(document).ajaxComplete(function() {
 
 function show_input_options (){
 
-    $("#map").html("<img src='" + static_url + "img/3D_scene.png'>")
+    $("#scene").html("<img style='position:relative; top:-10px; border-radius:6px;width:100%' src='" + static_url + "img/3D_scene.png'>")
 
     $("#selected_features").html("Currently Selected: " + feature_id);
 
@@ -51,7 +51,15 @@ function show_input_options (){
         }
     );
 
+    $("#scene").show()
+    $("#map").hide()
+    $("#button_list").css("visibility", "visible")
+
     $("#run_button").show();
+
+    // Set the second tab (3D) to the selected tab.
+    $("#map_button").removeClass("selected")
+    $("#scene_button").addClass("selected")
 
 }
 
@@ -99,10 +107,6 @@ function run_st_sim(feature_id) {
             console.log(xhr.status + ": " + xhr.responseText);
         }
     });
-}
-
-function createWebGL(json_data,extent){
-    console.log(json_data,extent)
 }
 
 /*************************************************** Slider bars  ****************************************************/
@@ -278,5 +282,24 @@ function total_percent_action(value){
         $("#total_input_percent").css('background-color', 'white')
     }
 
+}
+
+function activate_map() {
+    $("#map_button").addClass("selected")
+    $("#scene_button").removeClass("selected")
+    $("#map").show()
+    $("#scene").hide()
+}
+
+function activate_scene(){
+    $("#map_button").removeClass("selected")
+    $("#scene_button").addClass("selected")
+    $("#scene").show()
+    $("#map").hide()
+
+}
+
+function createWebGL(json_data,extent){
+    console.log(json_data,extent)
 }
 
