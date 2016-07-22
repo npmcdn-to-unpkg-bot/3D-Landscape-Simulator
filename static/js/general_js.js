@@ -1,17 +1,17 @@
 $(document).ready(function() {
+
     $(".current_slider_setting").val(0);
 
+    // Tooltip popup on management scenarios
     $(".scenario_radio_label").hover(function(e) {
         var moveLeft = 50;
         var moveDown = -20;
-        $(this).css("background-color", "#DBDBDB");
-        $("div#pop-up").css("width", "280");
         $("div#pop-up").html(this.id);
         $('div#pop-up').show();
 
-        $('.scenario_radio_label').mousemove(function(e) {
-          $("div#pop-up").css('top', e.pageY + moveDown).css('left', e.pageX + moveLeft);
-        });
+       $('.scenario_radio_label').mousemove(function(e) {
+              $("div#pop-up").css('top', e.pageY + moveDown).css('left', e.pageX + moveLeft);
+            });
 
       //On mouse out
     },function(e){
@@ -19,50 +19,40 @@ $(document).ready(function() {
             $(this).css("background-color", "white");
         }
     );
+
 });
 
-$('.scenario_radio_label').mousemove(function(e) {
-    $("div#pop-up").css('top', e.pageY + moveDown).css('left', e.pageX + moveLeft);
+// Disable Run Model button on model run.
+$(document).ajaxStart(function(){
+    $("#run_button").addClass('disabled');
+    $('input:submit').attr("disabled", true);
 });
 
-// Get initial conditions out of CSV file
-function load_initial_conditions(feature_id){
-     $.ajax({
-        type: "GET",
-        url: "static/st_sim/initial_conditions/" + feature_id + ".csv",
-        dataType: "text",
-        success: function(data) {
-            process_initial_conditions(data);
+$(document).ajaxComplete(function() {
+    $("#run_button").removeClass('disabled');
+    $('input:submit').attr("disabled", false);
+});
+
+function show_input_options (){
+
+    $("#map").html("<img src='" + static_url + "img/3D_scene.png'>")
+
+    $("#selected_features").html("Currently Selected: " + feature_id);
+
+    $("#selected_features").animate({backgroundColor: '#DBDBDB'}, 400, function() {
+        $('#selected_features').animate({backgroundColor: 'white'}, 400);
+    });
+
+    $("#input_initial_veg").show();
+    $("#input_management_scenario").show();
+
+    $("#run_button").on("click", function(){
+            run_st_sim(feature_id)
         }
-     });
+    );
 
-    $("#input_initial_veg").show()
-    $("#input_management_scenario").show()
-    $("#run_button").show()
-}
+    $("#run_button").show();
 
-// Process initial conditions data. Write to initial conditions table.
-function process_initial_conditions(initial_conditions_data_json) {
-    $("#selected_features").html("Currently Selected: " + feature_id)
-    /*
-    $("#initial_conditions").empty()
-    $("#initial_conditions_table").empty()
-    $("#initial_conditions_table").append("<tr><th colspan='3'>County: " + feature_id + "</th></tr>");
-    $("#initial_conditions_table").append("<tr><td class='sub_th' colspan='3'>Initial Conditions</td></tr>");
-    initial_conditions_data_lines = initial_conditions_data.split(/\r\n|\n/);
-    var headers = initial_conditions_data_lines[0].split(',');
-    var lines = [];
-    initial_conditions_data_json={}
-    for (var i = 1; i < initial_conditions_data_lines.length -1; i++) {
-        var data = initial_conditions_data_lines[i].split(',');
-        if (typeof data[0] != "undefined") {
-            initial_conditions_data_json[data[0]]=parseFloat(data[2])
-            $('#initial_conditions_table').append('<tr><td>' + data[0] + '</td><td>' + data[2] + '%</td></tr>');
-        }
-    }
-    */
-
-    createWebGL(initial_conditions_data_json, extent)
 }
 
 // Send the scenario and initial conditions to ST-Sim.
@@ -72,6 +62,7 @@ function run_st_sim(feature_id) {
     $("#results_loading").html("<img src='"+static_url + "img/spinner.gif'>")
     var scenario=$("input[name=scenario]:checked").val()
     veg_slider_values_string=JSON.stringify(veg_slider_values)
+
     $.ajax({
         url: "", // the endpoint (for a specific view configured in urls.conf /view_name/)
         type: "POST", // http method
@@ -87,7 +78,7 @@ function run_st_sim(feature_id) {
             if (typeof previous_feature_id == "undefined" || previous_feature_id != feature_id) {
                 $("#results_table").append("<tr><th colspan='3'>County: " + feature_id + "</th></tr>");
             }
-            $("#results_table").append("<tr><td class='sub_th' colspan='3'>Scenario: " + scenario_label + "</td></tr>");
+            $("#results_table").append("<tr><td class='sub_th' colspan='3'>" + scenario_label + "</td></tr>");
             $.each(results_data_json, function(key,value) {
                 //console.log(key + ": " + value);
                 $("results_table").find("tr:gt(0)").remove();
@@ -142,6 +133,7 @@ $(function() {
           $( "#veg1_label" ).val( ui.value + "%");
           $( "#total_input_percent").html(total_input_percent + ui.value + "%");
           total_percent_action(total_input_percent + ui.value)
+          createWebGL(veg_slider_values, extent)
       },
       start:function(event, ui){
             total_input_percent=total_input_percent-ui.value
@@ -164,6 +156,7 @@ $(function() {
           $( "#veg2_label" ).val( ui.value + "%");
           $( "#total_input_percent").html(total_input_percent + ui.value + "%");
           total_percent_action(total_input_percent + ui.value)
+          createWebGL(veg_slider_values, extent)
       },
       start:function(event, ui){
           total_input_percent=total_input_percent-ui.value
@@ -186,6 +179,7 @@ $(function() {
             $( "#veg3_label" ).val( ui.value + "%");
             $( "#total_input_percent").html(total_input_percent + ui.value + "%");
             total_percent_action(total_input_percent + ui.value)
+            createWebGL(veg_slider_values, extent)
         },
         start:function(event, ui){
             total_input_percent=total_input_percent-ui.value
@@ -208,6 +202,7 @@ $(function() {
             $( "#veg4_label" ).val( ui.value + "%");
             $( "#total_input_percent").html(total_input_percent + ui.value + "%");
             total_percent_action(total_input_percent + ui.value)
+            createWebGL(veg_slider_values, extent)
         },
         start:function(event, ui){
             total_input_percent=total_input_percent-ui.value
@@ -230,6 +225,7 @@ $(function() {
             $( "#veg5_label" ).val( ui.value + "%");
             $( "#total_input_percent").html(total_input_percent + ui.value + "%");
             total_percent_action(total_input_percent + ui.value)
+            createWebGL(veg_slider_values, extent)
         },
         start:function(event, ui){
             total_input_percent=total_input_percent-ui.value
@@ -252,6 +248,7 @@ $(function() {
             $( "#veg6_label" ).val( ui.value + "%");
             $( "#total_input_percent").html(total_input_percent + ui.value + "%");
             total_percent_action(total_input_percent + ui.value)
+            createWebGL(veg_slider_values, extent)
         },
     });
 });
@@ -268,6 +265,7 @@ $(function() {
             $( "#veg7_label" ).val( ui.value + "%");
             $( "#total_input_percent").html(total_input_percent + ui.value + "%");
             total_percent_action(total_input_percent + ui.value)
+            createWebGL(veg_slider_values, extent)
         },
     });
 });

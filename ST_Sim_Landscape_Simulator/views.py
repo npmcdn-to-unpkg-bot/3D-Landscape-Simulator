@@ -40,9 +40,9 @@ def index(request):
 def run_st_sim(st_scenario,veg_slider_values_dict):
 
     #st_initial_conditions_file="F:/Projects2/OSU_BLM_Sagebrush2016/Tasks/Web_Applications/Landscape_Simulator/3D_Landscape_Simulator/Sagebrush/static/st_sim/initial_conditions/" + feature_id + ".csv"
-    st_initial_conditions_file="F:/Projects2/OSU_BLM_Sagebrush2016/Tasks/Web_Applications/Landscape_Simulator/3D_Landscape_Simulator/Sagebrush/static/st_sim/initial_conditions/temp.csv"
+    st_initial_conditions_file="F:/Projects2/OSU_BLM_Sagebrush2016/Tasks/Web_Applications/Landscape_Simulator/3D_Landscape_Simulator/Sagebrush/static/st_sim/initial_conditions/user_defined_temp.csv"
 
-    # Only for user defined initial conditions
+    # Only for user defined initial conditions. Write initial conditions slider values to csv.
     st_initial_conditions_file_handle=open(st_initial_conditions_file,'w')
     st_initial_conditions_file_handle.write('StratumID,StateClassID,RelativeAmount\n')
     for key,value in veg_slider_values_dict.iteritems():
@@ -56,7 +56,7 @@ def run_st_sim(st_scenario,veg_slider_values_dict):
     st_library=st_library_path+os.sep+st_library_file
 
     print "Running scenario sid:" + st_scenario
-    # Initial Conditions
+    # Run ST-Sim with initial conditions and user specified scenario.
     st_initial_conditions_command="--import --lib=" + st_library + " --sheet=STSim_InitialConditionsNonSpatialDistribution table_name --file="  + st_initial_conditions_file +  " --sid=" + st_scenario
     os.system(st_exe + " " + st_initial_conditions_command)
 
@@ -69,10 +69,11 @@ def run_st_sim(st_scenario,veg_slider_values_dict):
 
     st_model_output_file="stateclass-summary-" +str(st_model_output_sid)+ ".csv"
 
+    # Generate a report (csv) from ST-Sim for the model run above
     st_report_command=" --console=stsim --create-report --name=stateclass-summary --lib=" + st_library + " --file=" + st_model_results_dir + os.sep + st_model_output_file + " --sids=" + st_model_output_sid
-
     os.system(st_exe + " " + st_report_command)
 
+    # Get results out of ST-Sim csv report.
     results_dict={}
 
     reader=csv.reader(open(st_model_results_dir + os.sep + st_model_output_file))

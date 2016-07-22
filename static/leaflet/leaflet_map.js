@@ -17,10 +17,6 @@ counties.on('click', function (e) {
 
     var user_wkt = "POINT(" + e.latlng.lng + " " + e.latlng.lat + ")";
 
-    load_initial_conditions(feature_id)
+    show_input_options(feature_id)
 
-    $("#run_button").on("click", function(){
-            run_st_sim(feature_id)
-        }
-    )
 });
