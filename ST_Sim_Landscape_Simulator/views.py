@@ -1,6 +1,7 @@
 import os
 import csv
 import json
+import time
 
 from django.conf import settings
 from collections import OrderedDict
@@ -43,7 +44,7 @@ def index(request):
 def run_st_sim(st_scenario,veg_slider_values_dict):
 
     #st_initial_conditions_file=static_files_dir + "/static/st_sim/initial_conditions/" + feature_id + ".csv"
-    st_initial_conditions_file=static_files_dir + "/st_sim/initial_conditions/user_defined_temp.csv"
+    st_initial_conditions_file=static_files_dir + "/st_sim/initial_conditions/user_defined_temp" + str(time.time()) +".csv"
 
     # Only for user defined initial conditions. Write initial conditions slider values to csv.
     st_initial_conditions_file_handle=open(st_initial_conditions_file,'w')
@@ -62,6 +63,8 @@ def run_st_sim(st_scenario,veg_slider_values_dict):
     # Run ST-Sim with initial conditions and user specified scenario.
     st_initial_conditions_command="--import --lib=" + st_library + " --sheet=STSim_InitialConditionsNonSpatialDistribution table_name --file="  + st_initial_conditions_file +  " --sid=" + st_scenario
     os.system(st_exe + " " + st_initial_conditions_command)
+
+    os.remove(st_initial_conditions_file)
 
     st_run_model_command="--run --lib=" + st_library + " --sid="+st_scenario
 

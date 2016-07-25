@@ -281,7 +281,6 @@ function total_percent_action(value){
     else {
         $("#total_input_percent").css('background-color', 'white')
     }
-
 }
 
 function activate_map() {
