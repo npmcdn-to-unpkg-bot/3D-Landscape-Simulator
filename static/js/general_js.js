@@ -35,8 +35,6 @@ $(document).ajaxComplete(function() {
 
 function show_input_options (){
 
-    $("#scene").html("<img style='position:relative; top:-10px; border-radius:6px;width:100%' src='" + static_url + "img/3D_scene.png'>")
-
     $("#selected_features").html("Currently Selected: " + feature_id);
 
     $("#selected_features").animate({backgroundColor: '#DBDBDB'}, 400, function() {
@@ -299,7 +297,7 @@ function activate_scene(){
 
 }
 
-function createWebGL(json_data,extent){
-    console.log(json_data,extent)
-}
+//function createWebGL(json_data,extent){
+//    console.log(json_data,extent)
+//}
 

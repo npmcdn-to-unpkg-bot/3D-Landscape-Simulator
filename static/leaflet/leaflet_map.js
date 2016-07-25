@@ -20,7 +20,7 @@ counties.on('click', function (e) {
     var right = e.layer._bounds._northEast.lng
     feature_id = e.layer.feature.properties.NAME
 
-    extent=[bottom,top,left,right]
+    extent=[top,bottom,right,left]
 
     var user_wkt = "POINT(" + e.latlng.lng + " " + e.latlng.lat + ")";
 
