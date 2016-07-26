@@ -21,6 +21,8 @@ from django.views.decorators.csrf import csrf_exempt
 
 static_files_dir = settings.STATICFILES_DIRS[0]
 
+state_classes=["Ann Gr Mono:Open", "Ann Gr:Open", "Crst Wht Gr:Open", "Early:Open", "Late 2:Open", "Late:Closed", "Late:Open", "Mid 2:Open", "Mid:Closed", "Mid:Open", "Seeded:Open", "Sh Ann Gr:Closed", "Sh Dpl:Closed", "Tr Ann Gr:Closed", "Tr Ann Gr:Open", "Tr Enc Thr:Closed", "Tr Enc:Open"]
+
 @gzip_page
 @csrf_exempt
 def index(request):
@@ -34,14 +36,18 @@ def index(request):
         veg_slider_values=request.POST.get('veg_slider_values')
         veg_slider_values_dict=json.loads(veg_slider_values)
 
+        veg_slider_values_state_class=request.POST.get('veg_slider_values_state_class')
+        veg_slider_values_state_class_dict=json.loads(veg_slider_values_state_class)
+
         # for csv initial conditions
         # feature_id=request.POST.get('feature_id')
         # context=run_st_sim(st_scenario,feature_id)
-        context=run_st_sim(st_scenario,veg_slider_values_dict)
+        context=run_st_sim(st_scenario,veg_slider_values_dict, veg_slider_values_state_class_dict)
         return HttpResponse(context)
 
 #def run_st_sim(st_scenario,feature_id): # for csv initial conditions
-def run_st_sim(st_scenario,veg_slider_values_dict):
+def run_st_sim(st_scenario,veg_slider_values_dict, veg_slider_values_state_class_dict):
+    print veg_slider_values_state_class_dict
 
     #st_initial_conditions_file=static_files_dir + "/static/st_sim/initial_conditions/" + feature_id + ".csv"
     st_initial_conditions_file=static_files_dir + "/st_sim/initial_conditions/user_defined_temp" + str(time.time()) +".csv"
@@ -49,8 +55,13 @@ def run_st_sim(st_scenario,veg_slider_values_dict):
     # Only for user defined initial conditions. Write initial conditions slider values to csv.
     st_initial_conditions_file_handle=open(st_initial_conditions_file,'w')
     st_initial_conditions_file_handle.write('StratumID,StateClassID,RelativeAmount\n')
-    for key,value in veg_slider_values_dict.iteritems():
-        st_initial_conditions_file_handle.write(key+",Ann Gr Mono:Open,"+str(value) +"\n")
+    # Random state class. Values directly from sliders
+    #for key,value in veg_slider_values_dict.iteritems():
+    #    st_initial_conditions_file_handle.write(key+",Ann Gr Mono:Open,"+str(value) +"\n")
+
+    for key,value in veg_slider_values_state_class_dict.iteritems():
+        for i in range(0,17):
+            st_initial_conditions_file_handle.write(key+","+state_classes[i]+","+str(value[i]) +"\n")
 
     st_initial_conditions_file_handle.close()
 
@@ -64,7 +75,7 @@ def run_st_sim(st_scenario,veg_slider_values_dict):
     st_initial_conditions_command="--import --lib=" + st_library + " --sheet=STSim_InitialConditionsNonSpatialDistribution table_name --file="  + st_initial_conditions_file +  " --sid=" + st_scenario
     os.system(st_exe + " " + st_initial_conditions_command)
 
-    os.remove(st_initial_conditions_file)
+    #os.remove(st_initial_conditions_file)
 
     st_run_model_command="--run --lib=" + st_library + " --sid="+st_scenario
 

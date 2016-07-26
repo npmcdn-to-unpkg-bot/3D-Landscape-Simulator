@@ -20,6 +20,44 @@ $(document).ready(function() {
         }
     );
 
+    $(".show_state_classes_link").click(function() {
+        if ($(this).siblings(".sub_slider_text_inputs").is(":visible")) {
+            $(this).html(" <img class='dropdown_arrows' src='"+static_url+"img/down_arrow.png'>")
+            $(this).siblings(".sub_slider_text_inputs").hide()
+        }
+        else {
+            $(this).html(" <img class='dropdown_arrows' src='"+static_url+"img/up_arrow.png'>")
+            $(this).siblings(".sub_slider_text_inputs").show()
+        }
+    });
+
+    $(".veg_state_class_entry").keyup(function(){
+        test=this
+        if (typeof this.id != "undefined") {
+            veg_type_id=test.id.split("_")[1]
+        }
+        else {
+            veg_type_id = "1"
+        }
+        veg_type=this.closest('table').title
+        veg_slider_values_state_class[veg_type]=[]
+        veg_state_class_value_totals=0
+        for (i = 1; i < 18; i++){
+            veg_state_class_value=$("#veg_"+veg_type_id+"_"+i).val()
+            veg_state_class_value_totals+=parseFloat(veg_state_class_value)
+            console.log(veg_state_class_value)
+            veg_slider_values_state_class[veg_type].push(veg_state_class_value)
+
+        }
+        // To avoid initialization error
+        if ($("#veg" + veg_type_id + "_slider").slider()) {
+            $("#veg" + veg_type_id + "_slider").slider("value", veg_state_class_value_totals)
+            $('#veg1_slider').trigger('change');
+            $('#veg1_slider').trigger('slidechange');
+        }
+        $( "#veg" + veg_type_id + "_label" ).val( parseInt(veg_state_class_value_totals) + "%");
+    }).keyup();
+
 });
 
 // Disable Run Model button on model run.
@@ -70,12 +108,13 @@ function run_st_sim(feature_id) {
     $("#results_loading").html("<img src='"+static_url + "img/spinner.gif'>")
     var scenario=$("input[name=scenario]:checked").val()
     veg_slider_values_string=JSON.stringify(veg_slider_values)
+    veg_slider_values_state_class_string=JSON.stringify(veg_slider_values_state_class)
 
     $.ajax({
         url: "", // the endpoint (for a specific view configured in urls.conf /view_name/)
         type: "POST", // http method
         //data: {'scenario': scenario, 'feature_id': feature_id},
-        data: {'scenario': scenario, 'veg_slider_values':veg_slider_values_string},
+        data: {'scenario': scenario, 'veg_slider_values':veg_slider_values_string, 'veg_slider_values_state_class':veg_slider_values_state_class_string},
 
         // handle a successful response
         success: function (json) {
@@ -112,18 +151,28 @@ function run_st_sim(feature_id) {
 /*************************************************** Slider bars  ****************************************************/
 
 //initialize default values. Change the default labels above as well.
-var enable_environment_settings=false
-var veg1_slider=0
-var veg2_slider=0
-var veg3_slider=0
-var veg4_slider=0
-var veg5_slider=0
-var veg6_slider=0
-var veg7_slider=0
+var enable_environment_settings=false;
+var veg1_slider=0;
+var veg2_slider=0;
+var veg3_slider=0;
+var veg4_slider=0;
+var veg5_slider=0;
+var veg6_slider=0;
+var veg7_slider=0;
 
-var total_input_percent=0
+var total_input_percent=0;
 
-var veg_slider_values={}
+var veg_slider_values={
+    "Basin Big Sagebrush Upland":veg1_slider,
+    "Curleaf Mountain Mahogany":veg2_slider,
+    "Low Sagebrush":veg3_slider,
+    "Montane Sagebrush Upland":veg4_slider,
+    "Montane Sagebrush Upland With Trees":veg5_slider,
+    "Western Juniper Woodland & Savannah":veg6_slider,
+    "Wyoming and Basin Big Sagebrush Upland":veg7_slider
+};
+
+var veg_slider_values_state_class={}
 
 $(function() {
     $( "#veg1_slider" ).slider({
@@ -133,17 +182,33 @@ $(function() {
       max: 100,
       step:1,
       slide: function( event, ui ) {
+
+          $("#scene").html("<img style='position:relative; top:-10px; border-radius:6px;width:100%' src='" + static_url + "img/veg_scene.png'>")
+
           veg_slider_values["Basin Big Sagebrush Upland"]=ui.value
           $( "#veg1_label" ).val( ui.value + "%");
           $( "#total_input_percent").html(total_input_percent + ui.value + "%");
           total_percent_action(total_input_percent + ui.value)
           createWebGL(veg_slider_values, extent)
+
+          veg_proportion1=(ui.value/18).toFixed(1)
+          for (i=1; i <= 18; i++) {
+              $("#veg_1_"+i).val(veg_proportion1)
+          }
+
+          veg_slider_values_state_class["Basin Big Sagebrush Upland"]=[]
+
       },
       start:function(event, ui){
             total_input_percent=total_input_percent-ui.value
       },
       stop:function(event, ui){
             total_input_percent=total_input_percent+ui.value
+
+            for (i = 0; i < 18; i++){
+                  veg_slider_values_state_class["Basin Big Sagebrush Upland"].push(veg_proportion1)
+            }
+
       }
     });
 });
@@ -161,12 +226,23 @@ $(function() {
           $( "#total_input_percent").html(total_input_percent + ui.value + "%");
           total_percent_action(total_input_percent + ui.value)
           createWebGL(veg_slider_values, extent)
+
+          veg_proportion2=(ui.value/18).toFixed(1)
+          for (i=1; i <= 18; i++) {
+              $("#veg_2_"+i).val(veg_proportion2)
+          }
+
+          veg_slider_values_state_class["Curleaf Mountain Mahogany"]=[]
       },
       start:function(event, ui){
           total_input_percent=total_input_percent-ui.value
       },
       stop:function(event, ui){
           total_input_percent=total_input_percent+ui.value
+
+          for (i = 0; i < 18; i++){
+              veg_slider_values_state_class["Curleaf Mountain Mahogany"].push(veg_proportion2)
+          }
       }
   });
 });
@@ -184,12 +260,21 @@ $(function() {
             $( "#total_input_percent").html(total_input_percent + ui.value + "%");
             total_percent_action(total_input_percent + ui.value)
             createWebGL(veg_slider_values, extent)
+
+            veg_proportion3=(ui.value/18).toFixed(1)
+            for (i=1; i <= 18; i++) {
+                $("#veg_3_"+i).val(veg_proportion3)
+            }
         },
         start:function(event, ui){
             total_input_percent=total_input_percent-ui.value
         },
         stop:function(event, ui){
             total_input_percent=total_input_percent+ui.value
+
+            for (i = 0; i < 18; i++){
+                veg_slider_values_state_class["Low Sagebrush"].push(veg_proportion3)
+            }
         }
     });
 });
@@ -207,12 +292,21 @@ $(function() {
             $( "#total_input_percent").html(total_input_percent + ui.value + "%");
             total_percent_action(total_input_percent + ui.value)
             createWebGL(veg_slider_values, extent)
+
+            veg_proportion4=(ui.value/18).toFixed(1)
+            for (i=1; i <= 18; i++) {
+                $("#veg_4_"+i).val(veg_proportion4)
+            }
         },
         start:function(event, ui){
             total_input_percent=total_input_percent-ui.value
         },
         stop:function(event, ui){
             total_input_percent=total_input_percent+ui.value
+
+            for (i = 0; i < 18; i++){
+                veg_slider_values_state_class["Montane Sagebrush Upland"].push(veg_proportion4)
+            }
         }
     });
 });
@@ -230,12 +324,21 @@ $(function() {
             $( "#total_input_percent").html(total_input_percent + ui.value + "%");
             total_percent_action(total_input_percent + ui.value)
             createWebGL(veg_slider_values, extent)
+
+            veg_proportion5=(ui.value/18).toFixed(1)
+            for (i=1; i <= 18; i++) {
+                $("#veg_5_"+i).val(veg_proportion5)
+            }
         },
         start:function(event, ui){
             total_input_percent=total_input_percent-ui.value
         },
         stop:function(event, ui){
             total_input_percent=total_input_percent+ui.value
+
+            for (i = 0; i < 18; i++){
+                veg_slider_values_state_class["Montane Sagebrush Upland With Trees"].push(veg_proportion5)
+            }
         }
     });
 });
@@ -253,7 +356,22 @@ $(function() {
             $( "#total_input_percent").html(total_input_percent + ui.value + "%");
             total_percent_action(total_input_percent + ui.value)
             createWebGL(veg_slider_values, extent)
+
+            veg_proportion6=(ui.value/18).toFixed(1)
+            for (i=1; i <= 18; i++) {
+                $("#veg_6_"+i).val(veg_proportion6)
+            }
         },
+        start:function(event, ui){
+            total_input_percent=total_input_percent-ui.value
+        },
+        stop:function(event, ui){
+            total_input_percent=total_input_percent+ui.value
+
+            for (i = 0; i < 18; i++){
+                veg_slider_values_state_class["Western Juniper Woodland & Savannah"].push(veg_proportion6)
+            }
+        }
     });
 });
 
@@ -270,7 +388,22 @@ $(function() {
             $( "#total_input_percent").html(total_input_percent + ui.value + "%");
             total_percent_action(total_input_percent + ui.value)
             createWebGL(veg_slider_values, extent)
+
+            veg_proportion7=(ui.value/18).toFixed(1)
+            for (i=1; i <= 18; i++) {
+                $("#veg_7_"+i).val(veg_proportion7)
+            }
         },
+        start:function(event, ui){
+            total_input_percent=total_input_percent-ui.value
+        },
+        stop:function(event, ui){
+            total_input_percent=total_input_percent+ui.value
+
+            for (i = 0; i < 18; i++){
+                veg_slider_values_state_class["Wyoming and Basin Big Sagebrush Upland"].push(veg_proportion7)
+            }
+        }
     });
 });
 
@@ -301,4 +434,3 @@ function activate_scene(){
 function createWebGL(json_data,extent){
     console.log(json_data,extent)
 }
-

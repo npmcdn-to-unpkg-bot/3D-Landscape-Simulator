@@ -3,6 +3,8 @@ var map = L.map('map', {
     }
 ).setView([39,-113], 5);
 
+total_area=500000
+
 L.control.zoom({
      position:'topright'
 }).addTo(map);
@@ -19,6 +21,7 @@ counties.on('click', function (e) {
     var left = e.layer._bounds._southWest.lng
     var right = e.layer._bounds._northEast.lng
     feature_id = e.layer.feature.properties.NAME
+    console.log(e.layer)
 
     extent=[bottom,top,left,right]
 

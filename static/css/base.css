@@ -28,7 +28,7 @@ body {
 
 #input {
     position:relative;
-    width:21%;
+    width:336px;
     float:left;
     margin-left:2px;
 }
@@ -239,11 +239,41 @@ div#pop-up {
 }
 
 #sliderTable {
-    left: 10px;
     position: relative;
 }
 
 .slider_bars {
-    margin:5px;
+    width:94%;
+    margin:5px 0px 5px 5px;
 }
 
+.sub_slider_text_inputs{
+    width:100%;
+}
+
+.sub_slider_table{
+}
+
+.sub_slider_table td{
+   font-size:.8em;
+}
+
+.show_state_classes_link {
+	font-size: .7em;
+	color: #007BB0;
+	cursor: pointer;
+	float: right;
+	position: relative;
+	top: 28px;
+	left: 5px;
+}
+
+.current_slider_setting {
+  width:30px;
+  border:0;
+}
+
+.dropdown_arrows{
+   position:relative;
+   left:2px
+}
