@@ -1,8 +1,222 @@
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
+// Loader that provides a dictionary of named assets
+// LICENSE: MIT
+// Copyright (c) 2016 by Mike Linkovich;
+// Adapted for use by Taylor Mutch, CBI
+define("asset_loader", ["require", "exports"], function (require, exports) {
+    "use strict";
+    /**
+     * Create a Loader instance
+     */
+    function Loader() {
+        var isLoading = false;
+        var totalToLoad = 0;
+        var numLoaded = 0;
+        var numFailed = 0;
+        var success_cb;
+        var progress_cb;
+        var error_cb;
+        var done_cb;
+        var assets = { images: {}, text: {}, textures: {}, geometries: {}, statistics: {} };
+        /**
+         * Start loading a list of assets
+         */
+        function load(assetList, success, progress, error, done) {
+            success_cb = success;
+            progress_cb = progress;
+            error_cb = error;
+            done_cb = done;
+            totalToLoad = 0;
+            numLoaded = 0;
+            numFailed = 0;
+            isLoading = true;
+            if (assetList.text) {
+                totalToLoad += assetList.text.length;
+                for (var i = 0; i < assetList.text.length; ++i)
+                    loadText(assetList.text[i]);
+            }
+            if (assetList.images) {
+                totalToLoad += assetList.images.length;
+                for (var i = 0; i < assetList.images.length; ++i)
+                    loadImage(assetList.images[i]);
+            }
+            if (assetList.textures) {
+                totalToLoad += assetList.textures.length;
+                for (var i = 0; i < assetList.textures.length; ++i)
+                    loadTexture(assetList.textures[i]);
+            }
+            if (assetList.geometries) {
+                totalToLoad += assetList.geometries.length;
+                for (var i = 0; i < assetList.geometries.length; ++i)
+                    loadGeometry(assetList.geometries[i]);
+            }
+            if (assetList.statistics) {
+                totalToLoad += assetList.statistics.length;
+                for (var i = 0; i < assetList.statistics.length; ++i)
+                    loadStatistics(assetList.statistics[i]);
+            }
+        }
+        function loadText(ad) {
+            console.log('loading ' + ad.url);
+            var req = new XMLHttpRequest();
+            req.overrideMimeType('*/*');
+            req.onreadystatechange = function () {
+                if (req.readyState === 4) {
+                    if (req.status === 200) {
+                        assets.text[ad.name] = req.responseText;
+                        console.log('loaded ' + ad.name);
+                        doProgress();
+                    }
+                    else {
+                        doError("Error " + req.status + " loading " + ad.url);
+                    }
+                }
+            };
+            req.open('GET', ad.url);
+            req.send();
+        }
+        function loadImage(ad) {
+            var img = new Image();
+            assets.images[ad.name] = img;
+            img.onload = doProgress;
+            img.onerror = doError;
+            img.src = ad.url;
+        }
+        function loadTexture(ad) {
+            var parts = ad.url.split('.');
+            var ext = parts[parts.length - 1];
+            if (ext === 'tga') {
+                assets.textures[ad.name] = new THREE.TGALoader().load(ad.url, doProgress);
+            }
+            else {
+                assets.textures[ad.name] = new THREE.TextureLoader().load(ad.url, doProgress);
+            }
+        }
+        function loadGeometry(ad) {
+            var jsonLoader = new THREE.JSONLoader();
+            jsonLoader.load(ad.url, function (geometry, materials) {
+                assets.geometries[ad.name] = geometry;
+                doProgress();
+            }, function (e) { }, // progress
+            function (error) {
+                doError("Error " + error + "loading " + ad.url);
+            }); // failure
+        }
+        function loadStatistics(ad) {
+            if ($) {
+                $.getJSON(ad.url)
+                    .done(function (response) {
+                    assets.statistics[ad.name] = response['data'];
+                    doProgress();
+                })
+                    .fail(function (jqhxr, textStatus, error) {
+                    doError('Error ' + error + "loading " + ad.url);
+                });
+            }
+        }
+        function doProgress() {
+            numLoaded += 1;
+            if (progress_cb)
+                progress_cb(numLoaded / totalToLoad);
+            tryDone();
+        }
+        function doError(e) {
+            if (error_cb)
+                error_cb(e);
+            numFailed += 1;
+            tryDone();
+        }
+        function tryDone() {
+            if (!isLoading)
+                return true;
+            if (numLoaded + numFailed >= totalToLoad) {
+                var ok = !numFailed;
+                if (ok && success_cb)
+                    success_cb(assets);
+                if (done_cb)
+                    done_cb(ok);
+                isLoading = false;
+            }
+            return !isLoading;
+        }
+        /**
+         *  Public interface
+         */
+        return {
+            load: load,
+            getAssets: function () { return assets; }
+        };
+    }
+    exports.Loader = Loader; // end Loader
+});
+// terrain.ts
+define("terrain", ["require", "exports"], function (require, exports) {
+    "use strict";
+    var resolution = 50.0;
+    var disp = 0.5;
+    function createTerrain(params) {
+        // get the heightmap based on the extent parameters
+        //let srcPath = 'heightmap/' + extent.join('/')
+        //let statsPath = srcPath + '/stats'
+        //const loader = new AssetLoader()
+        //const heightmap = loader.loadTexture(srcPath)
+        //let maxHeight: number
+        //const mesh = new THREE.Mesh()
+        //console.log
+        var maxHeight = params.data.dem_max;
+        var width = params.data.dem_width;
+        var height = params.data.dem_height;
+        var heightmap = params.heightmap;
+        heightmap.wrapS = heightmap.wrapT = THREE.RepeatWrapping;
+        var groundmap = params.groundmap;
+        var geo = new THREE.PlaneBufferGeometry(width * resolution, height * resolution, width - 1, height - 1);
+        geo.rotateX(-Math.PI / 2);
+        var mat = new THREE.ShaderMaterial({
+            uniforms: {
+                heightmap: { type: "t", value: heightmap },
+                maxHeight: { type: "f", value: maxHeight },
+                disp: { type: "f", value: disp },
+                tex: { type: "t", value: groundmap }
+            },
+            vertexShader: params.vertShader,
+            //vertexShader: loader.loadShader('static/shader/terrain.vert.glsl'),
+            fragmentShader: params.fragShader
+        });
+        var mesh = new THREE.Mesh(geo, mat);
+        mesh.name = 'terrain';
+        //const width = heightmap.image.width
+        //const height = heightmap.image.height
+        //$.getJSON(statsPath)
+        //	.done(function(res) {
+        //		maxHeight = res.data.dem_max
+        //		const width = res.data.dem_width
+        //		const height = res.data.dem_height
+        //		let geo = new THREE.PlaneBufferGeometry(width * resolution, height * resolution, width-1, height-1)
+        //		let mat = new THREE.ShaderMaterial({
+        //			uniforms: {
+        //				heightmap: {type: "t", value: heightmap},
+        //				maxHeight: {type: "f", value: maxHeight},
+        //				disp: {type: "f", value: disp},
+        //				tex: {type: "t", value: groundmap}
+        //			},
+        //			vertexShader: vertShader,
+        //			//vertexShader: loader.loadShader('static/shader/terrain.vert.glsl'),
+        //			fragmentShader: fragShader
+        //			//fragmentShader: loader.loadShader('static/shader/terrain.frag.glsl')
+        //		})
+        //
+        //		//mesh = new THREE.Mesh(geo, mat)
+        //		mesh.geometry = geo
+        //		mesh.material = mat
+        //		mesh.name = 'terrain'
+        //})
+        return mesh;
+        //return //{
+        //mesh: mesh,
+        //heightmap: heightmap
+        //}
+    }
+    exports.createTerrain = createTerrain;
+});
 // veg.ts
 define("veg", ["require", "exports"], function (require, exports) {
     "use strict";
@@ -71,168 +285,6 @@ define("veg", ["require", "exports"], function (require, exports) {
     }());
     exports.VegetationCover = VegetationCover;
 });
-// terrain.ts
-define("terrain", ["require", "exports"], function (require, exports) {
-    "use strict";
-    var Terrain = (function (_super) {
-        __extends(Terrain, _super);
-        function Terrain(params) {
-            var geo = new THREE.PlaneBufferGeometry(params.width, params.height, params.widthSegments, params.heightSegments);
-            var mat = new THREE.ShaderMaterial({
-                uniforms: {
-                    heightmap: { type: "t", value: params.heightmap },
-                    maxHeight: { type: "f", value: params.maxHeight },
-                    minHeight: { type: "f", value: params.minHeight },
-                    disp: { type: "f", value: params.heightDisp },
-                    tex: { type: "t", value: params.groundmap }
-                },
-                vertexShader: params.vertShader,
-                fragmentShader: params.fragShader
-            });
-            _super.call(this, geo, mat); // create the mesh super class
-            this.name = 'terrain';
-            this.heightmap = mat.uniforms.heightmap.value;
-        }
-        Terrain.prototype.dispose = function () {
-            this.geometry.dispose();
-            this.material.dispose();
-            this.heightmap.dispose();
-        };
-        return Terrain;
-    }(THREE.Mesh));
-    exports.Terrain = Terrain;
-});
-// loader.ts
-define("loader", ["require", "exports"], function (require, exports) {
-    "use strict";
-    var AssetLoader = (function () {
-        function AssetLoader() {
-            this.jsonLoader = new THREE.JSONLoader();
-            this.TGALoader = new THREE.TGALoader();
-            this.textureLoader = new THREE.TextureLoader();
-        }
-        AssetLoader.prototype.loadTexture = function (path) {
-            var parts = path.split('.');
-            var ext = parts[parts.length - 1];
-            var texture;
-            if (ext === 'tga') {
-                this.TGALoader.load(path, function (texture) {
-                    texture = texture;
-                });
-            }
-            else {
-                this.textureLoader.load(path, function (texture) {
-                    texture = texture;
-                });
-            }
-            return texture;
-        };
-        AssetLoader.prototype.loadGeometry = function (path) {
-            var geo;
-            this.jsonLoader.load(path, function (geometry, materials) {
-                //return {
-                //geo: geometry,
-                //materials: materials
-                //}
-                geo = geometry;
-            });
-            return geo;
-        };
-        AssetLoader.prototype.loadShader = function (path) {
-            var shaderText;
-            var req = new XMLHttpRequest();
-            req.overrideMimeType('*/*');
-            req.onreadystatechange = function () {
-                if (req.readyState === 4) {
-                    if (req.status === 200) {
-                        shaderText = req.responseText;
-                    }
-                    else {
-                        console.log("Error " + req.status + " loading " + path);
-                        return "";
-                    }
-                }
-            };
-            req.open('GET', path);
-            req.send();
-            return shaderText;
-        };
-        AssetLoader.prototype.loadAssets = function (assets) {
-            var geo, tex, vs, fs;
-            for (geo in assets.geometries) {
-                geo.value = this.loadGeometry(geo.path);
-            }
-            for (tex in assets.textures) {
-                tex.value = this.loadTexture(tex.path);
-            }
-            for (fs in assets.fragmentShaders) {
-                fs.value = this.loadShader(fs.path);
-            }
-            for (vs in assets.vertexShaders) {
-                vs.value = this.loadShader(vs.path);
-            }
-            this.assets = assets;
-        };
-        return AssetLoader;
-    }());
-    exports.AssetLoader = AssetLoader;
-});
-// world.ts
-define("world", ["require", "exports", "veg", "terrain", "loader"], function (require, exports, veg_1, terrain_1, loader_1) {
-    "use strict";
-    var World = (function () {
-        function World() {
-            this.initialized = false;
-            this.scene = new THREE.Scene();
-            this.assetLoader = new loader_1.AssetLoader();
-            // load assets on object creation		
-            var assets;
-            // Terrain assets
-            assets.textures.push({ name: 'TerrainGround', path: 'img/ground_grass_dead.jpg' });
-            assets.vertexShaders.push({ name: 'TerrainVert', path: 'shader/terrain.vert.glsl' });
-            assets.fragmentShaders.push({ name: 'TerrainFrag', path: 'shader/terrain.frag.glsl' });
-            // Grass assets	(I.e. one type of vegetation)
-            assets.geometries.push({ name: 'GrassGeo', path: 'json/grass.json' });
-            assets.textures.push({ name: 'GrassMaterial', path: 'img/grass/grass_diff.tga' });
-            assets.vertexShaders.push({ name: 'GrassVert', path: 'shader/grass.vert.glsl' });
-            assets.fragmentShaders.push({ name: 'GrassFrag', path: 'shader/grass.frag.glsl' });
-            this.assetLoader.loadAssets(assets);
-            this.assets = assets;
-        }
-        World.prototype.initialize = function () {
-            // create objects (1 terrain, n vegtypes)
-            // create terrain
-            var terrainParams;
-            terrainParams.width = 1000;
-            terrainParams.height = 1000;
-            terrainParams.widthSegments = 100;
-            terrainParams.heightSegments = 100;
-            this.initialized = true;
-        };
-        World.prototype.updateTerrain = function (hfPath) {
-            this.assetLoader;
-        };
-        World.prototype.addTerrain = function (params) {
-            var terrain = new terrain_1.Terrain(params);
-            this.scene.add(terrain);
-        };
-        World.prototype.updateVegetation = function (params) {
-            for (var i = 0; i < this.vegetation.length; i++) {
-                if (this.vegetation[i].name === params.name) {
-                    // update pct cover of vegetation
-                    this.vegetation[i].pctCover = params.pctCover;
-                    return;
-                }
-            }
-            // otherwise, create new vegetation type
-            var newVegtype = new veg_1.VegetationCover(params);
-            this.vegetation.push(newVegtype);
-            this.scene.add(newVegtype.mesh);
-        };
-        return World;
-    }());
-    exports.World = World;
-});
 // utils.ts
 define("utils", ["require", "exports"], function (require, exports) {
     "use strict";
@@ -257,60 +309,126 @@ define("utils", ["require", "exports"], function (require, exports) {
     exports.detectWebGL = detectWebGL;
 });
 // app.ts
-define("app", ["require", "exports", "world"], function (require, exports, world_1) {
+define("app", ["require", "exports", "terrain", "asset_loader"], function (require, exports, terrain_1, asset_loader_1) {
     "use strict";
-    var App = (function () {
-        function App(container) {
-            //if detectWebGL()	// detect whether webgl will run on this platform
-            // Create the renderer, don't initialize yes
-            this.container = container;
-            this.renderer = new THREE.WebGLRenderer();
-            this.renderer.setSize(this.container.offsetWidth, this.container.offsetHeight);
-            this.container.appendChild(this.renderer.domElement);
-            document.addEventListener('resize', this.resizeRenderer, false);
-            this.world = new world_1.World();
-            this.camera = new THREE.PerspectiveCamera();
-            this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+    function run(container_id) {
+        var initialized = false;
+        var masterAssets;
+        var vegcounter = 0;
+        var addcounter = 0;
+        var terrain;
+        var container = document.getElementById(container_id);
+        var scene = new THREE.Scene();
+        var renderer = new THREE.WebGLRenderer();
+        var camera = new THREE.PerspectiveCamera(75, container.offsetWidth / container.offsetHeight, 1, 100000.0);
+        var controls = new THREE.OrbitControls(camera, renderer.domElement);
+        camera.position.z = 2;
+        camera.position.y = 10000;
+        container.appendChild(renderer.domElement);
+        // load initial assets
+        var loader = asset_loader_1.Loader();
+        loader.load({
+            text: [
+                { name: 'terrain.vert', url: 'static/shader/terrain.vert.glsl' },
+                { name: 'terrain.frag', url: 'static/shader/terrain.frag.glsl' }
+            ],
+            textures: [
+                { name: 'terrain_ground1', url: 'static/img/terrain/soil.jpg' },
+                { name: 'grass_material', url: 'static/img/grass/grass_base.tga' }
+            ],
+            geometries: [
+                { name: 'grass', url: 'static/json/geometry/grass.json' },
+                { name: 'tree', url: 'static/json/geometry/tree.json' }
+            ]
+        }, function (loadedAssets) {
+            masterAssets = loadedAssets;
+            initialized = true;
+        }, function (progress) {
+            console.log(progress * 100 + "% loaded...");
+        }, function (error) {
+            console.log(error);
+        });
+        var vegetations;
+        var spatialExtent = [-1, -1, -1, -1];
+        animate();
+        function updateTerrain(extent) {
+            if (extent.length === 4) {
+                // confirm params are different
+                //console.log(terrain)
+                if (terrain == undefined || extent[0] != spatialExtent[0] ||
+                    extent[1] != spatialExtent[1] ||
+                    extent[2] != spatialExtent[2] ||
+                    extent[3] != spatialExtent[3]) {
+                    if (terrain != undefined) {
+                        scene.remove(terrain);
+                    }
+                    var srcPath = 'heightmap/' + extent.join('/');
+                    var statsPath = srcPath + '/stats';
+                    loader.load({
+                        textures: [
+                            { name: 'heightmap', url: srcPath }
+                        ],
+                        statistics: [
+                            { name: 'heightmap_stats', url: statsPath }
+                        ]
+                    }, function (loadedAssets) {
+                        terrain = terrain_1.createTerrain({
+                            groundmap: masterAssets.textures['terrain_ground1'],
+                            vertShader: masterAssets.text['terrain.vert'],
+                            fragShader: masterAssets.text['terrain.frag'],
+                            data: loadedAssets.statistics['heightmap_stats'],
+                            heightmap: loadedAssets.textures['heightmap']
+                        });
+                        scene.add(terrain);
+                    }, function (progress) {
+                        console.log("Loading heightmap assets... " + progress * 100 + "%");
+                    }, function (error) {
+                        console.log(error);
+                    });
+                }
+            }
         }
-        // run boo
-        App.prototype.updateWebGL = function (hmPath, initialConditions) {
-            this.world.initialize();
-            // initial conditions
-            //this.updateHeightmap(hmPath)
-            this.currentParams = initialConditions;
-            //this.updateVegetationCovers(this.currentParams)
-            // start rendering
-            this.animate();
+        // for each slider value, we should create vegetation that attaches to it
+        function addVegetation(sliderVal) {
+            // do nothing for now
+            console.log("Add Vegetation Now");
+            vegcounter += 1;
+            console.log(vegcounter);
+        }
+        function updateVegetation(data) {
+            console.log("Update vegetation now");
+            addcounter += 1;
+            console.log(addcounter);
+            console.log(data);
+        }
+        function render() {
+            renderer.render(scene, camera);
+            controls.update();
+        }
+        var renderID;
+        function animate() {
+            render();
+            renderID = requestAnimationFrame(animate);
+        }
+        function stopAnimate() {
+            cancelAnimationFrame(renderID);
+        }
+        function resize() {
+            renderer.setSize(container.offsetWidth, container.offsetHeight);
+            camera.aspect = container.offsetWidth / container.offsetHeight;
+            camera.updateProjectionMatrix();
+        }
+        return {
+            updateTerrain: updateTerrain,
+            addVegetation: addVegetation,
+            updateVegetation: updateVegetation,
+            animate: animate,
+            stopAnimate: stopAnimate,
+            scene: scene,
+            resize: resize
         };
-        //updateHeightmap(hmPath: string) {
-        //	let newHeightmap = this.assetLoader.loadTexture(hmPath)
-        //	this.world.terrain.heightmap = newHeightmap
-        //
-        //}
-        //
-        //updateVegetationCovers(params: VegParams) {
-        //	// updates each vegetation in the world with a new percent cover
-        //	this.world.updateVegetation()
-        //}
-        App.prototype.render = function () {
-            this.controls.update();
-            this.renderer.render(this.world.scene, this.camera);
-        };
-        App.prototype.animate = function () {
-            this.render();
-            requestAnimationFrame(this.animate);
-        };
-        App.prototype.resizeRenderer = function () {
-            this.renderer.setSize(this.container.offsetWidth, this.container.offsetHeight);
-            this.camera.aspect = this.container.offsetWidth / this.container.offsetHeight;
-            this.camera.updateProjectionMatrix();
-        };
-        return App;
-    }());
+    }
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.default = App;
+    exports.default = run;
 });
-// then we need the app to construct the world without rendering anything
-// after world is ready, we need to wait for the user to select a county so 
-// that we can collect a heightmap and initialize the webgl sequence 
 //# sourceMappingURL=landscape-viewer.js.map

@@ -1,94 +1,164 @@
 // app.ts
 
-import {World, VegParams} from './world'
+import {createTerrain, TerrainParams} from './terrain'
+import {VegetationCover} from './veg'
 import {detectWebGL} from './utils'
+import {Loader, Assets} from './asset_loader'
 
-
-export default class App {
-
-	public initialized: boolean
-
-	// spatial extend
-	public top: number		// latitudes
-	public bottom: number
-	public left: number		// longitudes
-	public right: number
-	public currentParams: VegParams	// the main thing we need to change overall
-	public initialParams: VegParams // the thing we need to compare against to update the vegetation
-
-	// private members
-	private world: World
-	private renderer: THREE.WebGLRenderer	// the renderer renders the world
-	private controls: THREE.OrbitControls	// controls
-	private camera: THREE.PerspectiveCamera	// camera for the world
-	private container: HTMLDivElement		// container where our rendering happens
-
-	constructor(container: HTMLDivElement) {
-
-		//if detectWebGL()	// detect whether webgl will run on this platform
-
-		// Create the renderer, don't initialize yes
-		this.container = container
-		this.renderer = new THREE.WebGLRenderer()
-		this.renderer.setSize(this.container.offsetWidth, this.container.offsetHeight)
-		this.container.appendChild(this.renderer.domElement)
-		document.addEventListener('resize', this.resizeRenderer, false)
-		
-		this.world = new World()
-		this.camera = new THREE.PerspectiveCamera()
-		this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement)
-	}
-
-	// run boo
-	updateWebGL(hmPath:string, initialConditions: VegParams) {
-		
-		this.world.initialize()
-
-		// initial conditions
-		//this.updateHeightmap(hmPath)
-		this.currentParams = initialConditions
-		//this.updateVegetationCovers(this.currentParams)
-
-		// start rendering
-		this.animate()
-	}
-
-
-
-	//updateHeightmap(hmPath: string) {
-	//	let newHeightmap = this.assetLoader.loadTexture(hmPath)
-	//	this.world.terrain.heightmap = newHeightmap
-//
-	//}
-//
-	//updateVegetationCovers(params: VegParams) {
-	//	// updates each vegetation in the world with a new percent cover
-	//	this.world.updateVegetation()
-	//}
-
-	render() {
-		this.controls.update()
-		this.renderer.render(this.world.scene, this.camera)
-	}
-
-	animate() {
-		this.render()
-		requestAnimationFrame(this.animate)
-	}
-
-	resizeRenderer() {
-		this.renderer.setSize(this.container.offsetWidth, this.container.offsetHeight)
-		this.camera.aspect = this.container.offsetWidth / this.container.offsetHeight
-		this.camera.updateProjectionMatrix()
-	}
-
-
+interface VegParams {		// THIS INTERFACE IS SUBJECT TO CHANGE
+	"Basin Big Sagebrush Upland"?: number, 
+	"Curleaf Mountain Mahogany"?: number, 
+	"Low Sagebrush"?: number, 
+	"Montane Sagebrush Upland"?:	number, 
+	"Montane Sagebrush Upland With Trees"?: number,
+	"Western Juniper Woodland & Savannah"?: number,
+	"Wyoming and Basin Big Sagebrush Upland"?: number
 }
 
+export default function run(container_id: string) {
 
-// then we need the app to construct the world without rendering anything
+	let initialized = false
+	let masterAssets: Assets
 
+	let vegcounter = 0
+	let addcounter = 0
+	let terrain: THREE.Mesh
 
+	const container = document.getElementById(container_id)
+	const scene = new THREE.Scene()
+	const renderer = new THREE.WebGLRenderer()
+	const camera = new THREE.PerspectiveCamera(75, container.offsetWidth / container.offsetHeight, 1, 100000.0)
+	const controls = new THREE.OrbitControls(camera, renderer.domElement)
 
-// after world is ready, we need to wait for the user to select a county so 
-// that we can collect a heightmap and initialize the webgl sequence
+	camera.position.z = 2
+	camera.position.y = 10000
+
+	container.appendChild(renderer.domElement)
+
+	// load initial assets
+	const loader = Loader()
+	loader.load({
+			text: [
+				{name: 'terrain.vert', url: 'static/shader/terrain.vert.glsl'},
+				{name: 'terrain.frag', url: 'static/shader/terrain.frag.glsl'}
+			],
+			
+			textures: [
+				{name: 'terrain_ground1', url: 'static/img/terrain/soil.jpg'},
+				{name: 'grass_material', url: 'static/img/grass/grass_base.tga'}
+			],
+			
+			geometries: [
+				{name: 'grass', url: 'static/json/geometry/grass.json'},
+				{name: 'tree', url: 'static/json/geometry/tree.json'}
+			]
+		},
+		function(loadedAssets: Assets) {
+			masterAssets = loadedAssets
+			initialized = true
+		},
+		function(progress: number) {
+			console.log(progress * 100 + "% loaded...")
+		},
+		function(error: string) {
+			console.log(error)
+		}
+	)
+
+	let vegetations: VegetationCover[]
+	let spatialExtent = [-1, -1, -1, -1]
+
+	animate()
+
+	function updateTerrain(extent: number[]) {
+		if (extent.length === 4) {
+			// confirm params are different
+			//console.log(terrain)
+
+			if (terrain == undefined || extent[0] != spatialExtent[0] ||
+				extent[1] != spatialExtent[1] ||
+				extent[2] != spatialExtent[2] ||
+				extent[3] != spatialExtent[3]) {
+
+				if (terrain != undefined) {
+					scene.remove(terrain)
+				}
+
+				let srcPath = 'heightmap/' + extent.join('/')
+				let statsPath = srcPath + '/stats'
+				loader.load({
+					textures: [
+						{name: 'heightmap', url: srcPath}
+					],
+					statistics: [
+						{name: 'heightmap_stats', url: statsPath}
+					]
+				},
+				function(loadedAssets: Assets) {
+					terrain = createTerrain({
+						groundmap: masterAssets.textures['terrain_ground1'],
+						vertShader: masterAssets.text['terrain.vert'],
+						fragShader: masterAssets.text['terrain.frag'],
+						data: loadedAssets.statistics['heightmap_stats'],
+						heightmap: loadedAssets.textures['heightmap']
+					})
+					scene.add(terrain)
+				},
+				function(progress: number) {
+					console.log("Loading heightmap assets... " + progress*100  + "%")
+				},
+				function(error: string) {
+					console.log(error)
+				})
+			}
+		}
+	}
+
+	// for each slider value, we should create vegetation that attaches to it
+	function addVegetation(sliderVal: number) {
+		// do nothing for now
+		console.log("Add Vegetation Now")
+		vegcounter += 1
+		console.log(vegcounter)
+	}
+
+	function updateVegetation(data: VegParams) {
+		console.log("Update vegetation now")
+		addcounter += 1
+		console.log(addcounter)
+		console.log(data)
+	}
+
+	function render() {
+		renderer.render(scene, camera)
+		controls.update()
+	}
+
+	let renderID: any
+
+	function animate() {
+		render()
+		renderID = requestAnimationFrame(animate)
+	}
+
+	function stopAnimate() {
+		cancelAnimationFrame(renderID)
+	}
+
+	function resize() {
+		renderer.setSize(container.offsetWidth, container.offsetHeight)
+		camera.aspect = container.offsetWidth / container.offsetHeight
+		camera.updateProjectionMatrix()
+	}
+
+	return {
+		updateTerrain: updateTerrain,
+		addVegetation: addVegetation,
+		updateVegetation: updateVegetation,
+		animate: animate,
+		stopAnimate: stopAnimate,
+		scene: scene,
+		resize: resize
+	}
+}
+

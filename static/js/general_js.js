@@ -49,9 +49,11 @@ function show_input_options (){
         }
     );
 
+    updateWebGL(veg_slider_values, extent);
     $("#scene").show()
     $("#map").hide()
     $("#button_list").css("visibility", "visible")
+    landscape_viewer.resize()
 
     $("#run_button").show();
 
@@ -93,7 +95,7 @@ function run_st_sim(feature_id) {
 
             $("#running_st_sim").html("ST-Sim Model Results")
 
-            createWebGL(results_data_json)
+            updateWebGL(results_data_json)
             previous_feature_id=feature_id
 
         },
@@ -111,6 +113,7 @@ function run_st_sim(feature_id) {
 
 //initialize default values. Change the default labels above as well.
 var enable_environment_settings=false
+
 var veg1_slider=0
 var veg2_slider=0
 var veg3_slider=0
@@ -135,7 +138,7 @@ $(function() {
           $( "#veg1_label" ).val( ui.value + "%");
           $( "#total_input_percent").html(total_input_percent + ui.value + "%");
           total_percent_action(total_input_percent + ui.value)
-          createWebGL(veg_slider_values, extent)
+          //updateWebGL(veg_slider_values, extent)
       },
       start:function(event, ui){
             total_input_percent=total_input_percent-ui.value
@@ -158,7 +161,7 @@ $(function() {
           $( "#veg2_label" ).val( ui.value + "%");
           $( "#total_input_percent").html(total_input_percent + ui.value + "%");
           total_percent_action(total_input_percent + ui.value)
-          createWebGL(veg_slider_values, extent)
+          //updateWebGL(veg_slider_values, extent)
       },
       start:function(event, ui){
           total_input_percent=total_input_percent-ui.value
@@ -181,7 +184,7 @@ $(function() {
             $( "#veg3_label" ).val( ui.value + "%");
             $( "#total_input_percent").html(total_input_percent + ui.value + "%");
             total_percent_action(total_input_percent + ui.value)
-            createWebGL(veg_slider_values, extent)
+            //updateWebGL(veg_slider_values, extent)
         },
         start:function(event, ui){
             total_input_percent=total_input_percent-ui.value
@@ -204,7 +207,7 @@ $(function() {
             $( "#veg4_label" ).val( ui.value + "%");
             $( "#total_input_percent").html(total_input_percent + ui.value + "%");
             total_percent_action(total_input_percent + ui.value)
-            createWebGL(veg_slider_values, extent)
+            //updateWebGL(veg_slider_values, extent)
         },
         start:function(event, ui){
             total_input_percent=total_input_percent-ui.value
@@ -227,7 +230,7 @@ $(function() {
             $( "#veg5_label" ).val( ui.value + "%");
             $( "#total_input_percent").html(total_input_percent + ui.value + "%");
             total_percent_action(total_input_percent + ui.value)
-            createWebGL(veg_slider_values, extent)
+            //updateWebGL(veg_slider_values, extent)
         },
         start:function(event, ui){
             total_input_percent=total_input_percent-ui.value
@@ -250,7 +253,7 @@ $(function() {
             $( "#veg6_label" ).val( ui.value + "%");
             $( "#total_input_percent").html(total_input_percent + ui.value + "%");
             total_percent_action(total_input_percent + ui.value)
-            createWebGL(veg_slider_values, extent)
+            //updateWebGL(veg_slider_values, extent)
         },
     });
 });
@@ -267,7 +270,7 @@ $(function() {
             $( "#veg7_label" ).val( ui.value + "%");
             $( "#total_input_percent").html(total_input_percent + ui.value + "%");
             total_percent_action(total_input_percent + ui.value)
-            createWebGL(veg_slider_values, extent)
+            //updateWebGL(veg_slider_values, extent)
         },
     });
 });
@@ -293,11 +296,23 @@ function activate_scene(){
     $("#map_button").removeClass("selected")
     $("#scene_button").addClass("selected")
     $("#scene").show()
+    landscape_viewer.resize()   // need to recompute the size since display was none
     $("#map").hide()
 
 }
 
-//function createWebGL(json_data,extent){
-//    console.log(json_data,extent)
-//}
+/////////////////////////////  WebGL Components //////////////////////////////////
+
+var webgl_initialized = false
+var landscape_viewer = require('app').default('scene');
+
+function updateWebGL(json_data,extent){
+
+    // update the terrain. Remains unchanged if the extent remains unchanged
+    landscape_viewer.updateTerrain(extent)
+
+    // update the vegetation scalers
+    landscape_viewer.updateVegetation(json_data)
+
+}
 
