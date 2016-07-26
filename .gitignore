@@ -1,3 +1,5 @@
 *.pyc
 Sagebrush/settings.py
 node_modules/
+todo.txt
+ts_old/
