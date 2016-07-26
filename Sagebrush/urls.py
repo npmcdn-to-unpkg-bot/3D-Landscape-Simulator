@@ -1,11 +1,14 @@
 from django.conf.urls import patterns, include, url
 
 from ST_Sim_Landscape_Simulator import views
-from Heightmaps.views import generate_heightmap
+from Heightmaps.views import generate_heightmap, heightmap_stats
 
 # Uncomment the next two lines to enable the admin:
 # from django.contrib import admin
 # admin.autodiscover()
+
+heightmap_path = r'^heightmap/(?P<nlat>\d+\.\d+)/(?P<slat>\d+\.\d+)/(?P<elon>\-\d+\.\d+)/(?P<wlon>\-\d+\.\d+)'
+
 
 urlpatterns = patterns('',
     # Examples:
@@ -21,6 +24,6 @@ urlpatterns = patterns('',
     url(r'^$', views.index, name='index'),
 
     # Heightmap generation service
-    url(r'^heightmap/(?P<nlat>\d+\.\d+)/(?P<slat>\d+\.\d+)/(?P<elon>\-\d+\.\d+)/(?P<wlon>\-\d+\.\d+)$',
-                    generate_heightmap, name='heightmap'),
+    url(heightmap_path + '$', generate_heightmap, name='heightmap-src'),
+    url(heightmap_path + '/stats$', heightmap_stats, name='heightmap-stats'),
 )

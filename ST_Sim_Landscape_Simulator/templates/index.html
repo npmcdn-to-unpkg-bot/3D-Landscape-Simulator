@@ -15,15 +15,7 @@
     <script src="//code.jquery.com/jquery-1.10.2.js"></script>
     <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
 
-    <!-- WebGL Landscape Viewer and dependencies -->
-    <script src="{{STATIC_URL}}js/vendor/three/three.min.js"></script>
-    <script src="{{STATIC_URL}}js/vendor/three/TGALoader.js"></script>
-    <script src="{{STATIC_URL}}js/vendor/three/OrbitControls.js"></script>
-    <script src="{{STATIC_URL}}js/vendor/almond.min.js"></script>
-    <script src="{{STATIC_URL}}js/landscape-viewer.js"></script>
 
-    <!-- General Javascript Functions -->
-    <script src="{{STATIC_URL}}js/general_js.js"></script>
 
     <!-- My CSS -->
     <link rel="stylesheet" href="{{STATIC_URL}}css/base.css" />
@@ -144,7 +136,6 @@
                 <div id="scene" style="display:none"></div>
         </div>
 
-        <script src="{{STATIC_URL}}leaflet/leaflet_map.js"></script>
 
         <div id="output" style="display:none">
             <div id="results">
@@ -159,6 +150,18 @@
 
     <!-- HIDDEN / POP-UP DIV -->
     <div id="pop-up"></div>
+
+    <!-- WebGL Landscape Viewer and dependencies -->
+    <script src="{{STATIC_URL}}js/vendor/three/three.min.js"></script>
+    <script src="{{STATIC_URL}}js/vendor/three/TGALoader.js"></script>
+    <script src="{{STATIC_URL}}js/vendor/three/OrbitControls.js"></script>
+    <script src="{{STATIC_URL}}js/vendor/almond.min.js"></script>
+    <script src="{{STATIC_URL}}js/landscape-viewer.js"></script>
+
+    <!-- General Javascript Functions -->
+    <script src="{{STATIC_URL}}js/general_js.js"></script>
+
+    <script src="{{STATIC_URL}}leaflet/leaflet_map.js"></script>
 
 </body>
 
