@@ -20,18 +20,16 @@ export default function run(container_id: string) {
 	let initialized = false
 	let masterAssets: Assets
 
-	let vegcounter = 0
-	let addcounter = 0
 	let terrain: THREE.Mesh
 
 	const container = document.getElementById(container_id)
 	const scene = new THREE.Scene()
 	const renderer = new THREE.WebGLRenderer()
-	const camera = new THREE.PerspectiveCamera(75, container.offsetWidth / container.offsetHeight, 1, 100000.0)
+	const camera = new THREE.PerspectiveCamera(75, container.offsetWidth / container.offsetHeight, 1, 1000.0)
 	const controls = new THREE.OrbitControls(camera, renderer.domElement)
 
-	camera.position.z = 2
-	camera.position.y = 10000
+	camera.position.z = 40
+	camera.position.y = 100
 
 	container.appendChild(renderer.domElement)
 
@@ -44,8 +42,18 @@ export default function run(container_id: string) {
 			],
 			
 			textures: [
-				{name: 'terrain_ground1', url: 'static/img/terrain/soil.jpg'},
+				// terrain materials
+				{name: 'terrain_rock', url: 'static/img/terrain/rock-512.jpg'},
+				{name: 'terrain_grass', url: 'static/img/terrain/grass-512.jpg'},
+				{name: 'terrain_dirt', url: 'static/img/terrain/dirt-512.jpg'},
+				{name: 'terrain_snow', url: 'static/img/terrain/snow-512.jpg'},
+				{name: 'terrain_sand', url: 'static/img/terrain/sand-512.jpg'},
+				{name: 'terrain_water', url: 'static/img/terrain/water-512.jpg'},
+
+				// vegtype materials
 				{name: 'grass_material', url: 'static/img/grass/grass_base.tga'}
+
+				// tree materials
 			],
 			
 			geometries: [
@@ -72,14 +80,15 @@ export default function run(container_id: string) {
 
 	function updateTerrain(extent: number[]) {
 		if (extent.length === 4) {
-			// confirm params are different
-			//console.log(terrain)
 
+			// confirm params are different
 			if (terrain == undefined || extent[0] != spatialExtent[0] ||
 				extent[1] != spatialExtent[1] ||
 				extent[2] != spatialExtent[2] ||
 				extent[3] != spatialExtent[3]) {
 
+				spatialExtent = extent
+				console.log("Creating new terrain...")
 				if (terrain != undefined) {
 					scene.remove(terrain)
 				}
@@ -96,7 +105,14 @@ export default function run(container_id: string) {
 				},
 				function(loadedAssets: Assets) {
 					terrain = createTerrain({
-						groundmap: masterAssets.textures['terrain_ground1'],
+						// testing
+						rock: masterAssets.textures['terrain_rock'],
+						snow: masterAssets.textures['terrain_snow'],
+						grass: masterAssets.textures['terrain_grass'],
+						dirt: masterAssets.textures['terrain_dirt'],
+						sand: masterAssets.textures['terrain_sand'],
+						water: masterAssets.textures['terrain_water'],
+
 						vertShader: masterAssets.text['terrain.vert'],
 						fragShader: masterAssets.text['terrain.frag'],
 						data: loadedAssets.statistics['heightmap_stats'],
@@ -116,16 +132,11 @@ export default function run(container_id: string) {
 
 	// for each slider value, we should create vegetation that attaches to it
 	function addVegetation(sliderVal: number) {
-		// do nothing for now
 		console.log("Add Vegetation Now")
-		vegcounter += 1
-		console.log(vegcounter)
 	}
 
 	function updateVegetation(data: VegParams) {
 		console.log("Update vegetation now")
-		addcounter += 1
-		console.log(addcounter)
 		console.log(data)
 	}
 
@@ -157,8 +168,10 @@ export default function run(container_id: string) {
 		updateVegetation: updateVegetation,
 		animate: animate,
 		stopAnimate: stopAnimate,
+		resize: resize,
+		// debug 
 		scene: scene,
-		resize: resize
+		camera: camera
 	}
 }
 

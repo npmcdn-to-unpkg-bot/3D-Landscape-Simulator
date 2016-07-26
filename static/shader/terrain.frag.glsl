@@ -1,23 +1,21 @@
 // terrain.frag
 
 uniform sampler2D heightmap;
-uniform sampler2D tex;
+uniform sampler2D rock;
+uniform sampler2D snow;
+uniform sampler2D grass;
+uniform sampler2D dirt;
+uniform sampler2D sand;
+uniform sampler2D water;
 
 varying float vAmount;
 varying vec2 vUV;
-varying vec3 vNormal;
-varying vec3 vViewPosition;
 
-void main() 
-{
-
-    vec3 normal = normalize(vNormal);
-    vec3 lightDir = normalize(vViewPosition);
-    float dot = max( dot(normal, lightDir), 0.0);
-
-    vec4 color = texture2D(tex, vUV) * 0.5;
-    //gl_FragColor = vec4(color.rgb, 1.0) * dot;    // fake some lighting
-    // debug
-    vec4 heightColor = vec4(vAmount, vAmount, vAmount, 1.0) * 0.5;
-    gl_FragColor = vec4(color.rgb + heightColor.rgb, 1.0);
+void main() {
+	vec4 watery = (smoothstep(0.01, 0.1, vAmount) - smoothstep(0.17, 0.21, vAmount)) * texture2D( water, vUV * 10.0 );
+	vec4 sandy = (smoothstep(0.14, 0.27, vAmount) - smoothstep(0.28, 0.31, vAmount)) * texture2D( sand, vUV * 10.0 );
+	vec4 grassy = (smoothstep(0.28, 0.32, vAmount) - smoothstep(0.35, 0.40, vAmount)) * texture2D( grass, vUV * 20.0 );
+	vec4 rocky = (smoothstep(0.30, 0.50, vAmount) - smoothstep(0.40, 0.70, vAmount)) * texture2D( rock, vUV * 20.0 );
+	vec4 snowy = (smoothstep(0.50, 0.65, vAmount))                                   * texture2D( snow, vUV * 10.0 );
+	gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0) + watery + sandy + grassy + rocky + snowy;
 }

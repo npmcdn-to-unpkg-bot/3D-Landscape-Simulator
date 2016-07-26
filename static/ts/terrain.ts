@@ -1,13 +1,18 @@
 // terrain.ts
 
-import {Loader} from './asset_loader'
-
-const resolution = 50.0
-const disp = 0.5
+const resolution = 800.0
+const disp = 5.0 / resolution
 
 export interface TerrainParams {
 
-	groundmap: THREE.Texture
+	//groundmap: THREE.Texture
+	rock: THREE.Texture
+	snow: THREE.Texture
+	grass: THREE.Texture
+	dirt: THREE.Texture
+	sand: THREE.Texture
+	water: THREE.Texture
+
 	vertShader: string
 	fragShader: string
 	heightmap: THREE.Texture
@@ -17,78 +22,42 @@ export interface TerrainParams {
 
 export function createTerrain(params: TerrainParams) {
 
-	// get the heightmap based on the extent parameters
-	//let srcPath = 'heightmap/' + extent.join('/')
-	//let statsPath = srcPath + '/stats'
-
-	//const loader = new AssetLoader()
-	//const heightmap = loader.loadTexture(srcPath)
-	//let maxHeight: number
-	//const mesh = new THREE.Mesh()
-
-	//console.log
-
+	// data for landscape width/height
 	const maxHeight = params.data.dem_max
 	const width = params.data.dem_width
 	const height = params.data.dem_height
 
-	const heightmap = params.heightmap
+	// make sure the textures repeat wrap
+	params.heightmap.wrapS = params.heightmap.wrapT = THREE.RepeatWrapping
+	params.rock.wrapS = params.rock.wrapT = THREE.RepeatWrapping
+	params.grass.wrapS = params.grass.wrapT = THREE.RepeatWrapping
+	params.dirt.wrapS = params.dirt.wrapT = THREE.RepeatWrapping
+	params.snow.wrapS = params.snow.wrapT = THREE.RepeatWrapping
+	params.sand.wrapS = params.sand.wrapT = THREE.RepeatWrapping
 
-	heightmap.wrapS = heightmap.wrapT = THREE.RepeatWrapping
-
-	const groundmap = params.groundmap
-
-	const geo = new THREE.PlaneBufferGeometry(width * resolution, height * resolution, width-1, height-1)
+	const geo = new THREE.PlaneBufferGeometry(width, height, width-1, height-1)
 	geo.rotateX(-Math.PI / 2)
 	const mat = new THREE.ShaderMaterial({
 		uniforms: {
-			heightmap: {type: "t", value: heightmap},
+			heightmap: {type: "t", value: params.heightmap},
 			maxHeight: {type: "f", value: maxHeight},
 			disp: {type: "f", value: disp},
-			tex: {type: "t", value: groundmap}
+			rock: {type: "t", value: params.rock},
+			snow: {type: "t", value: params.snow},
+			grass: {type: "t", value: params.grass},
+			sand: {type: "t", value: params.sand},
+			water: {type: "t", value: params.water}
 		},
 		vertexShader: params.vertShader,
-		//vertexShader: loader.loadShader('static/shader/terrain.vert.glsl'),
 		fragmentShader: params.fragShader
-		//fragmentShader: loader.loadShader('static/shader/terrain.frag.glsl')
 	})
 
 	const mesh = new THREE.Mesh(geo, mat)
 	mesh.name = 'terrain'
 
-	//const width = heightmap.image.width
-	//const height = heightmap.image.height
-
-	//$.getJSON(statsPath)
-	//	.done(function(res) {
-	//		maxHeight = res.data.dem_max
-	//		const width = res.data.dem_width
-	//		const height = res.data.dem_height
-	//		let geo = new THREE.PlaneBufferGeometry(width * resolution, height * resolution, width-1, height-1)
-	//		let mat = new THREE.ShaderMaterial({
-	//			uniforms: {
-	//				heightmap: {type: "t", value: heightmap},
-	//				maxHeight: {type: "f", value: maxHeight},
-	//				disp: {type: "f", value: disp},
-	//				tex: {type: "t", value: groundmap}
-	//			},
-	//			vertexShader: vertShader,
-	//			//vertexShader: loader.loadShader('static/shader/terrain.vert.glsl'),
-	//			fragmentShader: fragShader
-	//			//fragmentShader: loader.loadShader('static/shader/terrain.frag.glsl')
-	//		})
-//
-	//		//mesh = new THREE.Mesh(geo, mat)
-	//		mesh.geometry = geo
-	//		mesh.material = mat
-	//		mesh.name = 'terrain'
-	//})
+	// never reuse
+	geo.dispose()
+	mat.dispose()
 
 	return mesh
-
-	//return //{
-		//mesh: mesh,
-		//heightmap: heightmap
-	//}
-
 }
