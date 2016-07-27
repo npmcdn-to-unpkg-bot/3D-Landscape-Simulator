@@ -5,10 +5,18 @@ precision highp float;
 uniform sampler2D tex;
 uniform sampler2D heightmap;
 uniform float maxHeight;
+
+uniform float vegMaxHeight;
+uniform float vegMinHeight;
+
 varying vec2 vUV;
 varying float vAmount;
 
 void main() {
-    vec4 color = texture2D(tex, vUV); // use this to show ALL veg at all heights
-    gl_FragColor = vec4(color.r, color.g, color.b, 1.0);
+	if (vAmount <= vegMaxHeight && vAmount >= vegMinHeight) {
+    	vec4 color = texture2D(tex, vUV);
+    	gl_FragColor = vec4(color.r, color.g, color.b, 1.0);
+	} else {
+		discard;
+	}
 }

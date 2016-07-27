@@ -50,15 +50,18 @@ export function createVegetation(params: VegetationOptions) {
 	
 	generateOffsets()
 	
+	
 	geo.addAttribute('offset', offsets)
 	geo.addAttribute('hCoord', hCoords)
-
 	const mat = new THREE.RawShaderMaterial({
 		uniforms: {
 			heightmap: {type: "t", value: heightmap},
 			tex: {type: "t", value: params.tex},
 			maxHeight: {type: "f", value: maxHeight},
-			disp: {type: "f", value: params.disp}
+			disp: {type: "f", value: params.disp},
+
+			vegMaxHeight: {type: "f", value: params.vegData.maxHeight},
+			vegMinHeight: {type: "f", value: params.vegData.minHeight}
 		},
 		vertexShader: params.vertShader,
 		fragmentShader: params.fragShader,

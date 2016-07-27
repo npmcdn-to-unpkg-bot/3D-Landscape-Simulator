@@ -109,7 +109,7 @@ export default function run(container_id: string, params: VegParams) {
 				if (terrain != undefined) {
 					scene.remove(terrain)
 					for (var key in vegParams) {
-						scene.remove(scene.getChildByName(key))
+						scene.remove(scene.getObjectByName(key))
 					}
 				}
 
@@ -154,7 +154,7 @@ export default function run(container_id: string, params: VegParams) {
 								disp: 5.0 / 800.0,
 								cells: {},
 								heightData: loadedAssets.statistics['heightmap_stats'],
-								vegData: {}
+								vegData: {maxHeight: 2100.0, minHeight: 1000.0}
 							}
 						))
 

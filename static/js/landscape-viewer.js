@@ -71,7 +71,9 @@ define("veg", ["require", "exports"], function (require, exports) {
                 heightmap: { type: "t", value: heightmap },
                 tex: { type: "t", value: params.tex },
                 maxHeight: { type: "f", value: maxHeight },
-                disp: { type: "f", value: params.disp }
+                disp: { type: "f", value: params.disp },
+                vegMaxHeight: { type: "f", value: params.vegData.maxHeight },
+                vegMinHeight: { type: "f", value: params.vegData.minHeight }
             },
             vertexShader: params.vertShader,
             fragmentShader: params.fragShader,
@@ -341,7 +343,7 @@ define("app", ["require", "exports", "terrain", "veg", "utils", "asset_loader"],
                     if (terrain != undefined) {
                         scene.remove(terrain);
                         for (var key in vegParams) {
-                            scene.remove(scene.getChildByName(key));
+                            scene.remove(scene.getObjectByName(key));
                         }
                     }
                     var srcPath = 'heightmap/' + extent.join('/');
@@ -380,7 +382,7 @@ define("app", ["require", "exports", "terrain", "veg", "utils", "asset_loader"],
                                 disp: 5.0 / 800.0,
                                 cells: {},
                                 heightData: loadedAssets.statistics['heightmap_stats'],
-                                vegData: {}
+                                vegData: { maxHeight: 2100.0, minHeight: 1000.0 }
                             }));
                         }
                         if (updateVeg)
