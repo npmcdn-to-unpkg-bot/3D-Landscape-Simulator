@@ -15,7 +15,12 @@ varying float vAmount;
 void main() {
 	if (vAmount <= vegMaxHeight && vAmount >= vegMinHeight) {
     	vec4 color = texture2D(tex, vUV);
-    	gl_FragColor = vec4(color.r, color.g, color.b, 1.0);
+    	if (color.r == 0.0) {
+    		discard;
+    	}
+    	else {
+    		gl_FragColor = vec4(color.r, color.g, color.b, 1.0);
+    	}
 	} else {
 		discard;
 	}

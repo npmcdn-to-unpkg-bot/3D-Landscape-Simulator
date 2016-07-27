@@ -68,15 +68,16 @@ export default function run(container_id: string, params: VegParams) {
 				{name: 'terrain_water', url: 'static/img/terrain/water-512.jpg'},
 
 				// vegtype materials
-				{name: 'grass_material', url: 'static/img/grass/grass_base.tga'}
+				{name: 'grass_material', url: 'static/img/grass/grass_base.tga'},
 
-				// tree materials
-				// todo get sagebrush materials
+				// sagebrush
+				{name: 'sagebrush_material', url: 'static/img/sagebrush/sagebrush_1.tga'}
 			],
 			
 			geometries: [
 				{name: 'grass', url: 'static/json/geometry/grass.json'},
-				{name: 'tree', url: 'static/json/geometry/tree.json'}
+				{name: 'tree', url: 'static/json/geometry/tree.json'},
+				{name: 'sagebrush', url: 'static/json/geometry/sagebrush.json'}
 			]
 		},
 		function(loadedAssets: Assets) {
@@ -147,14 +148,14 @@ export default function run(container_id: string, params: VegParams) {
 							{
 								heightmap: loadedAssets.textures['heightmap'],
 								name: key,
-								tex: masterAssets.textures['grass_material'],
-								geo: masterAssets.geometries['grass'],
+								tex: masterAssets.textures['sagebrush_material'],
+								geo: masterAssets.geometries['sagebrush'],
 								vertShader: masterAssets.text['veg_vert'],
 								fragShader: masterAssets.text['veg_frag'],
 								disp: 5.0 / 800.0,
 								cells: {},
 								heightData: loadedAssets.statistics['heightmap_stats'],
-								vegData: {maxHeight: 2100.0, minHeight: 1000.0}
+								vegData: {maxHeight: 2000.0, minHeight: 1000.0}
 							}
 						))
 
