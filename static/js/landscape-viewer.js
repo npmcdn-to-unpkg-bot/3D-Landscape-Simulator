@@ -44,55 +44,46 @@ define("terrain", ["require", "exports"], function (require, exports) {
 define("veg", ["require", "exports"], function (require, exports) {
     "use strict";
     var MAX_INSTANCES = 5000; // the max number of instances we will allow of one vegtype to be drawn
-    /**
-        Create a THREE object that exposes:
-            - Mesh
-            - MaxInstancedCount
-            - HeightTexture
-    */
-    var VegetationCover = (function () {
-        function VegetationCover(params) {
-            this.geo = new THREE.InstancedBufferGeometry();
-            this.geo.fromGeometry(params.geo);
-            if (this.geo.attributes['color']) {
-                this.geo.removeAttribute('color');
-            }
-            this.cells = params.cells; // todo - what are these cells going to look like?
-            this.heightmap = params.heightmap;
-            this.pctCover = params.pctCover;
-            this.widthExtent = params.patchDimensions.x;
-            this.heightExtent = params.patchDimensions.y;
-            this.minHeight = params.patchDimensions.z;
-            this.maxHeight = params.patchDimensions.w;
-            // The main thing we need to update
-            this.geo.maxInstancedCount = Math.floor(this.pctCover * MAX_INSTANCES);
-            // create the uniforms and allocate shaders for this vegtype
-            this.colorMap = params.tex;
-            this.offsets = new THREE.InstancedBufferAttribute(new Float32Array(MAX_INSTANCES * 2), 2);
-            this.hCoords = new THREE.InstancedBufferAttribute(new Float32Array(MAX_INSTANCES * 2), 2);
-            this.generateOffsets();
-            this.geo.addAttribute('offset', this.offsets);
-            this.geo.addAttribute('hCoord', this.hCoords);
-            this.mat = new THREE.RawShaderMaterial({
-                uniforms: {
-                    heightmap: { type: "t", value: this.heightmap },
-                    tex: { type: "t", value: this.colorMap },
-                    minHeight: { type: "f", value: this.minHeight },
-                    maxHeight: { type: "f", value: this.maxHeight }
-                },
-                vertexShader: params.vertShader,
-                fragmentShader: params.fragShader,
-                side: THREE.DoubleSide
-            });
-            this.mesh = new THREE.Mesh(this.geo, this.mat); // this what we want to access initially on initializing the world
+    function createVegetation(params) {
+        var halfPatch = new THREE.Geometry();
+        halfPatch.merge(params.geo);
+        params.geo.rotateY(Math.PI);
+        halfPatch.merge(params.geo);
+        var geo = new THREE.InstancedBufferGeometry();
+        geo.fromGeometry(halfPatch);
+        halfPatch.dispose();
+        if (geo.attributes['color']) {
+            geo.removeAttribute('color');
         }
-        VegetationCover.prototype.generateOffsets = function (cells) {
-            if (cells !== undefined) {
-                this.cells = cells;
-            }
+        var cells = params.cells; // todo - what are these cells going to look like?
+        var heightmap = params.heightmap;
+        var widthExtent = params.heightData.dem_width;
+        var heightExtent = params.heightData.dem_height;
+        var maxHeight = params.heightData.dem_max;
+        geo.maxInstancedCount = 0;
+        var offsets = new THREE.InstancedBufferAttribute(new Float32Array(MAX_INSTANCES * 2), 2);
+        var hCoords = new THREE.InstancedBufferAttribute(new Float32Array(MAX_INSTANCES * 2), 2);
+        generateOffsets();
+        geo.addAttribute('offset', offsets);
+        geo.addAttribute('hCoord', hCoords);
+        var mat = new THREE.RawShaderMaterial({
+            uniforms: {
+                heightmap: { type: "t", value: heightmap },
+                tex: { type: "t", value: params.tex },
+                maxHeight: { type: "f", value: maxHeight },
+                disp: { type: "f", value: params.disp }
+            },
+            vertexShader: params.vertShader,
+            fragmentShader: params.fragShader,
+            side: THREE.DoubleSide
+        });
+        var mesh = new THREE.Mesh(geo, mat);
+        mesh.frustumCulled = false; // Prevents the veg from disappearing randomly
+        mesh.name = params.name; // Make the mesh selectable directly from the scene
+        function generateOffsets(cells) {
             var x, y, tx, ty;
-            var width = this.widthExtent, height = this.heightExtent;
-            for (var i = 0; i < this.offsets.count; i++) {
+            var width = widthExtent, height = heightExtent;
+            for (var i = 0; i < offsets.count; i++) {
                 // position in the spatial extent
                 x = Math.random() * width - width / 2;
                 y = Math.random() * height - height / 2;
@@ -100,13 +91,13 @@ define("veg", ["require", "exports"], function (require, exports) {
                 tx = x / width + 0.5;
                 ty = y / height + 0.5;
                 // update attribute buffers
-                this.offsets.setXY(i, x, y);
-                this.hCoords.setXY(i, tx, 1 - ty); // 1-ty since texture is flipped on Y axis
+                offsets.setXY(i, x, y);
+                hCoords.setXY(i, tx, 1 - ty); // 1-ty since texture is flipped on Y axis
             }
-        };
-        return VegetationCover;
-    }());
-    exports.VegetationCover = VegetationCover;
+        }
+        return mesh;
+    }
+    exports.createVegetation = createVegetation;
 });
 // utils.ts
 define("utils", ["require", "exports"], function (require, exports) {
@@ -282,16 +273,22 @@ define("asset_loader", ["require", "exports"], function (require, exports) {
     exports.Loader = Loader; // end Loader
 });
 // app.ts
-define("app", ["require", "exports", "terrain", "asset_loader"], function (require, exports, terrain_1, asset_loader_1) {
+define("app", ["require", "exports", "terrain", "veg", "utils", "asset_loader"], function (require, exports, terrain_1, veg_1, utils_1, asset_loader_1) {
     "use strict";
-    function run(container_id) {
+    function run(container_id, params) {
+        if (!utils_1.detectWebGL) {
+            alert("Your browser does not support WebGL. Please use a different browser (I.e. Chrome, Firefox).");
+            return null;
+        }
         var initialized = false;
         var masterAssets;
+        var vegParams = params;
         var terrain;
+        //let vegCovers: VegCovers
         var container = document.getElementById(container_id);
         var scene = new THREE.Scene();
         var renderer = new THREE.WebGLRenderer();
-        var camera = new THREE.PerspectiveCamera(75, container.offsetWidth / container.offsetHeight, 1, 1000.0);
+        var camera = new THREE.PerspectiveCamera(75, container.offsetWidth / container.offsetHeight, .1, 1000.0);
         var controls = new THREE.OrbitControls(camera, renderer.domElement);
         camera.position.z = 40;
         camera.position.y = 100;
@@ -300,8 +297,12 @@ define("app", ["require", "exports", "terrain", "asset_loader"], function (requi
         var loader = asset_loader_1.Loader();
         loader.load({
             text: [
-                { name: 'terrain.vert', url: 'static/shader/terrain.vert.glsl' },
-                { name: 'terrain.frag', url: 'static/shader/terrain.frag.glsl' }
+                // terrain
+                { name: 'terrain_vert', url: 'static/shader/terrain.vert.glsl' },
+                { name: 'terrain_frag', url: 'static/shader/terrain.frag.glsl' },
+                // veg
+                { name: 'veg_vert', url: 'static/shader/veg.vert.glsl' },
+                { name: 'veg_frag', url: 'static/shader/veg.frag.glsl' }
             ],
             textures: [
                 // terrain materials
@@ -326,10 +327,9 @@ define("app", ["require", "exports", "terrain", "asset_loader"], function (requi
         }, function (error) {
             console.log(error);
         });
-        var vegetations;
-        var spatialExtent = [-1, -1, -1, -1];
+        var spatialExtent = [-1, -1, -1, -1]; // dummy vars for starting out
         animate();
-        function updateTerrain(extent) {
+        function updateTerrain(extent, updateVeg) {
             if (extent.length === 4) {
                 // confirm params are different
                 if (terrain == undefined || extent[0] != spatialExtent[0] ||
@@ -337,9 +337,12 @@ define("app", ["require", "exports", "terrain", "asset_loader"], function (requi
                     extent[2] != spatialExtent[2] ||
                     extent[3] != spatialExtent[3]) {
                     spatialExtent = extent;
-                    console.log("Creating new terrain...");
+                    //console.log("Creating new terrain...")
                     if (terrain != undefined) {
                         scene.remove(terrain);
+                        for (var key in vegParams) {
+                            scene.remove(scene.getChildByName(key));
+                        }
                     }
                     var srcPath = 'heightmap/' + extent.join('/');
                     var statsPath = srcPath + '/stats';
@@ -359,12 +362,29 @@ define("app", ["require", "exports", "terrain", "asset_loader"], function (requi
                             dirt: masterAssets.textures['terrain_dirt'],
                             sand: masterAssets.textures['terrain_sand'],
                             water: masterAssets.textures['terrain_water'],
-                            vertShader: masterAssets.text['terrain.vert'],
-                            fragShader: masterAssets.text['terrain.frag'],
+                            vertShader: masterAssets.text['terrain_vert'],
+                            fragShader: masterAssets.text['terrain_frag'],
                             data: loadedAssets.statistics['heightmap_stats'],
                             heightmap: loadedAssets.textures['heightmap']
                         });
                         scene.add(terrain);
+                        // Add our vegcovers
+                        for (var key in vegParams) {
+                            scene.add(veg_1.createVegetation({
+                                heightmap: loadedAssets.textures['heightmap'],
+                                name: key,
+                                tex: masterAssets.textures['grass_material'],
+                                geo: masterAssets.geometries['grass'],
+                                vertShader: masterAssets.text['veg_vert'],
+                                fragShader: masterAssets.text['veg_frag'],
+                                disp: 5.0 / 800.0,
+                                cells: {},
+                                heightData: loadedAssets.statistics['heightmap_stats'],
+                                vegData: {}
+                            }));
+                        }
+                        if (updateVeg)
+                            updateVegetation(vegParams);
                     }, function (progress) {
                         console.log("Loading heightmap assets... " + progress * 100 + "%");
                     }, function (error) {
@@ -373,13 +393,15 @@ define("app", ["require", "exports", "terrain", "asset_loader"], function (requi
                 }
             }
         }
-        // for each slider value, we should create vegetation that attaches to it
-        function addVegetation(sliderVal) {
-            console.log("Add Vegetation Now");
-        }
-        function updateVegetation(data) {
-            console.log("Update vegetation now");
-            console.log(data);
+        function updateVegetation(newParams) {
+            for (var key in newParams) {
+                if (vegParams.hasOwnProperty(key)) {
+                    vegParams[key] = newParams[key]; // update the object to what we want it to be
+                    var vegCover = scene.getObjectByName(key);
+                    var vegGeo = vegCover.geometry;
+                    vegGeo.maxInstancedCount = Math.floor(vegParams[key] / 100 * 5000); // make this a static function
+                }
+            }
         }
         function render() {
             renderer.render(scene, camera);
@@ -400,7 +422,6 @@ define("app", ["require", "exports", "terrain", "asset_loader"], function (requi
         }
         return {
             updateTerrain: updateTerrain,
-            addVegetation: addVegetation,
             updateVegetation: updateVegetation,
             animate: animate,
             stopAnimate: stopAnimate,

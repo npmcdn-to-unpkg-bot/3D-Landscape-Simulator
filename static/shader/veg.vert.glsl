@@ -8,7 +8,6 @@ uniform mat4 normalMatrix;
 uniform sampler2D heightmap;
 uniform float disp;
 uniform float maxHeight;
-uniform float veg_scaler;
 
 attribute vec3 position;
 attribute vec2 offset;
@@ -25,8 +24,7 @@ void main() {
     float height = heightInfo.r * maxHeight;
     vAmount = height;
 
-    vec3 newPosition = position * veg_scaler;
-    newPosition += vec3(offset.x, height * disp, offset.y);
+    vec3 newPosition = position + vec3(offset.x, height * disp, offset.y);
 
     gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
 }

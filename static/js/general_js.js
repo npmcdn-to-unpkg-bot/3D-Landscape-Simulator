@@ -49,7 +49,6 @@ function show_input_options (){
         }
     );
 
-    updateWebGL(veg_slider_values, extent);
     $("#scene").show()
     $("#map").hide()
     $("#button_list").css("visibility", "visible")
@@ -95,7 +94,7 @@ function run_st_sim(feature_id) {
 
             $("#running_st_sim").html("ST-Sim Model Results")
 
-            updateWebGL(results_data_json)
+            landscape_viewer.updateVegetation(results_data_json)
             previous_feature_id=feature_id
 
         },
@@ -124,7 +123,17 @@ var veg7_slider=0
 
 var total_input_percent=0
 
-var veg_slider_values={}
+var veg_slider_values={
+    "Basin Big Sagebrush Upland":veg1_slider, 
+    "Curleaf Mountain Mahogany":veg2_slider, 
+    "Low Sagebrush":veg3_slider, 
+    "Montane Sagebrush Upland":veg4_slider, 
+    "Montane Sagebrush Upland With Trees":veg5_slider, 
+    "Western Juniper Woodland & Savannah":veg6_slider, 
+    "Wyoming and Basin Big Sagebrush Upland":veg7_slider
+};
+
+var landscape_viewer = require('app').default('scene', veg_slider_values);
 
 $(function() {
     $( "#veg1_slider" ).slider({
@@ -138,7 +147,7 @@ $(function() {
           $( "#veg1_label" ).val( ui.value + "%");
           $( "#total_input_percent").html(total_input_percent + ui.value + "%");
           total_percent_action(total_input_percent + ui.value)
-          //updateWebGL(veg_slider_values, extent)
+          landscape_viewer.updateVegetation(veg_slider_values)
       },
       start:function(event, ui){
             total_input_percent=total_input_percent-ui.value
@@ -161,7 +170,7 @@ $(function() {
           $( "#veg2_label" ).val( ui.value + "%");
           $( "#total_input_percent").html(total_input_percent + ui.value + "%");
           total_percent_action(total_input_percent + ui.value)
-          //updateWebGL(veg_slider_values, extent)
+          landscape_viewer.updateVegetation(veg_slider_values)
       },
       start:function(event, ui){
           total_input_percent=total_input_percent-ui.value
@@ -184,7 +193,7 @@ $(function() {
             $( "#veg3_label" ).val( ui.value + "%");
             $( "#total_input_percent").html(total_input_percent + ui.value + "%");
             total_percent_action(total_input_percent + ui.value)
-            //updateWebGL(veg_slider_values, extent)
+            landscape_viewer.updateVegetation(veg_slider_values)
         },
         start:function(event, ui){
             total_input_percent=total_input_percent-ui.value
@@ -207,7 +216,7 @@ $(function() {
             $( "#veg4_label" ).val( ui.value + "%");
             $( "#total_input_percent").html(total_input_percent + ui.value + "%");
             total_percent_action(total_input_percent + ui.value)
-            //updateWebGL(veg_slider_values, extent)
+            landscape_viewer.updateVegetation(veg_slider_values)
         },
         start:function(event, ui){
             total_input_percent=total_input_percent-ui.value
@@ -230,7 +239,7 @@ $(function() {
             $( "#veg5_label" ).val( ui.value + "%");
             $( "#total_input_percent").html(total_input_percent + ui.value + "%");
             total_percent_action(total_input_percent + ui.value)
-            //updateWebGL(veg_slider_values, extent)
+            landscape_viewer.updateVegetation(veg_slider_values)
         },
         start:function(event, ui){
             total_input_percent=total_input_percent-ui.value
@@ -253,7 +262,7 @@ $(function() {
             $( "#veg6_label" ).val( ui.value + "%");
             $( "#total_input_percent").html(total_input_percent + ui.value + "%");
             total_percent_action(total_input_percent + ui.value)
-            //updateWebGL(veg_slider_values, extent)
+            landscape_viewer.updateVegetation(veg_slider_values)
         },
     });
 });
@@ -270,7 +279,7 @@ $(function() {
             $( "#veg7_label" ).val( ui.value + "%");
             $( "#total_input_percent").html(total_input_percent + ui.value + "%");
             total_percent_action(total_input_percent + ui.value)
-            //updateWebGL(veg_slider_values, extent)
+            landscape_viewer.updateVegetation(veg_slider_values)
         },
     });
 });
@@ -300,19 +309,3 @@ function activate_scene(){
     $("#map").hide()
 
 }
-
-/////////////////////////////  WebGL Components //////////////////////////////////
-
-var webgl_initialized = false
-var landscape_viewer = require('app').default('scene');
-
-function updateWebGL(json_data,extent){
-
-    // update the terrain. Remains unchanged if the extent remains unchanged
-    landscape_viewer.updateTerrain(extent)
-
-    // update the vegetation scalers
-    landscape_viewer.updateVegetation(json_data)
-
-}
-

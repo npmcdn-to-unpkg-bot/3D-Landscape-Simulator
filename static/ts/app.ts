@@ -1,31 +1,43 @@
 // app.ts
 
 import {createTerrain, TerrainParams} from './terrain'
-import {VegetationCover} from './veg'
+import {createVegetation, VegetationOptions} from './veg'
 import {detectWebGL} from './utils'
 import {Loader, Assets} from './asset_loader'
 
-interface VegParams {		// THIS INTERFACE IS SUBJECT TO CHANGE
-	"Basin Big Sagebrush Upland"?: number, 
-	"Curleaf Mountain Mahogany"?: number, 
-	"Low Sagebrush"?: number, 
-	"Montane Sagebrush Upland"?:	number, 
-	"Montane Sagebrush Upland With Trees"?: number,
-	"Western Juniper Woodland & Savannah"?: number,
-	"Wyoming and Basin Big Sagebrush Upland"?: number
+interface VegCovers {
+	[id:string] : THREE.Mesh
 }
 
-export default function run(container_id: string) {
+interface VegParams {		// THIS INTERFACE IS SUBJECT TO CHANGE
+	"Basin Big Sagebrush Upland"?: 				number, 
+	"Curleaf Mountain Mahogany"?: 				number, 
+	"Low Sagebrush"?: 			  				number, 
+	"Montane Sagebrush Upland"?:				number, 
+	"Montane Sagebrush Upland With Trees"?: 	number,
+	"Western Juniper Woodland & Savannah"?: 	number,
+	"Wyoming and Basin Big Sagebrush Upland"?: 	number
+}
+
+export default function run(container_id: string, params: VegParams) {
+
+	if (!detectWebGL) {
+		alert("Your browser does not support WebGL. Please use a different browser (I.e. Chrome, Firefox).")
+		return null
+	}
 
 	let initialized = false
 	let masterAssets: Assets
 
+	const vegParams = params
+
 	let terrain: THREE.Mesh
+	//let vegCovers: VegCovers
 
 	const container = document.getElementById(container_id)
 	const scene = new THREE.Scene()
 	const renderer = new THREE.WebGLRenderer()
-	const camera = new THREE.PerspectiveCamera(75, container.offsetWidth / container.offsetHeight, 1, 1000.0)
+	const camera = new THREE.PerspectiveCamera(75, container.offsetWidth / container.offsetHeight, .1, 1000.0)
 	const controls = new THREE.OrbitControls(camera, renderer.domElement)
 
 	camera.position.z = 40
@@ -37,8 +49,13 @@ export default function run(container_id: string) {
 	const loader = Loader()
 	loader.load({
 			text: [
-				{name: 'terrain.vert', url: 'static/shader/terrain.vert.glsl'},
-				{name: 'terrain.frag', url: 'static/shader/terrain.frag.glsl'}
+				// terrain
+				{name: 'terrain_vert', url: 'static/shader/terrain.vert.glsl'},
+				{name: 'terrain_frag', url: 'static/shader/terrain.frag.glsl'},
+
+				// veg
+				{name: 'veg_vert', url: 'static/shader/veg.vert.glsl'},
+				{name: 'veg_frag', url: 'static/shader/veg.frag.glsl'}
 			],
 			
 			textures: [
@@ -54,6 +71,7 @@ export default function run(container_id: string) {
 				{name: 'grass_material', url: 'static/img/grass/grass_base.tga'}
 
 				// tree materials
+				// todo get sagebrush materials
 			],
 			
 			geometries: [
@@ -73,12 +91,11 @@ export default function run(container_id: string) {
 		}
 	)
 
-	let vegetations: VegetationCover[]
-	let spatialExtent = [-1, -1, -1, -1]
+	let spatialExtent = [-1, -1, -1, -1]	// dummy vars for starting out
 
 	animate()
 
-	function updateTerrain(extent: number[]) {
+	function updateTerrain(extent: number[], updateVeg?: boolean) {
 		if (extent.length === 4) {
 
 			// confirm params are different
@@ -88,9 +105,12 @@ export default function run(container_id: string) {
 				extent[3] != spatialExtent[3]) {
 
 				spatialExtent = extent
-				console.log("Creating new terrain...")
+				//console.log("Creating new terrain...")
 				if (terrain != undefined) {
 					scene.remove(terrain)
+					for (var key in vegParams) {
+						scene.remove(scene.getChildByName(key))
+					}
 				}
 
 				let srcPath = 'heightmap/' + extent.join('/')
@@ -113,12 +133,34 @@ export default function run(container_id: string) {
 						sand: masterAssets.textures['terrain_sand'],
 						water: masterAssets.textures['terrain_water'],
 
-						vertShader: masterAssets.text['terrain.vert'],
-						fragShader: masterAssets.text['terrain.frag'],
+						vertShader: masterAssets.text['terrain_vert'],
+						fragShader: masterAssets.text['terrain_frag'],
 						data: loadedAssets.statistics['heightmap_stats'],
 						heightmap: loadedAssets.textures['heightmap']
 					})
 					scene.add(terrain)
+
+					// Add our vegcovers
+					for (var key in vegParams) {
+
+						scene.add(createVegetation( 
+							{
+								heightmap: loadedAssets.textures['heightmap'],
+								name: key,
+								tex: masterAssets.textures['grass_material'],
+								geo: masterAssets.geometries['grass'],
+								vertShader: masterAssets.text['veg_vert'],
+								fragShader: masterAssets.text['veg_frag'],
+								disp: 5.0 / 800.0,
+								cells: {},
+								heightData: loadedAssets.statistics['heightmap_stats'],
+								vegData: {}
+							}
+						))
+
+					}
+
+					if (updateVeg) updateVegetation(vegParams)
 				},
 				function(progress: number) {
 					console.log("Loading heightmap assets... " + progress*100  + "%")
@@ -130,14 +172,17 @@ export default function run(container_id: string) {
 		}
 	}
 
-	// for each slider value, we should create vegetation that attaches to it
-	function addVegetation(sliderVal: number) {
-		console.log("Add Vegetation Now")
-	}
+	function updateVegetation(newParams: VegParams) {
 
-	function updateVegetation(data: VegParams) {
-		console.log("Update vegetation now")
-		console.log(data)
+		for (var key in newParams) {
+			if (vegParams.hasOwnProperty(key)) {
+				vegParams[key] = newParams[key]		// update the object to what we want it to be
+				const vegCover = scene.getObjectByName(key) as THREE.Mesh
+				const vegGeo = vegCover.geometry as THREE.InstancedBufferGeometry
+				vegGeo.maxInstancedCount = Math.floor(vegParams[key] / 100 * 5000)	// make this a static function
+			}
+		}
+
 	}
 
 	function render() {
@@ -164,7 +209,6 @@ export default function run(container_id: string) {
 
 	return {
 		updateTerrain: updateTerrain,
-		addVegetation: addVegetation,
 		updateVegetation: updateVegetation,
 		animate: animate,
 		stopAnimate: stopAnimate,

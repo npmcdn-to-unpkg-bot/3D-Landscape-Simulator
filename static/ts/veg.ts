@@ -2,105 +2,80 @@
 
 const MAX_INSTANCES = 5000	// the max number of instances we will allow of one vegtype to be drawn
 
-export interface VegetationCoverOptions {
+export interface VegetationOptions {
 
 	name: string
-	pctCover: number
-	heightmap: THREE.Texture		// heightmap texture
-	tex: THREE.Texture				// object texture
-	geo: THREE.Geometry				// object geometry
-	cells: any						// TODO - define veg cells to determine the position of where to grow vegetation
-	vertShader: string				// vertex shader
-	fragShader: string				// fragment shader
-	patchDimensions: THREE.Vector4	// THREE.Vector3(width, height, minHeight, maxHeight)
-	verticalDisp: number			// vertical scaler
-
+	heightmap: THREE.Texture	// heightmap texture
+	tex: THREE.Texture			// object texture
+	geo: THREE.Geometry			// object geometry
+	cells: any					// TODO - define veg cells to determine the position of where to grow vegetation
+	vertShader: string			// vertex shader
+	fragShader: string			// fragment shader
+	disp: number				// vertical scaler
+	
+	// Data regarding the shape of this vegcover
+	heightData: any
+	vegData: any
 }
 
-/**
-	Create a THREE object that exposes:
-		- Mesh
-		- MaxInstancedCount
-		- HeightTexture
-*/
-export class VegetationCover {
+export function createVegetation(params: VegetationOptions) {
 
-	public name: string			// the name of the veg type (I.e. "Big Basin Sagebrush", etc.)
-	public pctCover: number
-	public heightmap: THREE.Texture
-	public widthExtent: number
-	public heightExtent: number
-	public minHeight: number
-	public maxHeight: number
-	public mesh: THREE.Mesh
+	const halfPatch = new THREE.Geometry()
+	halfPatch.merge(params.geo)
 
-	private geo: THREE.InstancedBufferGeometry
-	private mat: THREE.RawShaderMaterial
-	private cells: any	// todo - determine the size/shape of this, whatever it might be
-	private offsets: THREE.InstancedBufferAttribute
-	private hCoords: THREE.InstancedBufferAttribute
-	private colorMap: THREE.Texture
+	params.geo.rotateY(Math.PI)
+	halfPatch.merge(params.geo)
 
-	constructor(params: VegetationCoverOptions) {
-		
-		this.geo = new THREE.InstancedBufferGeometry()
-		this.geo.fromGeometry(params.geo)
+	const geo = new THREE.InstancedBufferGeometry()
+	geo.fromGeometry(halfPatch)
+	halfPatch.dispose()
 
-		if ( this.geo.attributes['color'] ) {
+	if ( geo.attributes['color'] ) {
 
-			this.geo.removeAttribute('color')
-		
-		}
-
-		this.cells = params.cells	// todo - what are these cells going to look like?
-
-		this.heightmap = params.heightmap
-		this.pctCover = params.pctCover
-		this.widthExtent = params.patchDimensions.x
-		this.heightExtent = params.patchDimensions.y
-		this.minHeight = params.patchDimensions.z
-		this.maxHeight = params.patchDimensions.w
-		
-		// The main thing we need to update
-		this.geo.maxInstancedCount = Math.floor(this.pctCover * MAX_INSTANCES)
-
-		// create the uniforms and allocate shaders for this vegtype
-		this.colorMap = params.tex
-
-		this.offsets = new THREE.InstancedBufferAttribute(new Float32Array(MAX_INSTANCES * 2), 2)
-		this.hCoords = new THREE.InstancedBufferAttribute(new Float32Array(MAX_INSTANCES * 2), 2)
-		
-		this.generateOffsets()
-		
-		this.geo.addAttribute('offset', this.offsets)
-		this.geo.addAttribute('hCoord', this.hCoords)
-
-		this.mat = new THREE.RawShaderMaterial({
-			uniforms: {
-				heightmap: {type: "t", value: this.heightmap},
-				tex: {type: "t", value: this.colorMap},
-				minHeight: {type: "f", value: this.minHeight},
-				maxHeight: {type: "f", value: this.maxHeight}
-			},
-			vertexShader: params.vertShader,
-			fragmentShader: params.fragShader,
-			side: THREE.DoubleSide
-		})
-
-		this.mesh = new THREE.Mesh(this.geo, this.mat)	// this what we want to access initially on initializing the world
+		geo.removeAttribute('color')
+	
 	}
 
-	generateOffsets(cells?: any) {
-		
-		if (cells !== undefined) {
-			this.cells = cells
-		}
+	const cells = params.cells	// todo - what are these cells going to look like?
 
+	const heightmap = params.heightmap
+	const widthExtent = params.heightData.dem_width
+	const heightExtent = params.heightData.dem_height
+	const maxHeight = params.heightData.dem_max
+
+	geo.maxInstancedCount = 0
+
+	const offsets = new THREE.InstancedBufferAttribute(new Float32Array(MAX_INSTANCES * 2), 2)
+	const hCoords = new THREE.InstancedBufferAttribute(new Float32Array(MAX_INSTANCES * 2), 2)
+	
+	generateOffsets()
+	
+	geo.addAttribute('offset', offsets)
+	geo.addAttribute('hCoord', hCoords)
+
+	const mat = new THREE.RawShaderMaterial({
+		uniforms: {
+			heightmap: {type: "t", value: heightmap},
+			tex: {type: "t", value: params.tex},
+			maxHeight: {type: "f", value: maxHeight},
+			disp: {type: "f", value: params.disp}
+		},
+		vertexShader: params.vertShader,
+		fragmentShader: params.fragShader,
+		side: THREE.DoubleSide
+	})
+
+	const mesh = new THREE.Mesh(geo, mat)
+	mesh.frustumCulled = false	// Prevents the veg from disappearing randomly
+	mesh.name = params.name		// Make the mesh selectable directly from the scene
+
+	function generateOffsets(cells?: any) {
+	
 		let x: number, y:number, tx:number, ty:number
-		let width = this.widthExtent, height = this.heightExtent
-
-		for (let i = 0; i < this.offsets.count; i++) {
-
+		let width = widthExtent, height = heightExtent
+	
+		for (let i = 0; i < offsets.count; i++) {
+	
 			// position in the spatial extent
 			x = Math.random() * width - width / 2
 			y = Math.random() * height - height /2
@@ -110,9 +85,12 @@ export class VegetationCover {
 			ty = y / height + 0.5
 			
 			// update attribute buffers
-			this.offsets.setXY(i, x ,y)
-			this.hCoords.setXY(i, tx, 1-ty)	// 1-ty since texture is flipped on Y axis
+			offsets.setXY(i, x ,y)
+			hCoords.setXY(i, tx, 1-ty)	// 1-ty since texture is flipped on Y axis
 		
 		}
+
 	}
+
+	return mesh
 }
