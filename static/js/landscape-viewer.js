@@ -278,24 +278,35 @@ define("asset_loader", ["require", "exports"], function (require, exports) {
 define("app", ["require", "exports", "terrain", "veg", "utils", "asset_loader"], function (require, exports, terrain_1, veg_1, utils_1, asset_loader_1) {
     "use strict";
     function run(container_id, params) {
+        var vegParams = params;
         if (!utils_1.detectWebGL) {
             alert("Your browser does not support WebGL. Please use a different browser (I.e. Chrome, Firefox).");
             return null;
         }
-        var initialized = false;
         var masterAssets;
-        var vegParams = params;
         var terrain;
-        //let vegCovers: VegCovers
+        // setup the THREE scene
         var container = document.getElementById(container_id);
         var scene = new THREE.Scene();
         var renderer = new THREE.WebGLRenderer();
+        container.appendChild(renderer.domElement);
         var camera = new THREE.PerspectiveCamera(75, container.offsetWidth / container.offsetHeight, .1, 1000.0);
+        // Camera controls
         var controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableKeys = false;
+        //controls.addEventListener('change', render)
         camera.position.z = 40;
         camera.position.y = 100;
-        container.appendChild(renderer.domElement);
-        // load initial assets
+        // Custom event handlers since we only want to render when something happens
+        renderer.domElement.addEventListener('mousedown', animate, false);
+        renderer.domElement.addEventListener('mouseup', stopAnimate, false);
+        renderer.domElement.addEventListener('mousewheel', onMouseWheel, false);
+        renderer.domElement.addEventListener('MozMousePixelScroll', onMouseWheel, false); // firefox
+        function onMouseWheel() {
+            camera.zoom += 1.0;
+            render();
+        }
+        // Load initial assets
         var loader = asset_loader_1.Loader();
         loader.load({
             text: [
@@ -326,14 +337,13 @@ define("app", ["require", "exports", "terrain", "veg", "utils", "asset_loader"],
             ]
         }, function (loadedAssets) {
             masterAssets = loadedAssets;
-            initialized = true;
         }, function (progress) {
             console.log(progress * 100 + "% loaded...");
         }, function (error) {
             console.log(error);
         });
         var spatialExtent = [-1, -1, -1, -1]; // dummy vars for starting out
-        animate();
+        //animate()
         function updateTerrain(extent, updateVeg) {
             if (extent.length === 4) {
                 // confirm params are different
@@ -388,6 +398,7 @@ define("app", ["require", "exports", "terrain", "veg", "utils", "asset_loader"],
                                 vegData: { maxHeight: 2000.0, minHeight: 1000.0 }
                             }));
                         }
+                        render();
                         if (updateVeg)
                             updateVegetation(vegParams);
                     }, function (progress) {
@@ -407,6 +418,7 @@ define("app", ["require", "exports", "terrain", "veg", "utils", "asset_loader"],
                     vegGeo.maxInstancedCount = Math.floor(vegParams[key] / 100 * 5000); // make this a static function
                 }
             }
+            render();
         }
         function render() {
             renderer.render(scene, camera);
@@ -428,8 +440,6 @@ define("app", ["require", "exports", "terrain", "veg", "utils", "asset_loader"],
         return {
             updateTerrain: updateTerrain,
             updateVegetation: updateVegetation,
-            animate: animate,
-            stopAnimate: stopAnimate,
             resize: resize,
             // debug 
             scene: scene,

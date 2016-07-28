@@ -21,31 +21,42 @@ interface VegParams {		// THIS INTERFACE IS SUBJECT TO CHANGE
 
 export default function run(container_id: string, params: VegParams) {
 
+	const vegParams = params
+
 	if (!detectWebGL) {
 		alert("Your browser does not support WebGL. Please use a different browser (I.e. Chrome, Firefox).")
 		return null
 	}
 
-	let initialized = false
 	let masterAssets: Assets
-
-	const vegParams = params
-
 	let terrain: THREE.Mesh
-	//let vegCovers: VegCovers
 
+	// setup the THREE scene
 	const container = document.getElementById(container_id)
 	const scene = new THREE.Scene()
 	const renderer = new THREE.WebGLRenderer()
+	container.appendChild(renderer.domElement)
 	const camera = new THREE.PerspectiveCamera(75, container.offsetWidth / container.offsetHeight, .1, 1000.0)
+	
+	// Camera controls
 	const controls = new THREE.OrbitControls(camera, renderer.domElement)
-
+	controls.enableKeys = false
+	//controls.addEventListener('change', render)
 	camera.position.z = 40
 	camera.position.y = 100
 
-	container.appendChild(renderer.domElement)
+	// Custom event handlers since we only want to render when something happens
+	renderer.domElement.addEventListener('mousedown', animate, false)
+	renderer.domElement.addEventListener('mouseup', stopAnimate, false)
+	renderer.domElement.addEventListener('mousewheel', onMouseWheel, false)
+	renderer.domElement.addEventListener( 'MozMousePixelScroll', onMouseWheel, false ); // firefox
 
-	// load initial assets
+	function onMouseWheel() {
+		camera.zoom += 1.0
+		render()		
+	}
+
+	// Load initial assets
 	const loader = Loader()
 	loader.load({
 			text: [
@@ -82,7 +93,6 @@ export default function run(container_id: string, params: VegParams) {
 		},
 		function(loadedAssets: Assets) {
 			masterAssets = loadedAssets
-			initialized = true
 		},
 		function(progress: number) {
 			console.log(progress * 100 + "% loaded...")
@@ -94,7 +104,7 @@ export default function run(container_id: string, params: VegParams) {
 
 	let spatialExtent = [-1, -1, -1, -1]	// dummy vars for starting out
 
-	animate()
+	//animate()
 
 	function updateTerrain(extent: number[], updateVeg?: boolean) {
 		if (extent.length === 4) {
@@ -161,7 +171,10 @@ export default function run(container_id: string, params: VegParams) {
 
 					}
 
+					render()
+
 					if (updateVeg) updateVegetation(vegParams)
+
 				},
 				function(progress: number) {
 					console.log("Loading heightmap assets... " + progress*100  + "%")
@@ -184,6 +197,7 @@ export default function run(container_id: string, params: VegParams) {
 			}
 		}
 
+		render()
 	}
 
 	function render() {
@@ -211,8 +225,7 @@ export default function run(container_id: string, params: VegParams) {
 	return {
 		updateTerrain: updateTerrain,
 		updateVegetation: updateVegetation,
-		animate: animate,
-		stopAnimate: stopAnimate,
+
 		resize: resize,
 		// debug 
 		scene: scene,
