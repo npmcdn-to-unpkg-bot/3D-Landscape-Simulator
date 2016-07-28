@@ -30,6 +30,8 @@ export function createVegetation(params: VegetationOptions) {
 	geo.fromGeometry(halfPatch)
 	halfPatch.dispose()
 
+	geo.scale(2,2,2)
+
 	if ( geo.attributes['color'] ) {
 
 		geo.removeAttribute('color')

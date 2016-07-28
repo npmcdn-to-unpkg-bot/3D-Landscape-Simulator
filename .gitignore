@@ -3,3 +3,5 @@ Sagebrush/settings.py
 node_modules/
 todo.txt
 ts_old/
+static/deps/*
+static/st_sim/*

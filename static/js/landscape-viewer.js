@@ -52,6 +52,7 @@ define("veg", ["require", "exports"], function (require, exports) {
         var geo = new THREE.InstancedBufferGeometry();
         geo.fromGeometry(halfPatch);
         halfPatch.dispose();
+        geo.scale(2, 2, 2);
         if (geo.attributes['color']) {
             geo.removeAttribute('color');
         }
@@ -294,18 +295,13 @@ define("app", ["require", "exports", "terrain", "veg", "utils", "asset_loader"],
         // Camera controls
         var controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableKeys = false;
-        //controls.addEventListener('change', render)
         camera.position.z = 40;
         camera.position.y = 100;
-        // Custom event handlers since we only want to render when something happens
+        // Custom event handlers since we only want to render when something happens.
         renderer.domElement.addEventListener('mousedown', animate, false);
         renderer.domElement.addEventListener('mouseup', stopAnimate, false);
-        renderer.domElement.addEventListener('mousewheel', onMouseWheel, false);
-        renderer.domElement.addEventListener('MozMousePixelScroll', onMouseWheel, false); // firefox
-        function onMouseWheel() {
-            camera.zoom += 1.0;
-            render();
-        }
+        renderer.domElement.addEventListener('mousewheel', render, false);
+        renderer.domElement.addEventListener('MozMousePixelScroll', render, false); // firefox
         // Load initial assets
         var loader = asset_loader_1.Loader();
         loader.load({
@@ -343,70 +339,68 @@ define("app", ["require", "exports", "terrain", "veg", "utils", "asset_loader"],
             console.log(error);
         });
         var spatialExtent = [-1, -1, -1, -1]; // dummy vars for starting out
-        //animate()
         function updateTerrain(extent, updateVeg) {
-            if (extent.length === 4) {
-                // confirm params are different
-                if (terrain == undefined || extent[0] != spatialExtent[0] ||
+            // confirm params are different
+            if (extent.length === 4 // extent is exactly 4 long
+                && (terrain == undefined || extent[0] != spatialExtent[0] ||
                     extent[1] != spatialExtent[1] ||
                     extent[2] != spatialExtent[2] ||
-                    extent[3] != spatialExtent[3]) {
-                    spatialExtent = extent;
-                    //console.log("Creating new terrain...")
-                    if (terrain != undefined) {
-                        scene.remove(terrain);
-                        for (var key in vegParams) {
-                            scene.remove(scene.getObjectByName(key));
-                        }
+                    extent[3] != spatialExtent[3])) {
+                spatialExtent = extent;
+                if (terrain != undefined) {
+                    scene.remove(terrain);
+                    for (var key in vegParams) {
+                        scene.remove(scene.getObjectByName(key));
                     }
-                    var srcPath = 'heightmap/' + extent.join('/');
-                    var statsPath = srcPath + '/stats';
-                    loader.load({
-                        textures: [
-                            { name: 'heightmap', url: srcPath }
-                        ],
-                        statistics: [
-                            { name: 'heightmap_stats', url: statsPath }
-                        ]
-                    }, function (loadedAssets) {
-                        terrain = terrain_1.createTerrain({
-                            // testing
-                            rock: masterAssets.textures['terrain_rock'],
-                            snow: masterAssets.textures['terrain_snow'],
-                            grass: masterAssets.textures['terrain_grass'],
-                            dirt: masterAssets.textures['terrain_dirt'],
-                            sand: masterAssets.textures['terrain_sand'],
-                            water: masterAssets.textures['terrain_water'],
-                            vertShader: masterAssets.text['terrain_vert'],
-                            fragShader: masterAssets.text['terrain_frag'],
-                            data: loadedAssets.statistics['heightmap_stats'],
-                            heightmap: loadedAssets.textures['heightmap']
-                        });
-                        scene.add(terrain);
-                        // Add our vegcovers
-                        for (var key in vegParams) {
-                            scene.add(veg_1.createVegetation({
-                                heightmap: loadedAssets.textures['heightmap'],
-                                name: key,
-                                tex: masterAssets.textures['sagebrush_material'],
-                                geo: masterAssets.geometries['sagebrush'],
-                                vertShader: masterAssets.text['veg_vert'],
-                                fragShader: masterAssets.text['veg_frag'],
-                                disp: 5.0 / 800.0,
-                                cells: {},
-                                heightData: loadedAssets.statistics['heightmap_stats'],
-                                vegData: { maxHeight: 2000.0, minHeight: 1000.0 }
-                            }));
-                        }
-                        render();
-                        if (updateVeg)
-                            updateVegetation(vegParams);
-                    }, function (progress) {
-                        console.log("Loading heightmap assets... " + progress * 100 + "%");
-                    }, function (error) {
-                        console.log(error);
-                    });
                 }
+                var srcPath = 'heightmap/' + extent.join('/');
+                var statsPath = srcPath + '/stats';
+                loader.load({
+                    textures: [
+                        { name: 'heightmap', url: srcPath }
+                    ],
+                    statistics: [
+                        { name: 'heightmap_stats', url: statsPath }
+                    ]
+                }, function (loadedAssets) {
+                    terrain = terrain_1.createTerrain({
+                        // testing
+                        rock: masterAssets.textures['terrain_rock'],
+                        snow: masterAssets.textures['terrain_snow'],
+                        grass: masterAssets.textures['terrain_grass'],
+                        dirt: masterAssets.textures['terrain_dirt'],
+                        sand: masterAssets.textures['terrain_sand'],
+                        water: masterAssets.textures['terrain_water'],
+                        vertShader: masterAssets.text['terrain_vert'],
+                        fragShader: masterAssets.text['terrain_frag'],
+                        data: loadedAssets.statistics['heightmap_stats'],
+                        heightmap: loadedAssets.textures['heightmap']
+                    });
+                    scene.add(terrain);
+                    // Add our vegcovers
+                    for (var key in vegParams) {
+                        scene.add(veg_1.createVegetation({
+                            heightmap: loadedAssets.textures['heightmap'],
+                            name: key,
+                            tex: masterAssets.textures['sagebrush_material'],
+                            geo: masterAssets.geometries['sagebrush'],
+                            vertShader: masterAssets.text['veg_vert'],
+                            fragShader: masterAssets.text['veg_frag'],
+                            disp: 5.0 / 800.0,
+                            cells: {},
+                            heightData: loadedAssets.statistics['heightmap_stats'],
+                            vegData: { maxHeight: 2000.0, minHeight: 1000.0 }
+                        }));
+                    }
+                    render();
+                    if (updateVeg)
+                        updateVegetation(vegParams);
+                }, function (progress) {
+                    console.log("Loading heightmap assets... " + progress * 100 + "%");
+                }, function (error) {
+                    console.log(error);
+                    return;
+                });
             }
         }
         function updateVegetation(newParams) {

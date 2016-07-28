@@ -41,20 +41,14 @@ export default function run(container_id: string, params: VegParams) {
 	// Camera controls
 	const controls = new THREE.OrbitControls(camera, renderer.domElement)
 	controls.enableKeys = false
-	//controls.addEventListener('change', render)
 	camera.position.z = 40
 	camera.position.y = 100
 
-	// Custom event handlers since we only want to render when something happens
+	// Custom event handlers since we only want to render when something happens.
 	renderer.domElement.addEventListener('mousedown', animate, false)
 	renderer.domElement.addEventListener('mouseup', stopAnimate, false)
-	renderer.domElement.addEventListener('mousewheel', onMouseWheel, false)
-	renderer.domElement.addEventListener( 'MozMousePixelScroll', onMouseWheel, false ); // firefox
-
-	function onMouseWheel() {
-		camera.zoom += 1.0
-		render()		
-	}
+	renderer.domElement.addEventListener('mousewheel', render, false)
+	renderer.domElement.addEventListener( 'MozMousePixelScroll', render, false ); // firefox
 
 	// Load initial assets
 	const loader = Loader()
@@ -104,86 +98,74 @@ export default function run(container_id: string, params: VegParams) {
 
 	let spatialExtent = [-1, -1, -1, -1]	// dummy vars for starting out
 
-	//animate()
-
 	function updateTerrain(extent: number[], updateVeg?: boolean) {
-		if (extent.length === 4) {
 
-			// confirm params are different
-			if (terrain == undefined || extent[0] != spatialExtent[0] ||
-				extent[1] != spatialExtent[1] ||
-				extent[2] != spatialExtent[2] ||
-				extent[3] != spatialExtent[3]) {
-
-				spatialExtent = extent
-				//console.log("Creating new terrain...")
-				if (terrain != undefined) {
-					scene.remove(terrain)
-					for (var key in vegParams) {
-						scene.remove(scene.getObjectByName(key))
-					}
+		// confirm params are different
+		if (extent.length === 4	// extent is exactly 4 long
+			&& (terrain == undefined || extent[0] != spatialExtent[0] ||
+			extent[1] != spatialExtent[1] ||
+			extent[2] != spatialExtent[2] ||
+			extent[3] != spatialExtent[3])) {
+			spatialExtent = extent
+			if (terrain != undefined) {
+				scene.remove(terrain)
+				for (var key in vegParams) {
+					scene.remove(scene.getObjectByName(key))
 				}
-
-				let srcPath = 'heightmap/' + extent.join('/')
-				let statsPath = srcPath + '/stats'
-				loader.load({
-					textures: [
-						{name: 'heightmap', url: srcPath}
-					],
-					statistics: [
-						{name: 'heightmap_stats', url: statsPath}
-					]
-				},
-				function(loadedAssets: Assets) {
-					terrain = createTerrain({
-						// testing
-						rock: masterAssets.textures['terrain_rock'],
-						snow: masterAssets.textures['terrain_snow'],
-						grass: masterAssets.textures['terrain_grass'],
-						dirt: masterAssets.textures['terrain_dirt'],
-						sand: masterAssets.textures['terrain_sand'],
-						water: masterAssets.textures['terrain_water'],
-
-						vertShader: masterAssets.text['terrain_vert'],
-						fragShader: masterAssets.text['terrain_frag'],
-						data: loadedAssets.statistics['heightmap_stats'],
-						heightmap: loadedAssets.textures['heightmap']
-					})
-					scene.add(terrain)
-
-					// Add our vegcovers
-					for (var key in vegParams) {
-
-						scene.add(createVegetation( 
-							{
-								heightmap: loadedAssets.textures['heightmap'],
-								name: key,
-								tex: masterAssets.textures['sagebrush_material'],
-								geo: masterAssets.geometries['sagebrush'],
-								vertShader: masterAssets.text['veg_vert'],
-								fragShader: masterAssets.text['veg_frag'],
-								disp: 5.0 / 800.0,
-								cells: {},
-								heightData: loadedAssets.statistics['heightmap_stats'],
-								vegData: {maxHeight: 2000.0, minHeight: 1000.0}
-							}
-						))
-
-					}
-
-					render()
-
-					if (updateVeg) updateVegetation(vegParams)
-
-				},
-				function(progress: number) {
-					console.log("Loading heightmap assets... " + progress*100  + "%")
-				},
-				function(error: string) {
-					console.log(error)
-				})
 			}
-		}
+			let srcPath = 'heightmap/' + extent.join('/')
+			let statsPath = srcPath + '/stats'
+			loader.load({
+				textures: [
+					{name: 'heightmap', url: srcPath}
+				],
+				statistics: [
+					{name: 'heightmap_stats', url: statsPath}
+				]
+			},
+			function(loadedAssets: Assets) {
+				terrain = createTerrain({
+					// testing
+					rock: masterAssets.textures['terrain_rock'],
+					snow: masterAssets.textures['terrain_snow'],
+					grass: masterAssets.textures['terrain_grass'],
+					dirt: masterAssets.textures['terrain_dirt'],
+					sand: masterAssets.textures['terrain_sand'],
+					water: masterAssets.textures['terrain_water'],
+					vertShader: masterAssets.text['terrain_vert'],
+					fragShader: masterAssets.text['terrain_frag'],
+					data: loadedAssets.statistics['heightmap_stats'],
+					heightmap: loadedAssets.textures['heightmap']
+				})
+				scene.add(terrain)
+				// Add our vegcovers
+				for (var key in vegParams) {
+					scene.add(createVegetation( 
+						{
+							heightmap: loadedAssets.textures['heightmap'],
+							name: key,
+							tex: masterAssets.textures['sagebrush_material'],
+							geo: masterAssets.geometries['sagebrush'],
+							vertShader: masterAssets.text['veg_vert'],
+							fragShader: masterAssets.text['veg_frag'],
+							disp: 5.0 / 800.0,
+							cells: {},
+							heightData: loadedAssets.statistics['heightmap_stats'],
+							vegData: {maxHeight: 2000.0, minHeight: 1000.0}
+						}
+					))
+				}
+				render()
+				if (updateVeg) updateVegetation(vegParams)
+			},
+			function(progress: number) {
+				console.log("Loading heightmap assets... " + progress*100  + "%")
+			},
+			function(error: string) {
+				console.log(error)
+				return
+			})
+		}	
 	}
 
 	function updateVegetation(newParams: VegParams) {
