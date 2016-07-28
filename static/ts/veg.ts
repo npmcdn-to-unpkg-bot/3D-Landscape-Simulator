@@ -8,6 +8,7 @@ export interface VegetationOptions {
 	heightmap: THREE.Texture	// heightmap texture
 	tex: THREE.Texture			// object texture
 	geo: THREE.Geometry			// object geometry
+	color: THREE.Color			// object color to blend with
 	cells: any					// TODO - define veg cells to determine the position of where to grow vegetation
 	vertShader: string			// vertex shader
 	fragShader: string			// fragment shader
@@ -61,7 +62,7 @@ export function createVegetation(params: VegetationOptions) {
 			tex: {type: "t", value: params.tex},
 			maxHeight: {type: "f", value: maxHeight},
 			disp: {type: "f", value: params.disp},
-
+			vegColor: {type: "3f", value: [params.color.r/255.0, params.color.g/255.0, params.color.b/255.0]},	// implicit vec3 in shaders
 			vegMaxHeight: {type: "f", value: params.vegData.maxHeight},
 			vegMinHeight: {type: "f", value: params.vegData.minHeight}
 		},

@@ -11,6 +11,8 @@ from django.conf import settings
 
 path = os.path.join(settings.STATICFILES_DIRS[0], 'dems/WestUS_30AS.nc')
 
+DEM_HEIGHT = 5000.0
+
 @csrf_exempt
 def heightmap_stats(request, nlat=None, slat=None, elon=None, wlon=None):
 
@@ -43,8 +45,11 @@ def heightmap_stats(request, nlat=None, slat=None, elon=None, wlon=None):
                         dem_width = int(dem_slice.shape[1])
                         dem_height = int(dem_slice.shape[0])
 
-                        data = {'dem_min': dem_min, 'dem_max': dem_max,
+                        #data = {'dem_min': dem_min, 'dem_max': dem_max,
+                        #        'dem_width': dem_width, 'dem_height': dem_height}
+                        data = {'dem_min': dem_min, 'dem_max': DEM_HEIGHT,
                                 'dem_width': dem_width, 'dem_height': dem_height}
+
                         response['data'] = data
 
     return HttpResponse(json.dumps(response))
@@ -84,9 +89,9 @@ def generate_heightmap(request, nlat=None, slat=None, elon=None, wlon=None):
                         #//print(dem_slice.shape)
                         dem_flat = dem_slice.ravel().tolist()
                         dem_max = dem_slice.max()
-                        dem_flat = [(x/dem_max) * 255 for x in dem_flat]
+                        #dem_flat = [(x/dem_max) * 255 for x in dem_flat]
+                        dem_flat = [(x/DEM_HEIGHT) * 255 for x in dem_flat]
 
-                        print dem_flat[10]
                         # write and save new image
                         image = Image.new('L', (dem_slice.shape[1], dem_slice.shape[0]))
                         image.putdata(dem_flat)

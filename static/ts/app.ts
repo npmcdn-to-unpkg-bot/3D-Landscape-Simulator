@@ -5,10 +5,6 @@ import {createVegetation, VegetationOptions} from './veg'
 import {detectWebGL} from './utils'
 import {Loader, Assets} from './asset_loader'
 
-interface VegCovers {
-	[id:string] : THREE.Mesh
-}
-
 interface VegParams {		// THIS INTERFACE IS SUBJECT TO CHANGE
 	"Basin Big Sagebrush Upland"?: 				number, 
 	"Curleaf Mountain Mahogany"?: 				number, 
@@ -45,10 +41,11 @@ export default function run(container_id: string, params: VegParams) {
 	camera.position.y = 100
 
 	// Custom event handlers since we only want to render when something happens.
-	renderer.domElement.addEventListener('mousedown', animate, false)
-	renderer.domElement.addEventListener('mouseup', stopAnimate, false)
-	renderer.domElement.addEventListener('mousewheel', render, false)
-	renderer.domElement.addEventListener( 'MozMousePixelScroll', render, false ); // firefox
+	//renderer.domElement.addEventListener('mousedown', animate, false)
+	//renderer.domElement.addEventListener('mouseup', stopAnimate, false)
+	//renderer.domElement.addEventListener('mousewheel', render, false)
+	//renderer.domElement.addEventListener( 'MozMousePixelScroll', render, false ); // firefox
+	animate()	// debug
 
 	// Load initial assets
 	const loader = Loader()
@@ -67,7 +64,7 @@ export default function run(container_id: string, params: VegParams) {
 				// terrain materials
 				{name: 'terrain_rock', url: 'static/img/terrain/rock-512.jpg'},
 				{name: 'terrain_grass', url: 'static/img/terrain/grass-512.jpg'},
-				{name: 'terrain_dirt', url: 'static/img/terrain/dirt-512.jpg'},
+				//{name: 'terrain_dirt', url: 'static/img/terrain/dirt-512.jpg'},
 				{name: 'terrain_snow', url: 'static/img/terrain/snow-512.jpg'},
 				{name: 'terrain_sand', url: 'static/img/terrain/sand-512.jpg'},
 				{name: 'terrain_water', url: 'static/img/terrain/water-512.jpg'},
@@ -89,10 +86,11 @@ export default function run(container_id: string, params: VegParams) {
 			masterAssets = loadedAssets
 		},
 		function(progress: number) {
-			console.log(progress * 100 + "% loaded...")
+			console.log("Loading assets... " + progress * 100 + "%")
 		},
 		function(error: string) {
 			console.log(error)
+			return
 		}
 	)
 
@@ -129,7 +127,7 @@ export default function run(container_id: string, params: VegParams) {
 					rock: masterAssets.textures['terrain_rock'],
 					snow: masterAssets.textures['terrain_snow'],
 					grass: masterAssets.textures['terrain_grass'],
-					dirt: masterAssets.textures['terrain_dirt'],
+					//dirt: masterAssets.textures['terrain_dirt'],
 					sand: masterAssets.textures['terrain_sand'],
 					water: masterAssets.textures['terrain_water'],
 					vertShader: masterAssets.text['terrain_vert'],
@@ -139,21 +137,35 @@ export default function run(container_id: string, params: VegParams) {
 				})
 				scene.add(terrain)
 				// Add our vegcovers
+
+				let baseColor = new THREE.Color(55,80,100)
+				let i = 0
+				const maxColors = 7
+
 				for (var key in vegParams) {
+
+					// calculate the veg colors we want to display
+					const r = Math.floor(i/maxColors * 200)
+					const g = Math.floor(i/maxColors * 130)
+					const vegColor = new THREE.Color(baseColor.r + r, baseColor.g + g, baseColor.b)
+
 					scene.add(createVegetation( 
 						{
 							heightmap: loadedAssets.textures['heightmap'],
 							name: key,
 							tex: masterAssets.textures['sagebrush_material'],
 							geo: masterAssets.geometries['sagebrush'],
+							color: vegColor,
 							vertShader: masterAssets.text['veg_vert'],
 							fragShader: masterAssets.text['veg_frag'],
 							disp: 5.0 / 800.0,
 							cells: {},
 							heightData: loadedAssets.statistics['heightmap_stats'],
-							vegData: {maxHeight: 2000.0, minHeight: 1000.0}
+							vegData: {maxHeight: 3100.0, minHeight: 900.0}
 						}
 					))
+
+					++i;
 				}
 				render()
 				if (updateVeg) updateVegetation(vegParams)

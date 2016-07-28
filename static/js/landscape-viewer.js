@@ -12,9 +12,10 @@ define("terrain", ["require", "exports"], function (require, exports) {
         params.heightmap.wrapS = params.heightmap.wrapT = THREE.RepeatWrapping;
         params.rock.wrapS = params.rock.wrapT = THREE.RepeatWrapping;
         params.grass.wrapS = params.grass.wrapT = THREE.RepeatWrapping;
-        params.dirt.wrapS = params.dirt.wrapT = THREE.RepeatWrapping;
+        //params.dirt.wrapS = params.dirt.wrapT = THREE.RepeatWrapping
         params.snow.wrapS = params.snow.wrapT = THREE.RepeatWrapping;
         params.sand.wrapS = params.sand.wrapT = THREE.RepeatWrapping;
+        params.water.wrapS = params.water.wrapT = THREE.RepeatWrapping;
         var geo = new THREE.PlaneBufferGeometry(width, height, width - 1, height - 1);
         geo.rotateX(-Math.PI / 2);
         var mat = new THREE.ShaderMaterial({
@@ -73,6 +74,7 @@ define("veg", ["require", "exports"], function (require, exports) {
                 tex: { type: "t", value: params.tex },
                 maxHeight: { type: "f", value: maxHeight },
                 disp: { type: "f", value: params.disp },
+                vegColor: { type: "3f", value: [params.color.r / 255.0, params.color.g / 255.0, params.color.b / 255.0] },
                 vegMaxHeight: { type: "f", value: params.vegData.maxHeight },
                 vegMinHeight: { type: "f", value: params.vegData.minHeight }
             },
@@ -298,10 +300,11 @@ define("app", ["require", "exports", "terrain", "veg", "utils", "asset_loader"],
         camera.position.z = 40;
         camera.position.y = 100;
         // Custom event handlers since we only want to render when something happens.
-        renderer.domElement.addEventListener('mousedown', animate, false);
-        renderer.domElement.addEventListener('mouseup', stopAnimate, false);
-        renderer.domElement.addEventListener('mousewheel', render, false);
-        renderer.domElement.addEventListener('MozMousePixelScroll', render, false); // firefox
+        //renderer.domElement.addEventListener('mousedown', animate, false)
+        //renderer.domElement.addEventListener('mouseup', stopAnimate, false)
+        //renderer.domElement.addEventListener('mousewheel', render, false)
+        //renderer.domElement.addEventListener( 'MozMousePixelScroll', render, false ); // firefox
+        animate(); // debug
         // Load initial assets
         var loader = asset_loader_1.Loader();
         loader.load({
@@ -317,7 +320,7 @@ define("app", ["require", "exports", "terrain", "veg", "utils", "asset_loader"],
                 // terrain materials
                 { name: 'terrain_rock', url: 'static/img/terrain/rock-512.jpg' },
                 { name: 'terrain_grass', url: 'static/img/terrain/grass-512.jpg' },
-                { name: 'terrain_dirt', url: 'static/img/terrain/dirt-512.jpg' },
+                //{name: 'terrain_dirt', url: 'static/img/terrain/dirt-512.jpg'},
                 { name: 'terrain_snow', url: 'static/img/terrain/snow-512.jpg' },
                 { name: 'terrain_sand', url: 'static/img/terrain/sand-512.jpg' },
                 { name: 'terrain_water', url: 'static/img/terrain/water-512.jpg' },
@@ -334,9 +337,10 @@ define("app", ["require", "exports", "terrain", "veg", "utils", "asset_loader"],
         }, function (loadedAssets) {
             masterAssets = loadedAssets;
         }, function (progress) {
-            console.log(progress * 100 + "% loaded...");
+            console.log("Loading assets... " + progress * 100 + "%");
         }, function (error) {
             console.log(error);
+            return;
         });
         var spatialExtent = [-1, -1, -1, -1]; // dummy vars for starting out
         function updateTerrain(extent, updateVeg) {
@@ -368,7 +372,7 @@ define("app", ["require", "exports", "terrain", "veg", "utils", "asset_loader"],
                         rock: masterAssets.textures['terrain_rock'],
                         snow: masterAssets.textures['terrain_snow'],
                         grass: masterAssets.textures['terrain_grass'],
-                        dirt: masterAssets.textures['terrain_dirt'],
+                        //dirt: masterAssets.textures['terrain_dirt'],
                         sand: masterAssets.textures['terrain_sand'],
                         water: masterAssets.textures['terrain_water'],
                         vertShader: masterAssets.text['terrain_vert'],
@@ -378,19 +382,28 @@ define("app", ["require", "exports", "terrain", "veg", "utils", "asset_loader"],
                     });
                     scene.add(terrain);
                     // Add our vegcovers
+                    var baseColor = new THREE.Color(55, 80, 100);
+                    var i = 0;
+                    var maxColors = 7;
                     for (var key in vegParams) {
+                        // calculate the veg colors we want to display
+                        var r = Math.floor(i / maxColors * 200);
+                        var g = Math.floor(i / maxColors * 130);
+                        var vegColor = new THREE.Color(baseColor.r + r, baseColor.g + g, baseColor.b);
                         scene.add(veg_1.createVegetation({
                             heightmap: loadedAssets.textures['heightmap'],
                             name: key,
                             tex: masterAssets.textures['sagebrush_material'],
                             geo: masterAssets.geometries['sagebrush'],
+                            color: vegColor,
                             vertShader: masterAssets.text['veg_vert'],
                             fragShader: masterAssets.text['veg_frag'],
                             disp: 5.0 / 800.0,
                             cells: {},
                             heightData: loadedAssets.statistics['heightmap_stats'],
-                            vegData: { maxHeight: 2000.0, minHeight: 1000.0 }
+                            vegData: { maxHeight: 3100.0, minHeight: 900.0 }
                         }));
+                        ++i;
                     }
                     render();
                     if (updateVeg)

@@ -12,8 +12,9 @@ void main()
     vUV = uv;
     
     vec4 heightInfo = texture2D( heightmap, uv );
-    vAmount = heightInfo.r; // assuming map is grayscale it doesn't matter if you use r, g, or b.
-    vec3 newPosition = vec3(position.x, vAmount * maxHeight * disp, position.z);
- 
+    vAmount = heightInfo.r;
+    float height = vAmount * maxHeight * disp;
+    vec3 newPosition = vec3(position.x, height, position.z);
+ 	
     gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
 }

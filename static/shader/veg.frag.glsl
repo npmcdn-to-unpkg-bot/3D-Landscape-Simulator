@@ -5,6 +5,7 @@ precision highp float;
 uniform sampler2D tex;
 uniform sampler2D heightmap;
 uniform float maxHeight;
+uniform vec3 vegColor;
 
 uniform float vegMaxHeight;
 uniform float vegMinHeight;
@@ -19,8 +20,11 @@ void main() {
     		discard;
     	}
     	else {
+            // blend the chosen color with the color of the texture
+            color = vec4(color.r * vegColor.r, color.g * vegColor.g, color.b * vegColor.b, 1.0);
     		gl_FragColor = vec4(color.r, color.g, color.b, 1.0);
-    	}
+    	    //gl_FragColor = vec4(vegColor.r, vegColor.g, vegColor.b, 1.0);
+        }
 	} else {
 		discard;
 	}
