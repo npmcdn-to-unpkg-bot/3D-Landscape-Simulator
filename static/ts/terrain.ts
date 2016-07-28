@@ -1,21 +1,21 @@
 // terrain.ts
 
-const resolution = 800.0
-const disp = 5.0 / resolution
+interface TerrainParams {
 
-export interface TerrainParams {
+	// heightmap
+	heightmap: THREE.Texture
+	disp: number
 
-	//groundmap: THREE.Texture
+	// textures
 	rock: THREE.Texture
 	snow: THREE.Texture
 	grass: THREE.Texture
-	//dirt: THREE.Texture
 	sand: THREE.Texture
 	water: THREE.Texture
 
+	// shaders
 	vertShader: string
 	fragShader: string
-	heightmap: THREE.Texture
 	data: any
 
 }
@@ -31,7 +31,6 @@ export function createTerrain(params: TerrainParams) {
 	params.heightmap.wrapS = params.heightmap.wrapT = THREE.RepeatWrapping
 	params.rock.wrapS = params.rock.wrapT = THREE.RepeatWrapping
 	params.grass.wrapS = params.grass.wrapT = THREE.RepeatWrapping
-	//params.dirt.wrapS = params.dirt.wrapT = THREE.RepeatWrapping
 	params.snow.wrapS = params.snow.wrapT = THREE.RepeatWrapping
 	params.sand.wrapS = params.sand.wrapT = THREE.RepeatWrapping
 	params.water.wrapS = params.water.wrapT = THREE.RepeatWrapping
@@ -42,13 +41,12 @@ export function createTerrain(params: TerrainParams) {
 		uniforms: {
 			heightmap: {type: "t", value: params.heightmap},
 			maxHeight: {type: "f", value: maxHeight},
-			disp: {type: "f", value: disp},
+			disp: {type: "f", value: params.disp},
 			rock: {type: "t", value: params.rock},
 			snow: {type: "t", value: params.snow},
 			grass: {type: "t", value: params.grass},
 			sand: {type: "t", value: params.sand},
 			water: {type: "t", value: params.water}
-			//dirt: {type: "t", value: params.dirt}
 		},
 		vertexShader: params.vertShader,
 		fragmentShader: params.fragShader

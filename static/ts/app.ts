@@ -1,9 +1,12 @@
 // app.ts
 
-import {createTerrain, TerrainParams} from './terrain'
-import {createVegetation, VegetationOptions} from './veg'
+import {createTerrain} from './terrain'
+import {createVegetation, VegetationOptions, Cluster} from './veg'
 import {detectWebGL} from './utils'
 import {Loader, Assets} from './asset_loader'
+
+const RESOLUTION = 800.0
+const TERRAIN_DISP = 5.0 / RESOLUTION
 
 interface VegParams {		// THIS INTERFACE IS SUBJECT TO CHANGE
 	"Basin Big Sagebrush Upland"?: 				number, 
@@ -41,11 +44,10 @@ export default function run(container_id: string, params: VegParams) {
 	camera.position.y = 100
 
 	// Custom event handlers since we only want to render when something happens.
-	//renderer.domElement.addEventListener('mousedown', animate, false)
-	//renderer.domElement.addEventListener('mouseup', stopAnimate, false)
-	//renderer.domElement.addEventListener('mousewheel', render, false)
-	//renderer.domElement.addEventListener( 'MozMousePixelScroll', render, false ); // firefox
-	animate()	// debug
+	renderer.domElement.addEventListener('mousedown', animate, false)
+	renderer.domElement.addEventListener('mouseup', stopAnimate, false)
+	renderer.domElement.addEventListener('mousewheel', render, false)
+	renderer.domElement.addEventListener( 'MozMousePixelScroll', render, false ); // firefox
 
 	// Load initial assets
 	const loader = Loader()
@@ -80,7 +82,11 @@ export default function run(container_id: string, params: VegParams) {
 				{name: 'grass', url: 'static/json/geometry/grass.json'},
 				{name: 'tree', url: 'static/json/geometry/tree.json'},
 				{name: 'sagebrush', url: 'static/json/geometry/sagebrush.json'}
+			]/*,
+			statistics: [
+				{name: 'vegclass_stats', url: ""}
 			]
+			*/
 		},
 		function(loadedAssets: Assets) {
 			masterAssets = loadedAssets
@@ -123,25 +129,33 @@ export default function run(container_id: string, params: VegParams) {
 			},
 			function(loadedAssets: Assets) {
 				terrain = createTerrain({
-					// testing
 					rock: masterAssets.textures['terrain_rock'],
 					snow: masterAssets.textures['terrain_snow'],
 					grass: masterAssets.textures['terrain_grass'],
-					//dirt: masterAssets.textures['terrain_dirt'],
 					sand: masterAssets.textures['terrain_sand'],
 					water: masterAssets.textures['terrain_water'],
 					vertShader: masterAssets.text['terrain_vert'],
 					fragShader: masterAssets.text['terrain_frag'],
 					data: loadedAssets.statistics['heightmap_stats'],
-					heightmap: loadedAssets.textures['heightmap']
+					heightmap: loadedAssets.textures['heightmap'],
+					disp: TERRAIN_DISP
 				})
 				scene.add(terrain)
-				// Add our vegcovers
 
-				let baseColor = new THREE.Color(55,80,100)
+				// compute the heights from this heightmap
+				// Only do this once per terrain. We base our clusters off of this
+
+				// TODO - replace values with source in loadedAssets
+				const vegclass_stats = {maxHeight: 3100.0, minHeight: 900.0}
+
+				const heightmap = loadedAssets.textures['heightmap']
+				const heightmap_stats = loadedAssets.statistics['heightmap_stats']
+				const heights = computeHeights(heightmap, heightmap_stats)
+				let baseColor = new THREE.Color(55,80,100)	// TODO - better colors
 				let i = 0
 				const maxColors = 7
 
+				// Add our vegcovers
 				for (var key in vegParams) {
 
 					// calculate the veg colors we want to display
@@ -158,10 +172,10 @@ export default function run(container_id: string, params: VegParams) {
 							color: vegColor,
 							vertShader: masterAssets.text['veg_vert'],
 							fragShader: masterAssets.text['veg_frag'],
-							disp: 5.0 / 800.0,
-							cells: {},
+							disp: TERRAIN_DISP,
+							clusters: createClusters(heights, heightmap_stats, vegclass_stats),
 							heightData: loadedAssets.statistics['heightmap_stats'],
-							vegData: {maxHeight: 3100.0, minHeight: 900.0}
+							vegData: vegclass_stats
 						}
 					))
 
@@ -178,6 +192,62 @@ export default function run(container_id: string, params: VegParams) {
 				return
 			})
 		}	
+	}
+
+	function computeHeights(hmTexture: THREE.Texture, stats: any) {
+		const image = hmTexture.image
+		let w = image.naturalWidth
+		let h = image.naturalHeight
+		let canvas = document.createElement('canvas')
+		canvas.width = w
+		canvas.height = h
+		let ctx = canvas.getContext('2d')
+		ctx.drawImage(image, 0, 0, w, h)
+		let data = ctx.getImageData(0, 0, w, h).data
+		const heights = new Float32Array(w * h)
+		let idx: number
+		for (let y = 0; y < h; ++y) {
+			for (let x = 0; x < w; ++x) {
+				// flip vertical because textures are Y+
+				idx = (x + (h-y-1) * w) * 4
+	
+				// scale & store this altitude
+				heights[x + y * w] = data[idx] / 255.0 * stats.dem_max
+			}
+		}
+		// Free the resources and return
+		data = ctx = canvas = null
+		return heights
+	}
+
+	function createClusters(heights: Float32Array, hmstats: any, vegstats: any) : Cluster[] {
+
+		const numClusters = Math.floor(Math.random() * 20)
+
+		const finalClusters = new Array()
+
+		const w = hmstats.dem_width
+		const h = hmstats.dem_height
+		const maxHeight = vegstats.maxHeight
+		const minHeight = vegstats.minHeight
+		let ix: number, iy: number, height: number
+		for (let i = 0; i < numClusters; ++i) {
+			ix = Math.floor(Math.random() * w)
+			iy = Math.floor(Math.random() * h)
+			//console.log(ix, iy, "ix, iy")
+			height = heights[ix + iy * w]
+			//console.log(height, "height")
+			if (height < maxHeight && height > minHeight) { 
+				const newCluster = {
+					xpos: ix - w/2,
+					ypos: iy - h/2,
+					radius: Math.random() * 10.0
+				} as Cluster
+				finalClusters.push(newCluster)
+			}
+		}
+
+		return finalClusters
 	}
 
 	function updateVegetation(newParams: VegParams) {

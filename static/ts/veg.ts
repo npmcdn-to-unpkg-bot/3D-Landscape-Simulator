@@ -2,6 +2,12 @@
 
 const MAX_INSTANCES = 5000	// the max number of instances we will allow of one vegtype to be drawn
 
+export interface Cluster {
+	xpos: number
+	ypos: number
+	radius: number
+}
+
 export interface VegetationOptions {
 
 	name: string
@@ -9,7 +15,7 @@ export interface VegetationOptions {
 	tex: THREE.Texture			// object texture
 	geo: THREE.Geometry			// object geometry
 	color: THREE.Color			// object color to blend with
-	cells: any					// TODO - define veg cells to determine the position of where to grow vegetation
+	clusters: Cluster[]			// locations of sagebrush clusters in the terrain
 	vertShader: string			// vertex shader
 	fragShader: string			// fragment shader
 	disp: number				// vertical scaler
@@ -39,7 +45,7 @@ export function createVegetation(params: VegetationOptions) {
 	
 	}
 
-	const cells = params.cells	// todo - what are these cells going to look like?
+	const clusters = params.clusters
 
 	const heightmap = params.heightmap
 	const widthExtent = params.heightData.dem_width
@@ -79,7 +85,7 @@ export function createVegetation(params: VegetationOptions) {
 	
 		let x: number, y:number, tx:number, ty:number
 		let width = widthExtent, height = heightExtent
-	
+		console.log(clusters)
 		for (let i = 0; i < offsets.count; i++) {
 	
 			// position in the spatial extent

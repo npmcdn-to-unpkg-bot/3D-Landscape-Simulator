@@ -1,8 +1,6 @@
 // terrain.ts
 define("terrain", ["require", "exports"], function (require, exports) {
     "use strict";
-    var resolution = 800.0;
-    var disp = 5.0 / resolution;
     function createTerrain(params) {
         // data for landscape width/height
         var maxHeight = params.data.dem_max;
@@ -12,7 +10,6 @@ define("terrain", ["require", "exports"], function (require, exports) {
         params.heightmap.wrapS = params.heightmap.wrapT = THREE.RepeatWrapping;
         params.rock.wrapS = params.rock.wrapT = THREE.RepeatWrapping;
         params.grass.wrapS = params.grass.wrapT = THREE.RepeatWrapping;
-        //params.dirt.wrapS = params.dirt.wrapT = THREE.RepeatWrapping
         params.snow.wrapS = params.snow.wrapT = THREE.RepeatWrapping;
         params.sand.wrapS = params.sand.wrapT = THREE.RepeatWrapping;
         params.water.wrapS = params.water.wrapT = THREE.RepeatWrapping;
@@ -22,7 +19,7 @@ define("terrain", ["require", "exports"], function (require, exports) {
             uniforms: {
                 heightmap: { type: "t", value: params.heightmap },
                 maxHeight: { type: "f", value: maxHeight },
-                disp: { type: "f", value: disp },
+                disp: { type: "f", value: params.disp },
                 rock: { type: "t", value: params.rock },
                 snow: { type: "t", value: params.snow },
                 grass: { type: "t", value: params.grass },
@@ -57,7 +54,7 @@ define("veg", ["require", "exports"], function (require, exports) {
         if (geo.attributes['color']) {
             geo.removeAttribute('color');
         }
-        var cells = params.cells; // todo - what are these cells going to look like?
+        var clusters = params.clusters;
         var heightmap = params.heightmap;
         var widthExtent = params.heightData.dem_width;
         var heightExtent = params.heightData.dem_height;
@@ -88,6 +85,7 @@ define("veg", ["require", "exports"], function (require, exports) {
         function generateOffsets(cells) {
             var x, y, tx, ty;
             var width = widthExtent, height = heightExtent;
+            console.log(clusters);
             for (var i = 0; i < offsets.count; i++) {
                 // position in the spatial extent
                 x = Math.random() * width - width / 2;
@@ -280,6 +278,8 @@ define("asset_loader", ["require", "exports"], function (require, exports) {
 // app.ts
 define("app", ["require", "exports", "terrain", "veg", "utils", "asset_loader"], function (require, exports, terrain_1, veg_1, utils_1, asset_loader_1) {
     "use strict";
+    var RESOLUTION = 800.0;
+    var TERRAIN_DISP = 5.0 / RESOLUTION;
     function run(container_id, params) {
         var vegParams = params;
         if (!utils_1.detectWebGL) {
@@ -300,11 +300,10 @@ define("app", ["require", "exports", "terrain", "veg", "utils", "asset_loader"],
         camera.position.z = 40;
         camera.position.y = 100;
         // Custom event handlers since we only want to render when something happens.
-        //renderer.domElement.addEventListener('mousedown', animate, false)
-        //renderer.domElement.addEventListener('mouseup', stopAnimate, false)
-        //renderer.domElement.addEventListener('mousewheel', render, false)
-        //renderer.domElement.addEventListener( 'MozMousePixelScroll', render, false ); // firefox
-        animate(); // debug
+        renderer.domElement.addEventListener('mousedown', animate, false);
+        renderer.domElement.addEventListener('mouseup', stopAnimate, false);
+        renderer.domElement.addEventListener('mousewheel', render, false);
+        renderer.domElement.addEventListener('MozMousePixelScroll', render, false); // firefox
         // Load initial assets
         var loader = asset_loader_1.Loader();
         loader.load({
@@ -333,7 +332,11 @@ define("app", ["require", "exports", "terrain", "veg", "utils", "asset_loader"],
                 { name: 'grass', url: 'static/json/geometry/grass.json' },
                 { name: 'tree', url: 'static/json/geometry/tree.json' },
                 { name: 'sagebrush', url: 'static/json/geometry/sagebrush.json' }
+            ] /*,
+            statistics: [
+                {name: 'vegclass_stats', url: ""}
             ]
+            */
         }, function (loadedAssets) {
             masterAssets = loadedAssets;
         }, function (progress) {
@@ -368,23 +371,29 @@ define("app", ["require", "exports", "terrain", "veg", "utils", "asset_loader"],
                     ]
                 }, function (loadedAssets) {
                     terrain = terrain_1.createTerrain({
-                        // testing
                         rock: masterAssets.textures['terrain_rock'],
                         snow: masterAssets.textures['terrain_snow'],
                         grass: masterAssets.textures['terrain_grass'],
-                        //dirt: masterAssets.textures['terrain_dirt'],
                         sand: masterAssets.textures['terrain_sand'],
                         water: masterAssets.textures['terrain_water'],
                         vertShader: masterAssets.text['terrain_vert'],
                         fragShader: masterAssets.text['terrain_frag'],
                         data: loadedAssets.statistics['heightmap_stats'],
-                        heightmap: loadedAssets.textures['heightmap']
+                        heightmap: loadedAssets.textures['heightmap'],
+                        disp: TERRAIN_DISP
                     });
                     scene.add(terrain);
-                    // Add our vegcovers
-                    var baseColor = new THREE.Color(55, 80, 100);
+                    // compute the heights from this heightmap
+                    // Only do this once per terrain. We base our clusters off of this
+                    // TODO - replace values with source in loadedAssets
+                    var vegclass_stats = { maxHeight: 3100.0, minHeight: 900.0 };
+                    var heightmap = loadedAssets.textures['heightmap'];
+                    var heightmap_stats = loadedAssets.statistics['heightmap_stats'];
+                    var heights = computeHeights(heightmap, heightmap_stats);
+                    var baseColor = new THREE.Color(55, 80, 100); // TODO - better colors
                     var i = 0;
                     var maxColors = 7;
+                    // Add our vegcovers
                     for (var key in vegParams) {
                         // calculate the veg colors we want to display
                         var r = Math.floor(i / maxColors * 200);
@@ -398,10 +407,10 @@ define("app", ["require", "exports", "terrain", "veg", "utils", "asset_loader"],
                             color: vegColor,
                             vertShader: masterAssets.text['veg_vert'],
                             fragShader: masterAssets.text['veg_frag'],
-                            disp: 5.0 / 800.0,
-                            cells: {},
+                            disp: TERRAIN_DISP,
+                            clusters: createClusters(heights, heightmap_stats, vegclass_stats),
                             heightData: loadedAssets.statistics['heightmap_stats'],
-                            vegData: { maxHeight: 3100.0, minHeight: 900.0 }
+                            vegData: vegclass_stats
                         }));
                         ++i;
                     }
@@ -415,6 +424,55 @@ define("app", ["require", "exports", "terrain", "veg", "utils", "asset_loader"],
                     return;
                 });
             }
+        }
+        function computeHeights(hmTexture, stats) {
+            var image = hmTexture.image;
+            var w = image.naturalWidth;
+            var h = image.naturalHeight;
+            var canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(image, 0, 0, w, h);
+            var data = ctx.getImageData(0, 0, w, h).data;
+            var heights = new Float32Array(w * h);
+            var idx;
+            for (var y = 0; y < h; ++y) {
+                for (var x = 0; x < w; ++x) {
+                    // flip vertical because textures are Y+
+                    idx = (x + (h - y - 1) * w) * 4;
+                    // scale & store this altitude
+                    heights[x + y * w] = data[idx] / 255.0 * stats.dem_max;
+                }
+            }
+            // Free the resources and return
+            data = ctx = canvas = null;
+            return heights;
+        }
+        function createClusters(heights, hmstats, vegstats) {
+            var numClusters = Math.floor(Math.random() * 20);
+            var finalClusters = new Array();
+            var w = hmstats.dem_width;
+            var h = hmstats.dem_height;
+            var maxHeight = vegstats.maxHeight;
+            var minHeight = vegstats.minHeight;
+            var ix, iy, height;
+            for (var i = 0; i < numClusters; ++i) {
+                ix = Math.floor(Math.random() * w);
+                iy = Math.floor(Math.random() * h);
+                //console.log(ix, iy, "ix, iy")
+                height = heights[ix + iy * w];
+                //console.log(height, "height")
+                if (height < maxHeight && height > minHeight) {
+                    var newCluster = {
+                        xpos: ix - w / 2,
+                        ypos: iy - h / 2,
+                        radius: Math.random() * 10.0
+                    };
+                    finalClusters.push(newCluster);
+                }
+            }
+            return finalClusters;
         }
         function updateVegetation(newParams) {
             for (var key in newParams) {
