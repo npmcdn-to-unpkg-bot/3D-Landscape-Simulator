@@ -1,3 +1,15 @@
+// globals.ts
+define("globals", ["require", "exports"], function (require, exports) {
+    "use strict";
+    // debugging constants
+    exports.USE_RANDOM = true;
+    // global constants configuration
+    exports.MAX_INSTANCES = 5000; // max number of vertex instances we allow per vegtype
+    exports.MAX_CLUSTERS_PER_VEG = 20; // maximum number of clusters to generate for each vegtype
+    exports.RESOLUTION = 800.0; // resolution of terrain (in meters)
+    exports.TERRAIN_DISP = 5.0 / exports.RESOLUTION; // the amount of displacement we impose to actually 'see' the terrain
+    exports.MAX_CLUSTER_RADIUS = 30.0; // max radius to grow around a cluster
+});
 // terrain.ts
 define("terrain", ["require", "exports"], function (require, exports) {
     "use strict";
@@ -38,10 +50,8 @@ define("terrain", ["require", "exports"], function (require, exports) {
     }
     exports.createTerrain = createTerrain;
 });
-// veg.ts
-define("veg", ["require", "exports"], function (require, exports) {
+define("veg", ["require", "exports", "globals"], function (require, exports, globals) {
     "use strict";
-    var MAX_INSTANCES = 5000; // the max number of instances we will allow of one vegtype to be drawn
     function createVegetation(params) {
         var halfPatch = new THREE.Geometry();
         halfPatch.merge(params.geo);
@@ -59,9 +69,16 @@ define("veg", ["require", "exports"], function (require, exports) {
         var widthExtent = params.heightData.dem_width;
         var heightExtent = params.heightData.dem_height;
         var maxHeight = params.heightData.dem_max;
-        geo.maxInstancedCount = 0;
-        var offsets = new THREE.InstancedBufferAttribute(new Float32Array(MAX_INSTANCES * 2), 2);
-        var hCoords = new THREE.InstancedBufferAttribute(new Float32Array(MAX_INSTANCES * 2), 2);
+        var numVegInstances;
+        if (globals.USE_RANDOM) {
+            numVegInstances = globals.MAX_INSTANCES;
+        }
+        else {
+            numVegInstances = Math.floor(globals.MAX_INSTANCES * clusters.length / globals.MAX_CLUSTERS_PER_VEG);
+        }
+        geo.maxInstancedCount = 0; // must initialize with 0, otherwise THREE throws an error
+        var offsets = new THREE.InstancedBufferAttribute(new Float32Array(numVegInstances * 2), 2);
+        var hCoords = new THREE.InstancedBufferAttribute(new Float32Array(numVegInstances * 2), 2);
         generateOffsets();
         geo.addAttribute('offset', offsets);
         geo.addAttribute('hCoord', hCoords);
@@ -82,14 +99,31 @@ define("veg", ["require", "exports"], function (require, exports) {
         var mesh = new THREE.Mesh(geo, mat);
         mesh.frustumCulled = false; // Prevents the veg from disappearing randomly
         mesh.name = params.name; // Make the mesh selectable directly from the scene
+        mesh.userData['numClusters'] = clusters.length;
         function generateOffsets(cells) {
             var x, y, tx, ty;
-            var width = widthExtent, height = heightExtent;
-            console.log(clusters);
+            var width = widthExtent, height = heightExtent, numClusters = clusters.length;
+            var cluster;
             for (var i = 0; i < offsets.count; i++) {
-                // position in the spatial extent
-                x = Math.random() * width - width / 2;
-                y = Math.random() * height - height / 2;
+                // determine position in the spatial extent
+                if (globals.USE_RANDOM) {
+                    x = Math.random() * width - width / 2; // random placement
+                    y = Math.random() * height - height / 2;
+                }
+                else {
+                    cluster = clusters[i % clusters.length];
+                    x = cluster.xpos + Math.random() * globals.MAX_CLUSTER_RADIUS;
+                    y = cluster.ypos + Math.random() * globals.MAX_CLUSTER_RADIUS;
+                    // adjust if outside bounds
+                    if (x < -width / 2)
+                        x = -width / 2;
+                    if (x > width / 2)
+                        x = width / 2;
+                    if (y < -height / 2)
+                        y = -height / 2;
+                    if (y > height / 2)
+                        y = height / 2;
+                }
                 // position in the heightmap
                 tx = x / width + 0.5;
                 ty = y / height + 0.5;
@@ -276,10 +310,8 @@ define("asset_loader", ["require", "exports"], function (require, exports) {
     exports.Loader = Loader; // end Loader
 });
 // app.ts
-define("app", ["require", "exports", "terrain", "veg", "utils", "asset_loader"], function (require, exports, terrain_1, veg_1, utils_1, asset_loader_1) {
+define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asset_loader"], function (require, exports, globals, terrain_1, veg_1, utils_1, asset_loader_1) {
     "use strict";
-    var RESOLUTION = 800.0;
-    var TERRAIN_DISP = 5.0 / RESOLUTION;
     function run(container_id, params) {
         var vegParams = params;
         if (!utils_1.detectWebGL) {
@@ -380,7 +412,7 @@ define("app", ["require", "exports", "terrain", "veg", "utils", "asset_loader"],
                         fragShader: masterAssets.text['terrain_frag'],
                         data: loadedAssets.statistics['heightmap_stats'],
                         heightmap: loadedAssets.textures['heightmap'],
-                        disp: TERRAIN_DISP
+                        disp: globals.TERRAIN_DISP
                     });
                     scene.add(terrain);
                     // compute the heights from this heightmap
@@ -407,7 +439,7 @@ define("app", ["require", "exports", "terrain", "veg", "utils", "asset_loader"],
                             color: vegColor,
                             vertShader: masterAssets.text['veg_vert'],
                             fragShader: masterAssets.text['veg_frag'],
-                            disp: TERRAIN_DISP,
+                            disp: globals.TERRAIN_DISP,
                             clusters: createClusters(heights, heightmap_stats, vegclass_stats),
                             heightData: loadedAssets.statistics['heightmap_stats'],
                             vegData: vegclass_stats
@@ -450,7 +482,7 @@ define("app", ["require", "exports", "terrain", "veg", "utils", "asset_loader"],
             return heights;
         }
         function createClusters(heights, hmstats, vegstats) {
-            var numClusters = Math.floor(Math.random() * 20);
+            var numClusters = Math.floor(Math.random() * globals.MAX_CLUSTERS_PER_VEG);
             var finalClusters = new Array();
             var w = hmstats.dem_width;
             var h = hmstats.dem_height;
@@ -460,14 +492,11 @@ define("app", ["require", "exports", "terrain", "veg", "utils", "asset_loader"],
             for (var i = 0; i < numClusters; ++i) {
                 ix = Math.floor(Math.random() * w);
                 iy = Math.floor(Math.random() * h);
-                //console.log(ix, iy, "ix, iy")
                 height = heights[ix + iy * w];
-                //console.log(height, "height")
                 if (height < maxHeight && height > minHeight) {
                     var newCluster = {
                         xpos: ix - w / 2,
                         ypos: iy - h / 2,
-                        radius: Math.random() * 10.0
                     };
                     finalClusters.push(newCluster);
                 }
@@ -480,7 +509,13 @@ define("app", ["require", "exports", "terrain", "veg", "utils", "asset_loader"],
                     vegParams[key] = newParams[key]; // update the object to what we want it to be
                     var vegCover = scene.getObjectByName(key);
                     var vegGeo = vegCover.geometry;
-                    vegGeo.maxInstancedCount = Math.floor(vegParams[key] / 100 * 5000); // make this a static function
+                    if (globals.USE_RANDOM) {
+                        vegGeo.maxInstancedCount = Math.floor(vegParams[key] / 100 * globals.MAX_INSTANCES); // make this a static function
+                    }
+                    else {
+                        var vegClusters = vegCover.userData['numClusters'];
+                        vegGeo.maxInstancedCount = Math.floor(globals.MAX_INSTANCES * (vegParams[key] / 100) * (vegClusters / globals.MAX_CLUSTERS_PER_VEG));
+                    }
                 }
             }
             render();

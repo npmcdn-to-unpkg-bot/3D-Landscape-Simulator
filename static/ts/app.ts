@@ -1,12 +1,14 @@
 // app.ts
 
+import * as globals from './globals'
 import {createTerrain} from './terrain'
 import {createVegetation, VegetationOptions, Cluster} from './veg'
 import {detectWebGL} from './utils'
 import {Loader, Assets} from './asset_loader'
 
-const RESOLUTION = 800.0
-const TERRAIN_DISP = 5.0 / RESOLUTION
+//const RESOLUTION = 800.0
+//const TERRAIN_DISP = 5.0 / RESOLUTION
+//const MAX_NUM_CLUSTERS = 10
 
 interface VegParams {		// THIS INTERFACE IS SUBJECT TO CHANGE
 	"Basin Big Sagebrush Upland"?: 				number, 
@@ -138,7 +140,7 @@ export default function run(container_id: string, params: VegParams) {
 					fragShader: masterAssets.text['terrain_frag'],
 					data: loadedAssets.statistics['heightmap_stats'],
 					heightmap: loadedAssets.textures['heightmap'],
-					disp: TERRAIN_DISP
+					disp: globals.TERRAIN_DISP
 				})
 				scene.add(terrain)
 
@@ -172,7 +174,7 @@ export default function run(container_id: string, params: VegParams) {
 							color: vegColor,
 							vertShader: masterAssets.text['veg_vert'],
 							fragShader: masterAssets.text['veg_frag'],
-							disp: TERRAIN_DISP,
+							disp: globals.TERRAIN_DISP,
 							clusters: createClusters(heights, heightmap_stats, vegclass_stats),
 							heightData: loadedAssets.statistics['heightmap_stats'],
 							vegData: vegclass_stats
@@ -222,7 +224,7 @@ export default function run(container_id: string, params: VegParams) {
 
 	function createClusters(heights: Float32Array, hmstats: any, vegstats: any) : Cluster[] {
 
-		const numClusters = Math.floor(Math.random() * 20)
+		const numClusters = Math.floor(Math.random() * globals.MAX_CLUSTERS_PER_VEG)
 
 		const finalClusters = new Array()
 
@@ -234,15 +236,14 @@ export default function run(container_id: string, params: VegParams) {
 		for (let i = 0; i < numClusters; ++i) {
 			ix = Math.floor(Math.random() * w)
 			iy = Math.floor(Math.random() * h)
-			//console.log(ix, iy, "ix, iy")
 			height = heights[ix + iy * w]
-			//console.log(height, "height")
 			if (height < maxHeight && height > minHeight) { 
+				
 				const newCluster = {
 					xpos: ix - w/2,
 					ypos: iy - h/2,
-					radius: Math.random() * 10.0
 				} as Cluster
+
 				finalClusters.push(newCluster)
 			}
 		}
@@ -257,7 +258,13 @@ export default function run(container_id: string, params: VegParams) {
 				vegParams[key] = newParams[key]		// update the object to what we want it to be
 				const vegCover = scene.getObjectByName(key) as THREE.Mesh
 				const vegGeo = vegCover.geometry as THREE.InstancedBufferGeometry
-				vegGeo.maxInstancedCount = Math.floor(vegParams[key] / 100 * 5000)	// make this a static function
+				if (globals.USE_RANDOM) {
+					vegGeo.maxInstancedCount = Math.floor(vegParams[key] / 100 * globals.MAX_INSTANCES)	// make this a static function
+				}
+				else {
+					const vegClusters = vegCover.userData['numClusters']
+					vegGeo.maxInstancedCount = Math.floor(globals.MAX_INSTANCES * (vegParams[key] / 100) * (vegClusters / globals.MAX_CLUSTERS_PER_VEG))
+				}
 			}
 		}
 
