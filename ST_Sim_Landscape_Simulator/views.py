@@ -41,8 +41,7 @@ def index(request):
 
 #def run_st_sim(st_scenario,feature_id): # for csv initial conditions
 def run_st_sim(st_scenario,veg_slider_values_dict):
-
-    #st_initial_conditions_file=static_files_dir + "/static/st_sim/initial_conditions/" + feature_id + ".csv"
+    print st_scenario
     st_initial_conditions_file=static_files_dir + "/st_sim/initial_conditions/user_defined_temp.csv"
 
     # Only for user defined initial conditions. Write initial conditions slider values to csv.
@@ -53,33 +52,56 @@ def run_st_sim(st_scenario,veg_slider_values_dict):
 
     st_initial_conditions_file_handle.close()
 
-    st_exe=static_files_dir + "/deps/st_sim/syncrosim-linux-1-0-24-x64/SyncroSim.Console.exe"
+    # Handle running under mono on linux machines
+    os_prefix = 'sudo mono ' if os.name == 'posix' else ''
+    st_exe= os_prefix + static_files_dir + "/deps/st_sim/syncrosim-linux-1-0-24-x64/SyncroSim.Console.exe"
+
     st_library_path=static_files_dir + "/st_sim/libraries"
     st_library_file="ST-Sim-Sample-V3-0-24.ssim"
     st_library=st_library_path+os.sep+st_library_file
 
-    print "Running scenario sid:" + st_scenario
+    print "\nRunning scenario sid:" + st_scenario
+    
     # Run ST-Sim with initial conditions and user specified scenario.
-    st_initial_conditions_command="--import --lib=" + st_library + " --sheet=STSim_InitialConditionsNonSpatialDistribution table_name --file="  + st_initial_conditions_file +  " --sid=" + st_scenario
+    st_initial_conditions_command="--import --lib=" + st_library + \
+        " --sheet=STSim_InitialConditionsNonSpatialDistribution table_name --file="  + st_initial_conditions_file +  " --sid=" + st_scenario
+   
+    print "\nInitial conditions command: "
+    print st_exe + " " + st_initial_conditions_command
     os.system(st_exe + " " + st_initial_conditions_command)
-
     st_run_model_command="--run --lib=" + st_library + " --sid="+st_scenario
-
+    print "\nModel run command: "
+    print st_exe + " " + st_run_model_command
+    #print 'Outputting model results'
     st_model_output_sid=str(os.system(st_exe + " " + st_run_model_command))
-    print st_model_output_sid
-
+    
+    actual_st_model_output_sid = str(256 + int(st_model_output_sid) / 256) if os.name == 'posix' else st_model_output_sid
+    #print int(st_model_output_sid)
+    #print "\nResulting scenario id: " + st_model_output_sid
+    print "\nResulting scenario id: " + st_model_output_sid
+    print "\nActual Resulting scenario id: " + actual_st_model_output_sid
     st_model_results_dir=static_files_dir + "/st_sim/model_results"
 
-    st_model_output_file="stateclass-summary-" +str(st_model_output_sid)+ ".csv"
+    st_model_output_file="stateclass-summary-" +str(actual_st_model_output_sid)+ ".csv"
 
     # Generate a report (csv) from ST-Sim for the model run above
-    st_report_command=" --console=stsim --create-report --name=stateclass-summary --lib=" + st_library + " --file=" + st_model_results_dir + os.sep + st_model_output_file + " --sids=" + st_model_output_sid
+    st_report_command=" --console=stsim --create-report --name=stateclass-summary --lib=" + st_library + " --file=" + st_model_results_dir + os.sep + st_model_output_file + " --sids=" + actual_st_model_output_sid
+    print "Executing report..."
     os.system(st_exe + " " + st_report_command)
-
+    print "\nReport command: "
+    print st_exe + " " + st_report_command
     # Get results out of ST-Sim csv report.
+
     results_dict={}
+    print "\nOutput file location: "
+    print st_model_results_dir + os.sep + st_model_output_file
+
+    # debug
+    #debug_path_list = [st_model_results_dir, os.sep + 'stateclass-summary-260.csv']
+    #debug_path = "".join(debug_path_list)
 
     reader=csv.reader(open(st_model_results_dir + os.sep + st_model_output_file))
+    #reader=csv.reader(open(debug_path))
     reader.next()
 
     for row in reader:
@@ -92,6 +114,7 @@ def run_st_sim(st_scenario,veg_slider_values_dict):
     rounded_dict = {k:round(v,1) for k, v in results_dict.items()}
     sorted_dict=OrderedDict(sorted(rounded_dict.items(), key=lambda t: t[0]))
     results_json=json.dumps(sorted_dict)
+    print "\nResults: "
     print results_json
 
     context={
