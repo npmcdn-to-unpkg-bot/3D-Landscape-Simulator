@@ -277,3 +277,13 @@ div#pop-up {
    position:relative;
    left:2px
 }
+
+#site_icon {
+	width: 60px;
+	position: relative;
+	float: left;
+	top: 3px;
+	margin-right: 9px;
+	left: 2px;
+}
+

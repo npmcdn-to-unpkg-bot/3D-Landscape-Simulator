@@ -265,6 +265,8 @@ $(function() {
             for (i=1; i <= 18; i++) {
                 $("#veg_3_"+i).val(veg_proportion3)
             }
+
+            veg_slider_values_state_class["Low Sagebrush"]=[]
         },
         start:function(event, ui){
             total_input_percent=total_input_percent-ui.value
@@ -297,6 +299,8 @@ $(function() {
             for (i=1; i <= 18; i++) {
                 $("#veg_4_"+i).val(veg_proportion4)
             }
+
+            veg_slider_values_state_class["Montane Sagebrush Upland"]=[]
         },
         start:function(event, ui){
             total_input_percent=total_input_percent-ui.value
@@ -329,6 +333,8 @@ $(function() {
             for (i=1; i <= 18; i++) {
                 $("#veg_5_"+i).val(veg_proportion5)
             }
+
+            veg_slider_values_state_class["Montane Sagebrush Upland With Trees"]=[]
         },
         start:function(event, ui){
             total_input_percent=total_input_percent-ui.value
@@ -361,6 +367,8 @@ $(function() {
             for (i=1; i <= 18; i++) {
                 $("#veg_6_"+i).val(veg_proportion6)
             }
+
+            veg_slider_values_state_class["Western Juniper Woodland & Savannah"]=[]
         },
         start:function(event, ui){
             total_input_percent=total_input_percent-ui.value
@@ -393,6 +401,8 @@ $(function() {
             for (i=1; i <= 18; i++) {
                 $("#veg_7_"+i).val(veg_proportion7)
             }
+
+            veg_slider_values_state_class["Wyoming and Basin Big Sagebrush Upland"]=[]
         },
         start:function(event, ui){
             total_input_percent=total_input_percent-ui.value
