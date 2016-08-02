@@ -3,6 +3,7 @@
 // debugging constants
 
 export const USE_RANDOM = true
+//export const USE_RANDOM = false
 
 // global constants configuration
 export const MAX_INSTANCES = 5000		// max number of vertex instances we allow per vegtype

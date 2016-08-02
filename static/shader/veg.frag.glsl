@@ -16,7 +16,7 @@ varying float vAmount;
 void main() {
 	if (vAmount <= vegMaxHeight && vAmount >= vegMinHeight) {
     	vec4 color = texture2D(tex, vUV);
-    	if (color.r == 0.0) {
+    	if (color.a == 0.0) {  // if alpha is 0, discard
     		discard;
     	}
     	else {

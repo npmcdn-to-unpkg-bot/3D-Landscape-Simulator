@@ -75,7 +75,8 @@ export default function run(container_id: string, params: VegParams) {
 
 				// vegtype materials
 				{name: 'grass_material', url: 'static/img/grass/grass_base.tga'},
-
+				{name: 'tree_material', url: 'static/img/grass/grass_base.tga'},	// just a base green color
+				{name: 'juniper_material', url: 'static/img/juniper/pine-leaf-diff.png'},
 				// sagebrush
 				{name: 'sagebrush_material', url: 'static/img/sagebrush/sagebrush_1.tga'}
 			],
@@ -83,6 +84,8 @@ export default function run(container_id: string, params: VegParams) {
 			geometries: [
 				{name: 'grass', url: 'static/json/geometry/grass.json'},
 				{name: 'tree', url: 'static/json/geometry/tree.json'},
+				//{name: 'juniper', url: 'static/json/geometry/juniper2.json'},
+				{name: 'juniper', url: 'static/json/geometry/tree_simple.json'},
 				{name: 'sagebrush', url: 'static/json/geometry/sagebrush.json'}
 			]/*,
 			statistics: [
@@ -144,12 +147,14 @@ export default function run(container_id: string, params: VegParams) {
 				})
 				scene.add(terrain)
 
+				// TODO - replace values with source in loadedAssets
+				const vegclass_stats = {
+					maxHeight: 3100.0,
+					minHeight: 900.0
+				}
+
 				// compute the heights from this heightmap
 				// Only do this once per terrain. We base our clusters off of this
-
-				// TODO - replace values with source in loadedAssets
-				const vegclass_stats = {maxHeight: 3100.0, minHeight: 900.0}
-
 				const heightmap = loadedAssets.textures['heightmap']
 				const heightmap_stats = loadedAssets.statistics['heightmap_stats']
 				const heights = computeHeights(heightmap, heightmap_stats)
@@ -165,12 +170,17 @@ export default function run(container_id: string, params: VegParams) {
 					const g = Math.floor(i/maxColors * 130)
 					const vegColor = new THREE.Color(baseColor.r + r, baseColor.g + g, baseColor.b)
 
+					const vegtype = getVegetationType(key)
+					const vegscale = getVegetationScale(key)
+
 					scene.add(createVegetation( 
 						{
 							heightmap: loadedAssets.textures['heightmap'],
 							name: key,
-							tex: masterAssets.textures['sagebrush_material'],
-							geo: masterAssets.geometries['sagebrush'],
+							symmetric: useSymmetry(key),
+							scale: vegscale,
+							tex: masterAssets.textures[vegtype + '_material'],
+							geo: masterAssets.geometries[vegtype],
 							color: vegColor,
 							vertShader: masterAssets.text['veg_vert'],
 							fragShader: masterAssets.text['veg_frag'],
@@ -220,6 +230,37 @@ export default function run(container_id: string, params: VegParams) {
 		// Free the resources and return
 		data = ctx = canvas = null
 		return heights
+	}
+
+	function useSymmetry(vegname: string) : boolean {
+		return  !(vegname.includes('Sagebrush') || vegname.includes('Mahogany') || vegname.includes('Juniper'))
+	}
+
+	function getVegetationType(vegname: string) : string {
+
+		if (vegname.includes("Sagebrush")) {
+			return 'sagebrush'
+		} else if (vegname.includes("Juniper")) {
+			return 'juniper'
+		}
+		else if (vegname.includes("Mahogany")) {
+			return 'tree'
+		}
+
+		return 'grass' 
+	}
+
+	function getVegetationScale(vegname: string) : number {
+
+		if (vegname.includes("Sagebrush")) {
+			return 4.0
+		} else if (vegname.includes("Juniper")) {
+			return 1.
+		} else if (vegname.includes("Mahogany")) {
+			return 15.0
+		}
+
+		return 1.0 
 	}
 
 	function createClusters(heights: Float32Array, hmstats: any, vegstats: any) : Cluster[] {

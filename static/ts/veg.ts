@@ -9,6 +9,8 @@ export interface Cluster {
 export interface VegetationOptions {
 
 	name: string
+	scale: number
+	symmetric: boolean
 	heightmap: THREE.Texture	// heightmap texture
 	tex: THREE.Texture			// object texture
 	geo: THREE.Geometry			// object geometry
@@ -27,15 +29,17 @@ export function createVegetation(params: VegetationOptions) {
 
 	const halfPatch = new THREE.Geometry()
 	halfPatch.merge(params.geo)
-
-	params.geo.rotateY(Math.PI)
-	halfPatch.merge(params.geo)
+	
+	if (params.symmetric) {
+		params.geo.rotateY(Math.PI)
+		halfPatch.merge(params.geo)
+	}
 
 	const geo = new THREE.InstancedBufferGeometry()
 	geo.fromGeometry(halfPatch)
 	halfPatch.dispose()
-
-	geo.scale(2,2,2)
+	const scale = params.scale
+	geo.scale(scale,scale,scale)
 
 	if ( geo.attributes['color'] ) {
 
