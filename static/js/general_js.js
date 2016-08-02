@@ -13,7 +13,7 @@ $(document).ready(function() {
               $("div#pop-up").css('top', e.pageY + moveDown).css('left', e.pageX + moveLeft);
             });
 
-      //On mouse out
+      // On mouse out
     },function(e){
             $('div#pop-up').hide()
             $(this).css("background-color", "white");
@@ -31,10 +31,10 @@ $(document).ready(function() {
         }
     });
 
+    // Function for moving slider bar and calling 3D function on state class entry
     $(".veg_state_class_entry").keyup(function(){
-        test=this
         if (typeof this.id != "undefined") {
-            veg_type_id=test.id.split("_")[1]
+            veg_type_id=this.id.split("_")[1]
         }
         else {
             veg_type_id = "1"
@@ -45,15 +45,18 @@ $(document).ready(function() {
         for (i = 1; i < 18; i++){
             veg_state_class_value=$("#veg_"+veg_type_id+"_"+i).val()
             veg_state_class_value_totals+=parseFloat(veg_state_class_value)
-            console.log(veg_state_class_value)
             veg_slider_values_state_class[veg_type].push(veg_state_class_value)
 
         }
         // To avoid initialization error
         if ($("#veg" + veg_type_id + "_slider").slider()) {
             $("#veg" + veg_type_id + "_slider").slider("value", veg_state_class_value_totals)
-            $('#veg1_slider').trigger('change');
-            $('#veg1_slider').trigger('slidechange');
+            // Unable to trigger slide callback on state class input
+            // $('#veg1_slider').trigger('change');
+            // $('#veg1_slider').trigger('slidechange');
+            var this_veg_slider_value=$("#veg" + veg_type_id  + "_slider").slider("option", "value");
+            veg_slider_values[veg_type]=this_veg_slider_value
+            createWebGL(veg_slider_values)
         }
         $( "#veg" + veg_type_id + "_label" ).val( parseInt(veg_state_class_value_totals) + "%");
     }).keyup();
@@ -113,8 +116,8 @@ function run_st_sim(feature_id) {
     $.ajax({
         url: "", // the endpoint (for a specific view configured in urls.conf /view_name/)
         type: "POST", // http method
-        //data: {'scenario': scenario, 'feature_id': feature_id},
-        data: {'scenario': scenario, 'veg_slider_values':veg_slider_values_string, 'veg_slider_values_state_class':veg_slider_values_state_class_string},
+        //data: {'scenario': scenario, 'veg_slider_values':veg_slider_values_string, 'veg_slider_values_state_class':veg_slider_values_state_class_string},
+        data: {'scenario': scenario, 'veg_slider_values_state_class':veg_slider_values_state_class_string},
 
         // handle a successful response
         success: function (json) {

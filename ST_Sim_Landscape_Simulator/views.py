@@ -49,8 +49,6 @@ def index(request):
         return render(request, 'index.html')
 
     else:
-        veg_slider_values=request.POST.get('veg_slider_values')
-        veg_slider_values_dict=json.loads(veg_slider_values)
 
         veg_slider_values_state_class=request.POST.get('veg_slider_values_state_class')
         veg_slider_values_state_class_dict=json.loads(veg_slider_values_state_class)
@@ -58,11 +56,11 @@ def index(request):
         # for csv initial conditions
         # feature_id=request.POST.get('feature_id')
         # context=run_st_sim(st_scenario,feature_id)
-        context=run_st_sim(st_scenario,veg_slider_values_dict, veg_slider_values_state_class_dict)
+        context=run_st_sim(st_scenario, veg_slider_values_state_class_dict)
         return HttpResponse(context)
 
 #def run_st_sim(st_scenario,feature_id): # for csv initial conditions
-def run_st_sim(st_scenario,veg_slider_values_dict, veg_slider_values_state_class_dict):
+def run_st_sim(st_scenario, veg_slider_values_state_class_dict):
     print veg_slider_values_state_class_dict
 
     #st_initial_conditions_file=static_files_dir + "/static/st_sim/initial_conditions/" + feature_id + ".csv"
