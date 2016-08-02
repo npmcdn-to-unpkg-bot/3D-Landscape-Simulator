@@ -371,7 +371,7 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asse
                 { name: 'tree', url: 'static/json/geometry/tree.json' },
                 //{name: 'juniper', url: 'static/json/geometry/juniper2.json'},
                 { name: 'juniper', url: 'static/json/geometry/tree_simple.json' },
-                { name: 'sagebrush', url: 'static/json/geometry/sagebrush.json' }
+                { name: 'sagebrush', url: 'static/json/geometry/sagebrush_simple.json' }
             ] /*,
             statistics: [
                 {name: 'vegclass_stats', url: ""}
@@ -513,7 +513,7 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asse
         }
         function getVegetationScale(vegname) {
             if (vegname.includes("Sagebrush")) {
-                return 4.0;
+                return 8.0;
             }
             else if (vegname.includes("Juniper")) {
                 return 1.;

@@ -21,7 +21,7 @@ void main() {
     	}
     	else {
             // blend the chosen color with the color of the texture
-            color = vec4(color.r * vegColor.r, color.g * vegColor.g, color.b * vegColor.b, 1.0);
+            color = vec4(color.r * vegColor.r + 0.1, color.g * vegColor.g + 0.1, color.b * vegColor.b + 0.1, 1.0);
     		gl_FragColor = vec4(color.r, color.g, color.b, 1.0);
     	    //gl_FragColor = vec4(vegColor.r, vegColor.g, vegColor.b, 1.0);
         }

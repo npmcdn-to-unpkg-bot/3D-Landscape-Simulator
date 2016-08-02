@@ -86,7 +86,7 @@ export default function run(container_id: string, params: VegParams) {
 				{name: 'tree', url: 'static/json/geometry/tree.json'},
 				//{name: 'juniper', url: 'static/json/geometry/juniper2.json'},
 				{name: 'juniper', url: 'static/json/geometry/tree_simple.json'},
-				{name: 'sagebrush', url: 'static/json/geometry/sagebrush.json'}
+				{name: 'sagebrush', url: 'static/json/geometry/sagebrush_simple.json'}
 			]/*,
 			statistics: [
 				{name: 'vegclass_stats', url: ""}
@@ -253,7 +253,7 @@ export default function run(container_id: string, params: VegParams) {
 	function getVegetationScale(vegname: string) : number {
 
 		if (vegname.includes("Sagebrush")) {
-			return 4.0
+			return 8.0
 		} else if (vegname.includes("Juniper")) {
 			return 1.
 		} else if (vegname.includes("Mahogany")) {
