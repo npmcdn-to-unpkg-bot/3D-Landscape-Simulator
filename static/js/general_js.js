@@ -195,7 +195,7 @@ $(function() {
           $( "#veg1_label" ).val( ui.value + "%");
           $( "#total_input_percent").html(total_input_percent + ui.value + "%");
           total_percent_action(total_input_percent + ui.value)
-          landscape_viewer.updateVegetation(veg_slider_values, extent)
+          landscape_viewer.updateVegetation(veg_slider_values)
 
           veg_proportion1=(ui.value/18).toFixed(1)
           for (i=1; i <= 18; i++) {
@@ -231,7 +231,7 @@ $(function() {
           $( "#veg2_label" ).val( ui.value + "%");
           $( "#total_input_percent").html(total_input_percent + ui.value + "%");
           total_percent_action(total_input_percent + ui.value)
-          landscape_viewer.updateVegetation(veg_slider_values, extent)
+          landscape_viewer.updateVegetation(veg_slider_values)
 
           veg_proportion2=(ui.value/18).toFixed(1)
           for (i=1; i <= 18; i++) {
@@ -265,7 +265,7 @@ $(function() {
             $( "#veg3_label" ).val( ui.value + "%");
             $( "#total_input_percent").html(total_input_percent + ui.value + "%");
             total_percent_action(total_input_percent + ui.value)
-            landscape_viewer.updateVegetation(veg_slider_values, extent)
+            landscape_viewer.updateVegetation(veg_slider_values)
 
             veg_proportion3=(ui.value/18).toFixed(1)
             for (i=1; i <= 18; i++) {
@@ -299,7 +299,7 @@ $(function() {
             $( "#veg4_label" ).val( ui.value + "%");
             $( "#total_input_percent").html(total_input_percent + ui.value + "%");
             total_percent_action(total_input_percent + ui.value)
-            landscape_viewer.updateVegetation(veg_slider_values, extent)
+            landscape_viewer.updateVegetation(veg_slider_values)
 
             veg_proportion4=(ui.value/18).toFixed(1)
             for (i=1; i <= 18; i++) {
@@ -333,7 +333,7 @@ $(function() {
             $( "#veg5_label" ).val( ui.value + "%");
             $( "#total_input_percent").html(total_input_percent + ui.value + "%");
             total_percent_action(total_input_percent + ui.value)
-            landscape_viewer.updateVegetation(veg_slider_values, extent)
+            landscape_viewer.updateVegetation(veg_slider_values)
 
             veg_proportion5=(ui.value/18).toFixed(1)
             for (i=1; i <= 18; i++) {
@@ -367,7 +367,7 @@ $(function() {
             $( "#veg6_label" ).val( ui.value + "%");
             $( "#total_input_percent").html(total_input_percent + ui.value + "%");
             total_percent_action(total_input_percent + ui.value)
-            landscape_viewer.updateVegetation(veg_slider_values, extent)
+            landscape_viewer.updateVegetation(veg_slider_values)
 
             veg_proportion6=(ui.value/18).toFixed(1)
             for (i=1; i <= 18; i++) {
@@ -401,7 +401,7 @@ $(function() {
             $( "#veg7_label" ).val( ui.value + "%");
             $( "#total_input_percent").html(total_input_percent + ui.value + "%");
             total_percent_action(total_input_percent + ui.value)
-            landscape_viewer.updateVegetation(veg_slider_values, extent)
+            landscape_viewer.updateVegetation(veg_slider_values)
 
             veg_proportion7=(ui.value/18).toFixed(1)
             for (i=1; i <= 18; i++) {
