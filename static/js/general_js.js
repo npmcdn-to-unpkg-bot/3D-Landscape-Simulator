@@ -56,7 +56,9 @@ $(document).ready(function() {
             // $('#veg1_slider').trigger('slidechange');
             var this_veg_slider_value=$("#veg" + veg_type_id  + "_slider").slider("option", "value");
             veg_slider_values[veg_type]=this_veg_slider_value
-            createWebGL(veg_slider_values)
+            if (landscape_viewer.isInitialized()) {
+                landscape_viewer.updateVegetation(veg_slider_values)
+            }
         }
         $( "#veg" + veg_type_id + "_label" ).val( parseInt(veg_state_class_value_totals) + "%");
     }).keyup();
@@ -76,7 +78,7 @@ $(document).ajaxComplete(function() {
 
 function show_input_options (){
 
-    $("#scene").html("<img style='position:relative; top:-10px; border-radius:6px;width:100%' src='" + static_url + "img/3D_scene.png'>")
+    //$("#scene").html("<img style='position:relative; top:-10px; border-radius:6px;width:100%' src='" + static_url + "img/3D_scene.png'>")
 
     $("#selected_features").html("Currently Selected: " + feature_id);
 
@@ -95,6 +97,8 @@ function show_input_options (){
     $("#scene").show()
     $("#map").hide()
     $("#button_list").css("visibility", "visible")
+
+    landscape_viewer.resize()
 
     $("#run_button").show();
 
@@ -137,7 +141,7 @@ function run_st_sim(feature_id) {
 
             $("#running_st_sim").html("ST-Sim Model Results")
 
-            createWebGL(results_data_json)
+            landscape_viewer.updateVegetation(results_data_json)
             previous_feature_id=feature_id
 
         },
@@ -175,6 +179,8 @@ var veg_slider_values={
     "Wyoming and Basin Big Sagebrush Upland":veg7_slider
 };
 
+var landscape_viewer = require('app').default('scene', veg_slider_values);
+
 var veg_slider_values_state_class={}
 
 $(function() {
@@ -185,14 +191,11 @@ $(function() {
       max: 100,
       step:1,
       slide: function( event, ui ) {
-
-          $("#scene").html("<img style='position:relative; top:-10px; border-radius:6px;width:100%' src='" + static_url + "img/veg_scene.png'>")
-
           veg_slider_values["Basin Big Sagebrush Upland"]=ui.value
           $( "#veg1_label" ).val( ui.value + "%");
           $( "#total_input_percent").html(total_input_percent + ui.value + "%");
           total_percent_action(total_input_percent + ui.value)
-          createWebGL(veg_slider_values, extent)
+          landscape_viewer.updateVegetation(veg_slider_values, extent)
 
           veg_proportion1=(ui.value/18).toFixed(1)
           for (i=1; i <= 18; i++) {
@@ -228,7 +231,7 @@ $(function() {
           $( "#veg2_label" ).val( ui.value + "%");
           $( "#total_input_percent").html(total_input_percent + ui.value + "%");
           total_percent_action(total_input_percent + ui.value)
-          createWebGL(veg_slider_values, extent)
+          landscape_viewer.updateVegetation(veg_slider_values, extent)
 
           veg_proportion2=(ui.value/18).toFixed(1)
           for (i=1; i <= 18; i++) {
@@ -262,7 +265,7 @@ $(function() {
             $( "#veg3_label" ).val( ui.value + "%");
             $( "#total_input_percent").html(total_input_percent + ui.value + "%");
             total_percent_action(total_input_percent + ui.value)
-            createWebGL(veg_slider_values, extent)
+            landscape_viewer.updateVegetation(veg_slider_values, extent)
 
             veg_proportion3=(ui.value/18).toFixed(1)
             for (i=1; i <= 18; i++) {
@@ -296,7 +299,7 @@ $(function() {
             $( "#veg4_label" ).val( ui.value + "%");
             $( "#total_input_percent").html(total_input_percent + ui.value + "%");
             total_percent_action(total_input_percent + ui.value)
-            createWebGL(veg_slider_values, extent)
+            landscape_viewer.updateVegetation(veg_slider_values, extent)
 
             veg_proportion4=(ui.value/18).toFixed(1)
             for (i=1; i <= 18; i++) {
@@ -330,7 +333,7 @@ $(function() {
             $( "#veg5_label" ).val( ui.value + "%");
             $( "#total_input_percent").html(total_input_percent + ui.value + "%");
             total_percent_action(total_input_percent + ui.value)
-            createWebGL(veg_slider_values, extent)
+            landscape_viewer.updateVegetation(veg_slider_values, extent)
 
             veg_proportion5=(ui.value/18).toFixed(1)
             for (i=1; i <= 18; i++) {
@@ -364,7 +367,7 @@ $(function() {
             $( "#veg6_label" ).val( ui.value + "%");
             $( "#total_input_percent").html(total_input_percent + ui.value + "%");
             total_percent_action(total_input_percent + ui.value)
-            createWebGL(veg_slider_values, extent)
+            landscape_viewer.updateVegetation(veg_slider_values, extent)
 
             veg_proportion6=(ui.value/18).toFixed(1)
             for (i=1; i <= 18; i++) {
@@ -398,7 +401,7 @@ $(function() {
             $( "#veg7_label" ).val( ui.value + "%");
             $( "#total_input_percent").html(total_input_percent + ui.value + "%");
             total_percent_action(total_input_percent + ui.value)
-            createWebGL(veg_slider_values, extent)
+            landscape_viewer.updateVegetation(veg_slider_values, extent)
 
             veg_proportion7=(ui.value/18).toFixed(1)
             for (i=1; i <= 18; i++) {
@@ -444,6 +447,3 @@ function activate_scene(){
 
 }
 
-function createWebGL(json_data,extent){
-    console.log(json_data,extent)
-}

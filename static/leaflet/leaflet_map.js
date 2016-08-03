@@ -23,7 +23,8 @@ counties.on('click', function (e) {
     feature_id = e.layer.feature.properties.NAME
     console.log(e.layer)
 
-    extent=[bottom,top,left,right]
+    extent=[top,bottom,right,left]
+    landscape_viewer.updateTerrain(extent, true)  // also updates the vegetation to the user-specified conditions
 
     var user_wkt = "POINT(" + e.latlng.lng + " " + e.latlng.lat + ")";
 
