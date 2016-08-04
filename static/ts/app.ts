@@ -45,6 +45,7 @@ export default function run(container_id: string, params: VegParams) {
 	controls.enableKeys = false
 	camera.position.z = 40
 	camera.position.y = 100
+	controls.maxPolarAngle = Math.PI / 2
 
 	// Custom event handlers since we only want to render when something happens.
 	renderer.domElement.addEventListener('mousedown', animate, false)
@@ -120,6 +121,7 @@ export default function run(container_id: string, params: VegParams) {
 			spatialExtent = extent
 			if (terrain != undefined) {
 				scene.remove(terrain)
+				terrain.geometry.dispose()
 				for (var key in vegParams) {
 					scene.remove(scene.getObjectByName(key))
 				}
@@ -134,7 +136,13 @@ export default function run(container_id: string, params: VegParams) {
 					{name: 'heightmap_stats', url: statsPath}
 				]
 			},
-			function(loadedAssets: Assets) {
+	 		function(loadedAssets: Assets) {
+				// compute the heights from this heightmap
+				// Only do this once per terrain. We base our clusters off of this
+				const heightmap = loadedAssets.textures['heightmap']
+				const heightmap_stats = loadedAssets.statistics['heightmap_stats']
+				const heights = computeHeights(heightmap, heightmap_stats)
+
 				terrain = createTerrain({
 					rock: masterAssets.textures['terrain_rock'],
 					snow: masterAssets.textures['terrain_snow'],
@@ -144,7 +152,9 @@ export default function run(container_id: string, params: VegParams) {
 					vertShader: masterAssets.text['terrain_vert'],
 					fragShader: masterAssets.text['terrain_frag'],
 					data: loadedAssets.statistics['heightmap_stats'],
-					heightmap: loadedAssets.textures['heightmap'],
+					//heightmap: loadedAssets.textures['heightmap'],
+					heightmap: heightmap,
+					heights: heights,
 					disp: globals.TERRAIN_DISP
 				})
 				scene.add(terrain)
@@ -155,11 +165,6 @@ export default function run(container_id: string, params: VegParams) {
 					minHeight: 900.0
 				}
 
-				// compute the heights from this heightmap
-				// Only do this once per terrain. We base our clusters off of this
-				const heightmap = loadedAssets.textures['heightmap']
-				const heightmap_stats = loadedAssets.statistics['heightmap_stats']
-				const heights = computeHeights(heightmap, heightmap_stats)
 				let baseColor = new THREE.Color(55,80,100)	// TODO - better colors
 				let i = 0
 				const maxColors = 7
@@ -222,9 +227,9 @@ export default function run(container_id: string, params: VegParams) {
 		let idx: number
 		for (let y = 0; y < h; ++y) {
 			for (let x = 0; x < w; ++x) {
-				// flip vertical because textures are Y+
-				idx = (x + (h-y-1) * w) * 4
-	
+				// idx pixel we want to get. Image has rgba, but we only need the r channel
+				idx = (x + y * w) * 4
+
 				// scale & store this altitude
 				heights[x + y * w] = data[idx] / 255.0 * stats.dem_max
 			}

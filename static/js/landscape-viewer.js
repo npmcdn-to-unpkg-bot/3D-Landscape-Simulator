@@ -28,16 +28,18 @@ define("terrain", ["require", "exports"], function (require, exports) {
         params.water.wrapS = params.water.wrapT = THREE.RepeatWrapping;
         const geo = new THREE.PlaneBufferGeometry(width, height, width - 1, height - 1);
         geo.rotateX(-Math.PI / 2);
+        let vertices = geo.getAttribute('position');
+        for (var i = 0; i < vertices.count; i++) {
+            vertices.setY(i, params.heights[i] * params.disp);
+        }
+        geo.computeVertexNormals();
         const mat = new THREE.ShaderMaterial({
             uniforms: {
                 heightmap: { type: "t", value: params.heightmap },
-                maxHeight: { type: "f", value: maxHeight },
-                disp: { type: "f", value: params.disp },
                 rock: { type: "t", value: params.rock },
                 snow: { type: "t", value: params.snow },
                 grass: { type: "t", value: params.grass },
                 sand: { type: "t", value: params.sand },
-                water: { type: "t", value: params.water }
             },
             vertexShader: params.vertShader,
             fragmentShader: params.fragShader
@@ -336,6 +338,7 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asse
         controls.enableKeys = false;
         camera.position.z = 40;
         camera.position.y = 100;
+        controls.maxPolarAngle = Math.PI / 2;
         // Custom event handlers since we only want to render when something happens.
         renderer.domElement.addEventListener('mousedown', animate, false);
         renderer.domElement.addEventListener('mouseup', stopAnimate, false);
@@ -398,6 +401,7 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asse
                 spatialExtent = extent;
                 if (terrain != undefined) {
                     scene.remove(terrain);
+                    terrain.geometry.dispose();
                     for (var key in vegParams) {
                         scene.remove(scene.getObjectByName(key));
                     }
@@ -412,6 +416,11 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asse
                         { name: 'heightmap_stats', url: statsPath }
                     ]
                 }, function (loadedAssets) {
+                    // compute the heights from this heightmap
+                    // Only do this once per terrain. We base our clusters off of this
+                    const heightmap = loadedAssets.textures['heightmap'];
+                    const heightmap_stats = loadedAssets.statistics['heightmap_stats'];
+                    const heights = computeHeights(heightmap, heightmap_stats);
                     terrain = terrain_1.createTerrain({
                         rock: masterAssets.textures['terrain_rock'],
                         snow: masterAssets.textures['terrain_snow'],
@@ -421,7 +430,9 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asse
                         vertShader: masterAssets.text['terrain_vert'],
                         fragShader: masterAssets.text['terrain_frag'],
                         data: loadedAssets.statistics['heightmap_stats'],
-                        heightmap: loadedAssets.textures['heightmap'],
+                        //heightmap: loadedAssets.textures['heightmap'],
+                        heightmap: heightmap,
+                        heights: heights,
                         disp: globals.TERRAIN_DISP
                     });
                     scene.add(terrain);
@@ -430,11 +441,6 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asse
                         maxHeight: 3100.0,
                         minHeight: 900.0
                     };
-                    // compute the heights from this heightmap
-                    // Only do this once per terrain. We base our clusters off of this
-                    const heightmap = loadedAssets.textures['heightmap'];
-                    const heightmap_stats = loadedAssets.statistics['heightmap_stats'];
-                    const heights = computeHeights(heightmap, heightmap_stats);
                     let baseColor = new THREE.Color(55, 80, 100); // TODO - better colors
                     let i = 0;
                     const maxColors = 7;
@@ -488,8 +494,8 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asse
             let idx;
             for (let y = 0; y < h; ++y) {
                 for (let x = 0; x < w; ++x) {
-                    // flip vertical because textures are Y+
-                    idx = (x + (h - y - 1) * w) * 4;
+                    // idx pixel we want to get. Image has rgba, but we only need the r channel
+                    idx = (x + y * w) * 4;
                     // scale & store this altitude
                     heights[x + y * w] = data[idx] / 255.0 * stats.dem_max;
                 }

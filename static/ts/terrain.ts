@@ -4,6 +4,7 @@ interface TerrainParams {
 
 	// heightmap
 	heightmap: THREE.Texture
+	heights: Float32Array
 	disp: number
 
 	// textures
@@ -37,17 +38,23 @@ export function createTerrain(params: TerrainParams) {
 
 	const geo = new THREE.PlaneBufferGeometry(width, height, width-1, height-1)
 	geo.rotateX(-Math.PI / 2)
+
+	let vertices = geo.getAttribute('position')
+
+	for (var i = 0; i < vertices.count; i++) {
+		vertices.setY(i, params.heights[i] * params.disp)
+	}
+
+	geo.computeVertexNormals()
+
 	const mat = new THREE.ShaderMaterial({
 		uniforms: {
-			heightmap: {type: "t", value: params.heightmap},
-			maxHeight: {type: "f", value: maxHeight},
-			disp: {type: "f", value: params.disp},
-			rock: {type: "t", value: params.rock},
-			snow: {type: "t", value: params.snow},
-			grass: {type: "t", value: params.grass},
-			sand: {type: "t", value: params.sand},
-			water: {type: "t", value: params.water}
-		},
+				heightmap: {type: "t", value: params.heightmap},
+				rock: {type: "t", value: params.rock},
+				snow: {type: "t", value: params.snow},
+				grass: {type: "t", value: params.grass},
+				sand: {type: "t", value: params.sand},
+			},
 		vertexShader: params.vertShader,
 		fragmentShader: params.fragShader
 	})

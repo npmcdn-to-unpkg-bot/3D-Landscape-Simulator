@@ -1,5 +1,4 @@
 // terrain.frag
-// phong lighting courtest of Prof. Orr, Willamette, via Angel.hpp
 
 // our textures to blend
 uniform sampler2D rock;
@@ -29,10 +28,9 @@ void main() {
     // These are really material properties and belong with each individual object but
     // for now we will lump them in here and they will apply to all objects.
     //ka = 0.2;
-    float ka = 0.2;
+    float ka = 0.4;
     float kd = 1.0;
-    //float ks = 0.2;   // too shiny
-    float ks = 0.15;
+    float ks = 0.8;
     float shininess = 20.0;
 
 	// unused, but useful for debugging
@@ -67,6 +65,9 @@ void main() {
     }
 
     vec4 finalColor = ambient + diffuse + specular;
+
     finalColor.a = 1.0;
+
+	//gl_FragColor = vec4(finalColor, 1.0);
 	gl_FragColor = finalColor;
 }
