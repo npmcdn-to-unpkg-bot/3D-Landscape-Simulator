@@ -19,6 +19,7 @@ export interface VegetationOptions {
 	vertShader: string			// vertex shader
 	fragShader: string			// fragment shader
 	disp: number				// vertical scaler
+	light_position: number[]	// light position - differs for certain vegetation types
 	
 	// Data regarding the shape of this vegcover
 	heightData: any
@@ -79,7 +80,8 @@ export function createVegetation(params: VegetationOptions) {
 			disp: {type: "f", value: params.disp},
 			vegColor: {type: "3f", value: [params.color.r/255.0, params.color.g/255.0, params.color.b/255.0]},	// implicit vec3 in shaders
 			vegMaxHeight: {type: "f", value: params.vegData.maxHeight},
-			vegMinHeight: {type: "f", value: params.vegData.minHeight}
+			vegMinHeight: {type: "f", value: params.vegData.minHeight},
+			light_position: {type: "3f", value: params.light_position}
 		},
 		vertexShader: params.vertShader,
 		fragmentShader: params.fragShader,

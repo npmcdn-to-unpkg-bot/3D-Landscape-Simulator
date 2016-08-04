@@ -28,6 +28,9 @@ export function createTerrain(params: TerrainParams) {
 	const width = params.data.dem_width
 	const height = params.data.dem_height
 
+	const terrain_light_position = [1.0, 3.0, -1.0]	// light position for the terrain, i.e. the ball in the sky
+													// shines from the top and slightly behind and west
+
 	// make sure the textures repeat wrap
 	params.heightmap.wrapS = params.heightmap.wrapT = THREE.RepeatWrapping
 	params.rock.wrapS = params.rock.wrapT = THREE.RepeatWrapping
@@ -54,6 +57,7 @@ export function createTerrain(params: TerrainParams) {
 				snow: {type: "t", value: params.snow},
 				grass: {type: "t", value: params.grass},
 				sand: {type: "t", value: params.sand},
+				light_position: {type: "3f", value: terrain_light_position}
 			},
 		vertexShader: params.vertShader,
 		fragmentShader: params.fragShader

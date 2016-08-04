@@ -192,6 +192,7 @@ export default function run(container_id: string, params: VegParams) {
 							vertShader: masterAssets.text['veg_vert'],
 							fragShader: masterAssets.text['veg_frag'],
 							disp: globals.TERRAIN_DISP,
+							light_position: getVegetationLightPosition(key),
 							clusters: createClusters(heights, heightmap_stats, vegclass_stats),
 							heightData: loadedAssets.statistics['heightmap_stats'],
 							vegData: vegclass_stats
@@ -241,6 +242,16 @@ export default function run(container_id: string, params: VegParams) {
 
 	function useSymmetry(vegname: string) : boolean {
 		return  !(vegname.includes('Sagebrush') || vegname.includes('Mahogany') || vegname.includes('Juniper'))
+	}
+
+	function getVegetationLightPosition(vegname: string) : number[] {
+
+		if (vegname.includes("Sagebrush")) {
+			return [0.0, -5.0, 5.0]
+		}
+
+		return [0.0, 5.0, 0.0]
+
 	}
 
 	function getVegetationType(vegname: string) : string {

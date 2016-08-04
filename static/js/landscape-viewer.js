@@ -19,6 +19,8 @@ define("terrain", ["require", "exports"], function (require, exports) {
         const maxHeight = params.data.dem_max;
         const width = params.data.dem_width;
         const height = params.data.dem_height;
+        const terrain_light_position = [1.0, 3.0, -1.0]; // light position for the terrain, i.e. the ball in the sky
+        // shines from the top and slightly behind and west
         // make sure the textures repeat wrap
         params.heightmap.wrapS = params.heightmap.wrapT = THREE.RepeatWrapping;
         params.rock.wrapS = params.rock.wrapT = THREE.RepeatWrapping;
@@ -40,6 +42,7 @@ define("terrain", ["require", "exports"], function (require, exports) {
                 snow: { type: "t", value: params.snow },
                 grass: { type: "t", value: params.grass },
                 sand: { type: "t", value: params.sand },
+                light_position: { type: "3f", value: terrain_light_position }
             },
             vertexShader: params.vertShader,
             fragmentShader: params.fragShader
@@ -96,7 +99,8 @@ define("veg", ["require", "exports", "globals"], function (require, exports, glo
                 disp: { type: "f", value: params.disp },
                 vegColor: { type: "3f", value: [params.color.r / 255.0, params.color.g / 255.0, params.color.b / 255.0] },
                 vegMaxHeight: { type: "f", value: params.vegData.maxHeight },
-                vegMinHeight: { type: "f", value: params.vegData.minHeight }
+                vegMinHeight: { type: "f", value: params.vegData.minHeight },
+                light_position: { type: "3f", value: params.light_position }
             },
             vertexShader: params.vertShader,
             fragmentShader: params.fragShader,
@@ -463,6 +467,7 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asse
                             vertShader: masterAssets.text['veg_vert'],
                             fragShader: masterAssets.text['veg_frag'],
                             disp: globals.TERRAIN_DISP,
+                            light_position: getVegetationLightPosition(key),
                             clusters: createClusters(heights, heightmap_stats, vegclass_stats),
                             heightData: loadedAssets.statistics['heightmap_stats'],
                             vegData: vegclass_stats
@@ -506,6 +511,12 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asse
         }
         function useSymmetry(vegname) {
             return !(vegname.includes('Sagebrush') || vegname.includes('Mahogany') || vegname.includes('Juniper'));
+        }
+        function getVegetationLightPosition(vegname) {
+            if (vegname.includes("Sagebrush")) {
+                return [0.0, -5.0, 5.0];
+            }
+            return [0.0, 5.0, 0.0];
         }
         function getVegetationType(vegname) {
             if (vegname.includes("Sagebrush")) {
