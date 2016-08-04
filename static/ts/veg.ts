@@ -1,6 +1,21 @@
 // veg.ts
 import * as globals from './globals'
 
+/***** lighting uniforms for vegetation - calculate only once for the whole app *****/
+// TODO - add a sun tone to the vegetation? or green specular/emissive?
+const AMBIENT = new THREE.Color(globals.WHITE)
+const DIFFUSE = new THREE.Color(globals.WHITE)
+const SPEC = new THREE.Color(globals.WHITE)
+const INTENSITY = 1.0
+const KA = 0.63
+const KD = 1.0
+const KS = 0.2
+const SHINY = 20.0
+AMBIENT.multiplyScalar(KA * INTENSITY)
+DIFFUSE.multiplyScalar(KD * INTENSITY)
+SPEC.multiplyScalar(KS * INTENSITY)
+
+/* Interface */
 export interface Cluster {
 	xpos: number
 	ypos: number
@@ -75,14 +90,22 @@ export function createVegetation(params: VegetationOptions) {
 	geo.addAttribute('hCoord', hCoords)
 	const mat = new THREE.RawShaderMaterial({
 		uniforms: {
+			// heights
 			heightmap: {type: "t", value: heightmap},
-			tex: {type: "t", value: params.tex},
 			maxHeight: {type: "f", value: maxHeight},
 			disp: {type: "f", value: params.disp},
+			// coloring texture
+			tex: {type: "t", value: params.tex},
 			vegColor: {type: "3f", value: vegColor},	// implicit vec3 in shaders
+			// elevation drawing bands - TODO, remove when going to spatial
 			vegMaxHeight: {type: "f", value: params.vegData.maxHeight},
 			vegMinHeight: {type: "f", value: params.vegData.minHeight},
-			light_position: {type: "3f", value: lightPosition}
+			// lighting
+			lightPosition: {type: "3f", value: lightPosition},
+			ambientProduct: {type: "c", value: AMBIENT},
+			diffuseProduct: {type: "c", value: DIFFUSE},
+			specularProduct: {type: "c", value: SPEC},
+			shininess: {type: "f", value: SHINY}
 		},
 		vertexShader: params.vertShader,
 		fragmentShader: params.fragShader,

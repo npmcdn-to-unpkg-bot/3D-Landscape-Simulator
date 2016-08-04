@@ -10,17 +10,30 @@ define("globals", ["require", "exports"], function (require, exports) {
     exports.RESOLUTION = 800.0; // resolution of terrain (in meters)
     exports.TERRAIN_DISP = 5.0 / exports.RESOLUTION; // the amount of displacement we impose to actually 'see' the terrain
     exports.MAX_CLUSTER_RADIUS = 30.0; // max radius to grow around a cluster
+    // global colors
+    exports.WHITE = 'rgb(255,255,255)';
 });
 // terrain.ts
-define("terrain", ["require", "exports"], function (require, exports) {
+define("terrain", ["require", "exports", "globals"], function (require, exports, globals_1) {
     "use strict";
+    /***** lighting uniforms for terrain - calculate only once for the whole app *****/
+    const AMBIENT = new THREE.Color(globals_1.WHITE);
+    const DIFFUSE = new THREE.Color(globals_1.WHITE);
+    const SPEC = new THREE.Color(globals_1.WHITE);
+    const INTENSITY = 1.0;
+    const KA = 0.2;
+    const KD = 1.0;
+    const KS = 0.15;
+    const SHINY = 20.0;
+    AMBIENT.multiplyScalar(KA * INTENSITY);
+    DIFFUSE.multiplyScalar(KD * INTENSITY);
+    SPEC.multiplyScalar(KS * INTENSITY);
+    const SUN = [1.0, 3.0, -1.0]; // light position for the terrain, i.e. the ball in the sky
     function createTerrain(params) {
         // data for landscape width/height
         const maxHeight = params.data.dem_max;
         const width = params.data.dem_width;
         const height = params.data.dem_height;
-        const terrain_light_position = [1.0, 3.0, -1.0]; // light position for the terrain, i.e. the ball in the sky
-        // shines from the top and slightly behind and west
         // make sure the textures repeat wrap
         params.heightmap.wrapS = params.heightmap.wrapT = THREE.RepeatWrapping;
         params.rock.wrapS = params.rock.wrapT = THREE.RepeatWrapping;
@@ -37,12 +50,18 @@ define("terrain", ["require", "exports"], function (require, exports) {
         geo.computeVertexNormals();
         const mat = new THREE.ShaderMaterial({
             uniforms: {
+                // textures for color blending
                 heightmap: { type: "t", value: params.heightmap },
                 rock: { type: "t", value: params.rock },
                 snow: { type: "t", value: params.snow },
                 grass: { type: "t", value: params.grass },
                 sand: { type: "t", value: params.sand },
-                light_position: { type: "3f", value: terrain_light_position }
+                // lighting
+                lightPosition: { type: "3f", value: SUN },
+                ambientProduct: { type: "c", value: AMBIENT },
+                diffuseProduct: { type: "c", value: DIFFUSE },
+                specularProduct: { type: "c", value: SPEC },
+                shininess: { type: "f", value: SHINY }
             },
             vertexShader: params.vertShader,
             fragmentShader: params.fragShader
@@ -58,6 +77,19 @@ define("terrain", ["require", "exports"], function (require, exports) {
 });
 define("veg", ["require", "exports", "globals"], function (require, exports, globals) {
     "use strict";
+    /***** lighting uniforms for vegetation - calculate only once for the whole app *****/
+    // TODO - add a sun tone to the vegetation? or green specular/emissive?
+    const AMBIENT = new THREE.Color(globals.WHITE);
+    const DIFFUSE = new THREE.Color(globals.WHITE);
+    const SPEC = new THREE.Color(globals.WHITE);
+    const INTENSITY = 1.0;
+    const KA = 0.63;
+    const KD = 1.0;
+    const KS = 0.2;
+    const SHINY = 20.0;
+    AMBIENT.multiplyScalar(KA * INTENSITY);
+    DIFFUSE.multiplyScalar(KD * INTENSITY);
+    SPEC.multiplyScalar(KS * INTENSITY);
     function createVegetation(params) {
         const halfPatch = new THREE.Geometry();
         halfPatch.merge(params.geo);
@@ -96,14 +128,22 @@ define("veg", ["require", "exports", "globals"], function (require, exports, glo
         geo.addAttribute('hCoord', hCoords);
         const mat = new THREE.RawShaderMaterial({
             uniforms: {
+                // heights
                 heightmap: { type: "t", value: heightmap },
-                tex: { type: "t", value: params.tex },
                 maxHeight: { type: "f", value: maxHeight },
                 disp: { type: "f", value: params.disp },
+                // coloring texture
+                tex: { type: "t", value: params.tex },
                 vegColor: { type: "3f", value: vegColor },
+                // elevation drawing bands - TODO, remove when going to spatial
                 vegMaxHeight: { type: "f", value: params.vegData.maxHeight },
                 vegMinHeight: { type: "f", value: params.vegData.minHeight },
-                light_position: { type: "3f", value: lightPosition }
+                // lighting
+                lightPosition: { type: "3f", value: lightPosition },
+                ambientProduct: { type: "c", value: AMBIENT },
+                diffuseProduct: { type: "c", value: DIFFUSE },
+                specularProduct: { type: "c", value: SPEC },
+                shininess: { type: "f", value: SHINY }
             },
             vertexShader: params.vertShader,
             fragmentShader: params.fragShader,

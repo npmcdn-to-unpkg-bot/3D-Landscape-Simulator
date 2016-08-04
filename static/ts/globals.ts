@@ -12,3 +12,6 @@ export const RESOLUTION = 800.0			// resolution of terrain (in meters)
 export const TERRAIN_DISP = 5.0 / RESOLUTION // the amount of displacement we impose to actually 'see' the terrain
 export const MAX_CLUSTER_RADIUS = 30.0	// max radius to grow around a cluster
 
+// global colors
+
+export const WHITE = 'rgb(255,255,255)'

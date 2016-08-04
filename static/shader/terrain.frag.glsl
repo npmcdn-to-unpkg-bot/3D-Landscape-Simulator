@@ -11,6 +11,12 @@ uniform sampler2D sand;
 varying float vAmount;
 varying vec2 vUV;
 
+// light uniforms
+uniform vec3 ambientProduct;
+uniform vec3 diffuseProduct;
+uniform vec3 specularProduct;
+uniform float shininess;
+
 // light varyings
 varying vec3 fN;
 varying vec3 fE;
@@ -18,27 +24,6 @@ varying vec3 fL;
 
 
 void main() {
-
-	// compute lighting constants - TODO - import these as uniforms from the program
-    vec4 ambientColor = vec4(1.0, 1.0, 1.0, 1.0);	
-    vec4 diffuseColor = vec4(1.0, 1.0, 1.0, 1.0);
-    vec4 specularColor = vec4(1.0, 1.0, 1.0, 1.0);
-
-    float intensity = 1.0;
-
-    // These are really material properties and belong with each individual object but
-    // for now we will lump them in here and they will apply to all objects.
-    //ka = 0.2;
-    float ka = 0.2;
-    float kd = 1.0;
-    //float ks = 0.2;   // too shiny
-    float ks = 0.15;
-    float shininess = 20.0;
-
-	// unused, but useful for debugging
-	vec4 ambient_product = ka * intensity * ambientColor;
-	vec4 diffuse_product = kd * intensity * diffuseColor;
-	vec4 specular_product = ks * intensity * specularColor;
 
 	vec4 sand = (smoothstep(-0.01, 0.02, vAmount) - smoothstep(0.03, 0.04, vAmount)) * texture2D(sand, vUV * 20.0);
 	vec4 grassy = (smoothstep(-0.05, 0.14, vAmount) - smoothstep(0.15, 0.50, vAmount)) * texture2D( grass, vUV * 30.0 );
@@ -53,13 +38,13 @@ void main() {
 
     vec3 H = normalize( L + E );
 
-    vec4 ambient = ambient_product*myColor;
+    vec4 ambient = vec4(ambientProduct,1.0)*myColor;
 
     float diffDot = max(dot(L, N), 0.0);
-    vec4 diffuse = diffDot*diffuse_product*myColor;
+    vec4 diffuse = diffDot*vec4(diffuseProduct,1.0)*myColor;
 
     float specDot = pow(max(dot(N, H), 0.0), shininess);
-    vec4 specular = specDot*specular_product*myColor;
+    vec4 specular = specDot*vec4(specularProduct,1.0)*myColor;
 
     // discard the specular highlight if the light's behind the vertex
     if( dot(L, N) < 0.0 ) {
