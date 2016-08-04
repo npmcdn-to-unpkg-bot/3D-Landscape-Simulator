@@ -4,7 +4,7 @@ import * as globals from './globals'
 import {createTerrain} from './terrain'
 import {createVegetation, VegetationOptions, Cluster} from './veg'
 import {detectWebGL} from './utils'
-import {Loader, Assets} from './asset_loader'
+import {Loader, Assets} from './assetloader'
 
 //const RESOLUTION = 800.0
 //const TERRAIN_DISP = 5.0 / RESOLUTION
@@ -139,9 +139,9 @@ export default function run(container_id: string, params: VegParams) {
 	 		function(loadedAssets: Assets) {
 				// compute the heights from this heightmap
 				// Only do this once per terrain. We base our clusters off of this
-				const heightmap = loadedAssets.textures['heightmap']
-				const heightmap_stats = loadedAssets.statistics['heightmap_stats']
-				const heights = computeHeights(heightmap, heightmap_stats)
+				const heightmapTexture = loadedAssets.textures['heightmap']
+				const heightmapStats = loadedAssets.statistics['heightmap_stats']
+				const heights = computeHeights(heightmapTexture, heightmapStats)
 
 				terrain = createTerrain({
 					rock: masterAssets.textures['terrain_rock'],
@@ -152,18 +152,11 @@ export default function run(container_id: string, params: VegParams) {
 					vertShader: masterAssets.text['terrain_vert'],
 					fragShader: masterAssets.text['terrain_frag'],
 					data: loadedAssets.statistics['heightmap_stats'],
-					//heightmap: loadedAssets.textures['heightmap'],
-					heightmap: heightmap,
+					heightmap: heightmapTexture,
 					heights: heights,
 					disp: globals.TERRAIN_DISP
 				})
 				scene.add(terrain)
-
-				// TODO - replace values with source in loadedAssets
-				const vegclass_stats = {
-					maxHeight: 3100.0,
-					minHeight: 900.0
-				}
 
 				let baseColor = new THREE.Color(55,80,100)	// TODO - better colors
 				let i = 0
@@ -177,25 +170,22 @@ export default function run(container_id: string, params: VegParams) {
 					const g = Math.floor(i/maxColors * 130)
 					const vegColor = new THREE.Color(baseColor.r + r, baseColor.g + g, baseColor.b)
 
-					const vegtype = getVegetationType(key)
-					const vegscale = getVegetationScale(key)
+					const vegAssetName = getVegetationAssetsName(key)
+					const vegStats = getVegetationStats(key)
 
 					scene.add(createVegetation( 
 						{
 							heightmap: loadedAssets.textures['heightmap'],
 							name: key,
-							symmetric: useSymmetry(key),
-							scale: vegscale,
-							tex: masterAssets.textures[vegtype + '_material'],
-							geo: masterAssets.geometries[vegtype],
+							tex: masterAssets.textures[vegAssetName + '_material'],
+							geo: masterAssets.geometries[vegAssetName],
 							color: vegColor,
 							vertShader: masterAssets.text['veg_vert'],
 							fragShader: masterAssets.text['veg_frag'],
 							disp: globals.TERRAIN_DISP,
-							light_position: getVegetationLightPosition(key),
-							clusters: createClusters(heights, heightmap_stats, vegclass_stats),
+							clusters: createClusters(heights, heightmapStats, vegStats),
 							heightData: loadedAssets.statistics['heightmap_stats'],
-							vegData: vegclass_stats
+							vegData: vegStats
 						}
 					))
 
@@ -240,21 +230,7 @@ export default function run(container_id: string, params: VegParams) {
 		return heights
 	}
 
-	function useSymmetry(vegname: string) : boolean {
-		return  !(vegname.includes('Sagebrush') || vegname.includes('Mahogany') || vegname.includes('Juniper'))
-	}
-
-	function getVegetationLightPosition(vegname: string) : number[] {
-
-		if (vegname.includes("Sagebrush")) {
-			return [0.0, -5.0, 5.0]
-		}
-
-		return [0.0, 5.0, 0.0]
-
-	}
-
-	function getVegetationType(vegname: string) : string {
+	function getVegetationAssetsName(vegname: string) : string {
 
 		if (vegname.includes("Sagebrush")) {
 			return 'sagebrush'
@@ -266,19 +242,6 @@ export default function run(container_id: string, params: VegParams) {
 		}
 
 		return 'grass' 
-	}
-
-	function getVegetationScale(vegname: string) : number {
-
-		if (vegname.includes("Sagebrush")) {
-			return 8.0
-		} else if (vegname.includes("Juniper")) {
-			return 1.
-		} else if (vegname.includes("Mahogany")) {
-			return 15.0
-		}
-
-		return 1.0 
 	}
 
 	function createClusters(heights: Float32Array, hmstats: any, vegstats: any) : Cluster[] {
@@ -308,6 +271,28 @@ export default function run(container_id: string, params: VegParams) {
 		}
 
 		return finalClusters
+	}
+
+	function getVegetationStats(vegname: string) : any {
+
+		if (vegname.includes("Sagebrush")) {
+			return {
+				minHeight: 900.0,
+				maxHeight: 3100.0
+			}
+		}
+		else if (vegname.includes("Juniper")) {
+			return {
+				minHeight: 0.0,
+				maxHeight: 3100.0
+			}
+		}
+
+		return {
+			minHeight: 0.0,
+			maxHeight: 5000.0
+		}
+
 	}
 
 	function updateVegetation(newParams: VegParams) {

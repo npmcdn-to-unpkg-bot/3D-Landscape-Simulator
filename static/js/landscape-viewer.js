@@ -61,15 +61,16 @@ define("veg", ["require", "exports", "globals"], function (require, exports, glo
     function createVegetation(params) {
         const halfPatch = new THREE.Geometry();
         halfPatch.merge(params.geo);
-        if (params.symmetric) {
+        if (useSymmetry(params.name)) {
             params.geo.rotateY(Math.PI);
             halfPatch.merge(params.geo);
         }
         const geo = new THREE.InstancedBufferGeometry();
         geo.fromGeometry(halfPatch);
         halfPatch.dispose();
-        const scale = params.scale;
+        const scale = getVegetationScale(params.name);
         geo.scale(scale, scale, scale);
+        // always remove the color buffer since we are using textures
         if (geo.attributes['color']) {
             geo.removeAttribute('color');
         }
@@ -89,6 +90,8 @@ define("veg", ["require", "exports", "globals"], function (require, exports, glo
         const offsets = new THREE.InstancedBufferAttribute(new Float32Array(numVegInstances * 2), 2);
         const hCoords = new THREE.InstancedBufferAttribute(new Float32Array(numVegInstances * 2), 2);
         generateOffsets();
+        const vegColor = [params.color.r / 255.0, params.color.g / 255.0, params.color.b / 255.0];
+        const lightPosition = getVegetationLightPosition(params.name);
         geo.addAttribute('offset', offsets);
         geo.addAttribute('hCoord', hCoords);
         const mat = new THREE.RawShaderMaterial({
@@ -97,10 +100,10 @@ define("veg", ["require", "exports", "globals"], function (require, exports, glo
                 tex: { type: "t", value: params.tex },
                 maxHeight: { type: "f", value: maxHeight },
                 disp: { type: "f", value: params.disp },
-                vegColor: { type: "3f", value: [params.color.r / 255.0, params.color.g / 255.0, params.color.b / 255.0] },
+                vegColor: { type: "3f", value: vegColor },
                 vegMaxHeight: { type: "f", value: params.vegData.maxHeight },
                 vegMinHeight: { type: "f", value: params.vegData.minHeight },
-                light_position: { type: "3f", value: params.light_position }
+                light_position: { type: "3f", value: lightPosition }
             },
             vertexShader: params.vertShader,
             fragmentShader: params.fragShader,
@@ -145,6 +148,30 @@ define("veg", ["require", "exports", "globals"], function (require, exports, glo
         return mesh;
     }
     exports.createVegetation = createVegetation;
+    /****** Vegetation helper functions ******/
+    function useSymmetry(vegname) {
+        return !(vegname.includes('Sagebrush')
+            || vegname.includes('Mahogany')
+            || vegname.includes('Juniper'));
+    }
+    function getVegetationScale(vegname) {
+        if (vegname.includes("Sagebrush")) {
+            return 10.0;
+        }
+        else if (vegname.includes("Juniper")) {
+            return 1.;
+        }
+        else if (vegname.includes("Mahogany")) {
+            return 15.0;
+        }
+        return 1.0;
+    }
+    function getVegetationLightPosition(vegname) {
+        if (vegname.includes("Sagebrush")) {
+            return [0.0, -5.0, 5.0];
+        }
+        return [0.0, 5.0, 0.0];
+    }
 });
 // utils.ts
 define("utils", ["require", "exports"], function (require, exports) {
@@ -173,7 +200,7 @@ define("utils", ["require", "exports"], function (require, exports) {
 // LICENSE: MIT
 // Copyright (c) 2016 by Mike Linkovich;
 // Adapted for use by Taylor Mutch, CBI
-define("asset_loader", ["require", "exports"], function (require, exports) {
+define("assetloader", ["require", "exports"], function (require, exports) {
     "use strict";
     /**
      * Create a Loader instance
@@ -320,7 +347,7 @@ define("asset_loader", ["require", "exports"], function (require, exports) {
     exports.Loader = Loader; // end Loader
 });
 // app.ts
-define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asset_loader"], function (require, exports, globals, terrain_1, veg_1, utils_1, asset_loader_1) {
+define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "assetloader"], function (require, exports, globals, terrain_1, veg_1, utils_1, assetloader_1) {
     "use strict";
     function run(container_id, params) {
         const vegParams = params;
@@ -349,7 +376,7 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asse
         renderer.domElement.addEventListener('mousewheel', render, false);
         renderer.domElement.addEventListener('MozMousePixelScroll', render, false); // firefox
         // Load initial assets
-        const loader = asset_loader_1.Loader();
+        const loader = assetloader_1.Loader();
         loader.load({
             text: [
                 // terrain
@@ -422,9 +449,9 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asse
                 }, function (loadedAssets) {
                     // compute the heights from this heightmap
                     // Only do this once per terrain. We base our clusters off of this
-                    const heightmap = loadedAssets.textures['heightmap'];
-                    const heightmap_stats = loadedAssets.statistics['heightmap_stats'];
-                    const heights = computeHeights(heightmap, heightmap_stats);
+                    const heightmapTexture = loadedAssets.textures['heightmap'];
+                    const heightmapStats = loadedAssets.statistics['heightmap_stats'];
+                    const heights = computeHeights(heightmapTexture, heightmapStats);
                     terrain = terrain_1.createTerrain({
                         rock: masterAssets.textures['terrain_rock'],
                         snow: masterAssets.textures['terrain_snow'],
@@ -434,17 +461,11 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asse
                         vertShader: masterAssets.text['terrain_vert'],
                         fragShader: masterAssets.text['terrain_frag'],
                         data: loadedAssets.statistics['heightmap_stats'],
-                        //heightmap: loadedAssets.textures['heightmap'],
-                        heightmap: heightmap,
+                        heightmap: heightmapTexture,
                         heights: heights,
                         disp: globals.TERRAIN_DISP
                     });
                     scene.add(terrain);
-                    // TODO - replace values with source in loadedAssets
-                    const vegclass_stats = {
-                        maxHeight: 3100.0,
-                        minHeight: 900.0
-                    };
                     let baseColor = new THREE.Color(55, 80, 100); // TODO - better colors
                     let i = 0;
                     const maxColors = 7;
@@ -454,23 +475,20 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asse
                         const r = Math.floor(i / maxColors * 200);
                         const g = Math.floor(i / maxColors * 130);
                         const vegColor = new THREE.Color(baseColor.r + r, baseColor.g + g, baseColor.b);
-                        const vegtype = getVegetationType(key);
-                        const vegscale = getVegetationScale(key);
+                        const vegAssetName = getVegetationAssetsName(key);
+                        const vegStats = getVegetationStats(key);
                         scene.add(veg_1.createVegetation({
                             heightmap: loadedAssets.textures['heightmap'],
                             name: key,
-                            symmetric: useSymmetry(key),
-                            scale: vegscale,
-                            tex: masterAssets.textures[vegtype + '_material'],
-                            geo: masterAssets.geometries[vegtype],
+                            tex: masterAssets.textures[vegAssetName + '_material'],
+                            geo: masterAssets.geometries[vegAssetName],
                             color: vegColor,
                             vertShader: masterAssets.text['veg_vert'],
                             fragShader: masterAssets.text['veg_frag'],
                             disp: globals.TERRAIN_DISP,
-                            light_position: getVegetationLightPosition(key),
-                            clusters: createClusters(heights, heightmap_stats, vegclass_stats),
+                            clusters: createClusters(heights, heightmapStats, vegStats),
                             heightData: loadedAssets.statistics['heightmap_stats'],
-                            vegData: vegclass_stats
+                            vegData: vegStats
                         }));
                         ++i;
                     }
@@ -509,16 +527,7 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asse
             data = ctx = canvas = null;
             return heights;
         }
-        function useSymmetry(vegname) {
-            return !(vegname.includes('Sagebrush') || vegname.includes('Mahogany') || vegname.includes('Juniper'));
-        }
-        function getVegetationLightPosition(vegname) {
-            if (vegname.includes("Sagebrush")) {
-                return [0.0, -5.0, 5.0];
-            }
-            return [0.0, 5.0, 0.0];
-        }
-        function getVegetationType(vegname) {
+        function getVegetationAssetsName(vegname) {
             if (vegname.includes("Sagebrush")) {
                 return 'sagebrush';
             }
@@ -529,18 +538,6 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asse
                 return 'tree';
             }
             return 'grass';
-        }
-        function getVegetationScale(vegname) {
-            if (vegname.includes("Sagebrush")) {
-                return 8.0;
-            }
-            else if (vegname.includes("Juniper")) {
-                return 1.;
-            }
-            else if (vegname.includes("Mahogany")) {
-                return 15.0;
-            }
-            return 1.0;
         }
         function createClusters(heights, hmstats, vegstats) {
             const numClusters = Math.floor(Math.random() * globals.MAX_CLUSTERS_PER_VEG);
@@ -563,6 +560,24 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asse
                 }
             }
             return finalClusters;
+        }
+        function getVegetationStats(vegname) {
+            if (vegname.includes("Sagebrush")) {
+                return {
+                    minHeight: 900.0,
+                    maxHeight: 3100.0
+                };
+            }
+            else if (vegname.includes("Juniper")) {
+                return {
+                    minHeight: 0.0,
+                    maxHeight: 3100.0
+                };
+            }
+            return {
+                minHeight: 0.0,
+                maxHeight: 5000.0
+            };
         }
         function updateVegetation(newParams) {
             for (var key in newParams) {
