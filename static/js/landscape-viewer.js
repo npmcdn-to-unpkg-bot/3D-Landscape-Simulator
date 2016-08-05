@@ -121,11 +121,13 @@ define("veg", ["require", "exports", "globals"], function (require, exports, glo
         geo.maxInstancedCount = 0; // must initialize with 0, otherwise THREE throws an error
         const offsets = new THREE.InstancedBufferAttribute(new Float32Array(numVegInstances * 2), 2);
         const hCoords = new THREE.InstancedBufferAttribute(new Float32Array(numVegInstances * 2), 2);
+        const rotations = new THREE.InstancedBufferAttribute(new Float32Array(numVegInstances * 1), 1);
         generateOffsets();
         const vegColor = [params.color.r / 255.0, params.color.g / 255.0, params.color.b / 255.0];
         const lightPosition = getVegetationLightPosition(params.name);
         geo.addAttribute('offset', offsets);
         geo.addAttribute('hCoord', hCoords);
+        geo.addAttribute('rotation', rotations);
         const mat = new THREE.RawShaderMaterial({
             uniforms: {
                 // heights
@@ -154,7 +156,7 @@ define("veg", ["require", "exports", "globals"], function (require, exports, glo
         mesh.name = params.name; // Make the mesh selectable directly from the scene
         mesh.userData['numClusters'] = clusters.length;
         function generateOffsets(cells) {
-            let x, y, tx, ty;
+            let x, y, tx, ty, r;
             let width = widthExtent, height = heightExtent, numClusters = clusters.length;
             let cluster;
             for (let i = 0; i < offsets.count; i++) {
@@ -183,6 +185,7 @@ define("veg", ["require", "exports", "globals"], function (require, exports, glo
                 // update attribute buffers
                 offsets.setXY(i, x, y);
                 hCoords.setXY(i, tx, 1 - ty); // 1-ty since texture is flipped on Y axis
+                rotations.setX(i, 2 * Math.random()); // set a random rotation factor
             }
         }
         return mesh;

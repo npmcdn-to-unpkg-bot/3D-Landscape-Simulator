@@ -47,7 +47,7 @@ void main() {
 
     float vegHeight = vAmount * maxHeight;
 
-	if (vegHeight <= vegMaxHeight && vegHeight >= vegMinHeight) {
+	if (vegHeight <= vegMaxHeight && vegHeight > vegMinHeight) {
     	vec4 myColor = texture2D(tex, vUV);
     	if (myColor.a == 0.0) {  // if alpha is 0, discard
     		discard;

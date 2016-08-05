@@ -80,7 +80,8 @@ export function createVegetation(params: VegetationOptions) {
 
 	const offsets = new THREE.InstancedBufferAttribute(new Float32Array(numVegInstances * 2), 2)
 	const hCoords = new THREE.InstancedBufferAttribute(new Float32Array(numVegInstances * 2), 2)
-	
+	const rotations = new THREE.InstancedBufferAttribute(new Float32Array(numVegInstances * 1), 1)
+
 	generateOffsets()
 	
 	const vegColor = [params.color.r/255.0, params.color.g/255.0, params.color.b/255.0]
@@ -88,6 +89,8 @@ export function createVegetation(params: VegetationOptions) {
 
 	geo.addAttribute('offset', offsets)
 	geo.addAttribute('hCoord', hCoords)
+	geo.addAttribute('rotation', rotations)
+
 	const mat = new THREE.RawShaderMaterial({
 		uniforms: {
 			// heights
@@ -119,7 +122,7 @@ export function createVegetation(params: VegetationOptions) {
 
 	function generateOffsets(cells?: any) {
 	
-		let x: number, y:number, tx:number, ty:number
+		let x: number, y:number, tx:number, ty:number, r: number
 		let width = widthExtent, height = heightExtent, numClusters = clusters.length
 		let cluster: Cluster
 		for (let i = 0; i < offsets.count; i++) {
@@ -148,6 +151,7 @@ export function createVegetation(params: VegetationOptions) {
 			// update attribute buffers
 			offsets.setXY(i, x ,y)
 			hCoords.setXY(i, tx, 1-ty)	// 1-ty since texture is flipped on Y axis
+			rotations.setX(i, 2 * Math.random())	// set a random rotation factor
 		}
 
 	}
