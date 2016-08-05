@@ -442,7 +442,7 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asse
                 { name: 'tree_material', url: 'static/img/grass/grass_base.tga' },
                 { name: 'juniper_material', url: 'static/img/juniper/pine-leaf-diff.png' },
                 // sagebrush
-                { name: 'sagebrush_material', url: 'static/img/sagebrush/sagebrush_1.tga' }
+                { name: 'sagebrush_material', url: 'static/img/sagebrush/sagebrush_3.tga' }
             ],
             geometries: [
                 { name: 'grass', url: 'static/json/geometry/grass.json' },

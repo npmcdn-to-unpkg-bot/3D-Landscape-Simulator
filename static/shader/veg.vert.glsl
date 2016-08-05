@@ -28,6 +28,7 @@ uniform vec3 lightPosition;
 
 // light varyings
 varying vec3 fN;
+varying vec3 negfN;
 varying vec3 fE;
 varying vec3 fL;
 
@@ -56,6 +57,7 @@ void main() {
 
     // use for light in eye position. This makes things stand out more when the user is looking directly at it.
     fN = normalize( modelViewMatrix*vec4(newNormal, 0.0) ).xyz;
+    negfN = fN * -1.0;
     fE = -(modelViewMatrix*pos).xyz;
     fL = lightPosition - (modelViewMatrix*pos).xyz;
 

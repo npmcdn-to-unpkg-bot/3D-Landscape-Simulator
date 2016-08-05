@@ -23,6 +23,7 @@ uniform float shininess;
 varying vec3 fN;
 varying vec3 fE;
 varying vec3 fL;
+varying vec3 negfN;
 
 
 void main() {
@@ -58,7 +59,8 @@ void main() {
             myColor = vec4(myColor.r * vegColor.r + 0.1, myColor.g * vegColor.g + 0.1, myColor.b * vegColor.b + 0.1, 1.0);
     		
             // compute lighting
-            vec3 N = normalize(fN);
+            vec3 N = gl_FrontFacing ? normalize(fN) : normalize(negfN);
+            //vec3 N = gl_Front
             vec3 E = normalize(fE);
             vec3 L = normalize(fL);
         

@@ -6,10 +6,6 @@ import {createVegetation, VegetationOptions, Cluster} from './veg'
 import {detectWebGL} from './utils'
 import {Loader, Assets} from './assetloader'
 
-//const RESOLUTION = 800.0
-//const TERRAIN_DISP = 5.0 / RESOLUTION
-//const MAX_NUM_CLUSTERS = 10
-
 interface VegParams {		// THIS INTERFACE IS SUBJECT TO CHANGE
 	"Basin Big Sagebrush Upland"?: 				number, 
 	"Curleaf Mountain Mahogany"?: 				number, 
@@ -80,7 +76,7 @@ export default function run(container_id: string, params: VegParams) {
 				{name: 'tree_material', url: 'static/img/grass/grass_base.tga'},	// just a base green color
 				{name: 'juniper_material', url: 'static/img/juniper/pine-leaf-diff.png'},
 				// sagebrush
-				{name: 'sagebrush_material', url: 'static/img/sagebrush/sagebrush_1.tga'}
+				{name: 'sagebrush_material', url: 'static/img/sagebrush/sagebrush_3.tga'}
 			],
 			
 			geometries: [
