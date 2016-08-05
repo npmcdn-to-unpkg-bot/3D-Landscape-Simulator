@@ -17,10 +17,11 @@ attribute vec2 offset;
 attribute vec2 hCoord;
 attribute vec2 uv;
 attribute float rotation;
-
 attribute vec3 normal;
+
 varying vec2 vUV;     
 varying float vAmount;
+
 
 // light uniforms
 uniform vec3 lightPosition;
@@ -39,13 +40,13 @@ vec2 rotate (float x, float y, float r) {
 
 void main() {
     vUV = uv;
-
     vAmount = texture2D(heightmap, hCoord).r;
-
     vec3 newPosition = position;
+    vec3 newNormal = normal;
 
     // rotate around the y axis
     newPosition.xz = rotate(newPosition.x, newPosition.z, PI * rotation);
+    newNormal.xz = rotate(newNormal.x, newNormal.z, PI * rotation);
     
     // now translate to the offset position
     newPosition += vec3(offset.x, vAmount * maxHeight * disp, offset.y);
@@ -54,7 +55,7 @@ void main() {
     vec4 pos = vec4(newPosition,1.0);
 
     // use for light in eye position. This makes things stand out more when the user is looking directly at it.
-    fN = normalize( modelViewMatrix*vec4(normal, 0.0) ).xyz;
+    fN = normalize( modelViewMatrix*vec4(newNormal, 0.0) ).xyz;
     fE = -(modelViewMatrix*pos).xyz;
     fL = lightPosition - (modelViewMatrix*pos).xyz;
 
