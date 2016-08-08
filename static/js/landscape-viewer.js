@@ -84,6 +84,7 @@ define("veg", ["require", "exports", "globals"], function (require, exports, glo
     const SPEC = new THREE.Color(globals.WHITE);
     const INTENSITY = 1.0;
     const KA = 0.63;
+    //const KA = 0.2
     const KD = 1.0;
     const KS = 0.2;
     const SHINY = 20.0;
@@ -125,6 +126,7 @@ define("veg", ["require", "exports", "globals"], function (require, exports, glo
         generateOffsets();
         const vegColor = [params.color.r / 255.0, params.color.g / 255.0, params.color.b / 255.0];
         const lightPosition = getVegetationLightPosition(params.name);
+        const diffuseScale = getDiffuseScale(params.name);
         geo.addAttribute('offset', offsets);
         geo.addAttribute('hCoord', hCoords);
         geo.addAttribute('rotation', rotations);
@@ -142,8 +144,9 @@ define("veg", ["require", "exports", "globals"], function (require, exports, glo
                 vegMinHeight: { type: "f", value: params.vegData.minHeight },
                 // lighting
                 lightPosition: { type: "3f", value: lightPosition },
-                ambientProduct: { type: "c", value: AMBIENT },
+                ambientProduct: { type: "c", value: getAmbientProduct(params.name) },
                 diffuseProduct: { type: "c", value: DIFFUSE },
+                diffuseScale: { type: "f", value: diffuseScale },
                 specularProduct: { type: "c", value: SPEC },
                 shininess: { type: "f", value: SHINY }
             },
@@ -196,6 +199,18 @@ define("veg", ["require", "exports", "globals"], function (require, exports, glo
         return !(vegname.includes('Sagebrush')
             || vegname.includes('Mahogany')
             || vegname.includes('Juniper'));
+    }
+    function getDiffuseScale(vegname) {
+        if (vegname.includes("Sagebrush")) {
+            return 0.7;
+        }
+        return 0.0;
+    }
+    function getAmbientProduct(vegname) {
+        if (vegname.includes("Sagebrush")) {
+            return AMBIENT.multiplyScalar(0.2);
+        }
+        return AMBIENT;
     }
     function getVegetationScale(vegname) {
         if (vegname.includes("Sagebrush")) {
@@ -442,14 +457,15 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asse
                 { name: 'tree_material', url: 'static/img/grass/grass_base.tga' },
                 { name: 'juniper_material', url: 'static/img/juniper/pine-leaf-diff.png' },
                 // sagebrush
-                { name: 'sagebrush_material', url: 'static/img/sagebrush/sagebrush_3.tga' }
+                //{name: 'sagebrush_material', url: 'static/img/sagebrush/sagebrush_3.tga'}
+                { name: 'sagebrush_material', url: 'static/img/sagebrush/sagebrush_alt.png' }
             ],
             geometries: [
                 { name: 'grass', url: 'static/json/geometry/grass.json' },
                 { name: 'tree', url: 'static/json/geometry/tree.json' },
                 //{name: 'juniper', url: 'static/json/geometry/juniper2.json'},
                 { name: 'juniper', url: 'static/json/geometry/tree_simple.json' },
-                { name: 'sagebrush', url: 'static/json/geometry/sagebrush_simple.json' }
+                { name: 'sagebrush', url: 'static/json/geometry/sagebrush_simple4.json' }
             ] /*,
             statistics: [
                 {name: 'vegclass_stats', url: ""}

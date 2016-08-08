@@ -76,7 +76,8 @@ export default function run(container_id: string, params: VegParams) {
 				{name: 'tree_material', url: 'static/img/grass/grass_base.tga'},	// just a base green color
 				{name: 'juniper_material', url: 'static/img/juniper/pine-leaf-diff.png'},
 				// sagebrush
-				{name: 'sagebrush_material', url: 'static/img/sagebrush/sagebrush_3.tga'}
+				//{name: 'sagebrush_material', url: 'static/img/sagebrush/sagebrush_3.tga'}
+				{name: 'sagebrush_material', url: 'static/img/sagebrush/sagebrush_alt.png'}
 			],
 			
 			geometries: [
@@ -84,7 +85,7 @@ export default function run(container_id: string, params: VegParams) {
 				{name: 'tree', url: 'static/json/geometry/tree.json'},
 				//{name: 'juniper', url: 'static/json/geometry/juniper2.json'},
 				{name: 'juniper', url: 'static/json/geometry/tree_simple.json'},
-				{name: 'sagebrush', url: 'static/json/geometry/sagebrush_simple.json'}
+				{name: 'sagebrush', url: 'static/json/geometry/sagebrush_simple4.json'}
 			]/*,
 			statistics: [
 				{name: 'vegclass_stats', url: ""}

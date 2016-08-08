@@ -8,6 +8,7 @@ const DIFFUSE = new THREE.Color(globals.WHITE)
 const SPEC = new THREE.Color(globals.WHITE)
 const INTENSITY = 1.0
 const KA = 0.63
+//const KA = 0.2
 const KD = 1.0
 const KS = 0.2
 const SHINY = 20.0
@@ -86,6 +87,7 @@ export function createVegetation(params: VegetationOptions) {
 	
 	const vegColor = [params.color.r/255.0, params.color.g/255.0, params.color.b/255.0]
 	const lightPosition = getVegetationLightPosition(params.name)
+	const diffuseScale = getDiffuseScale(params.name)
 
 	geo.addAttribute('offset', offsets)
 	geo.addAttribute('hCoord', hCoords)
@@ -105,8 +107,9 @@ export function createVegetation(params: VegetationOptions) {
 			vegMinHeight: {type: "f", value: params.vegData.minHeight},
 			// lighting
 			lightPosition: {type: "3f", value: lightPosition},
-			ambientProduct: {type: "c", value: AMBIENT},
+			ambientProduct: {type: "c", value: getAmbientProduct(params.name)},
 			diffuseProduct: {type: "c", value: DIFFUSE},
+			diffuseScale: {type: "f", value: diffuseScale},
 			specularProduct: {type: "c", value: SPEC},
 			shininess: {type: "f", value: SHINY}
 		},
@@ -165,6 +168,23 @@ function useSymmetry(vegname: string) : boolean {
 	return  !(vegname.includes('Sagebrush')
 			  || vegname.includes('Mahogany') 
 			  || vegname.includes('Juniper'))
+}
+
+function getDiffuseScale(vegname: string) : number {
+	if (vegname.includes("Sagebrush")) {
+		return 0.7
+	}
+
+	return 0.0
+}
+
+function getAmbientProduct(vegname: string) : THREE.Color {
+	if (vegname.includes("Sagebrush")) {
+		return AMBIENT.multiplyScalar(0.2)
+	}
+
+	return AMBIENT
+
 }
 
 function getVegetationScale(vegname: string) : number {

@@ -16,6 +16,7 @@ varying float vAmount;
 // light color uniforms
 uniform vec3 ambientProduct;
 uniform vec3 diffuseProduct;
+uniform float diffuseScale;
 uniform vec3 specularProduct;
 uniform float shininess;
 
@@ -28,29 +29,11 @@ varying vec3 negfN;
 
 void main() {
 
-    // compute lighting constants - TODO - import these as uniforms from the program
-    //vec4 ambientColor = vec4(1.0, 1.0, 1.0, 1.0);   
-    //vec4 diffuseColor = vec4(1.0, 1.0, 1.0, 1.0);
-    //vec4 specularColor = vec4(1.0, 1.0, 1.0, 1.0);
-
-    //vloat intensity = 1.0;
-
-    //v/ These are really material properties and belong with each individual object but
-    //v/ for now we will lump them in here and they will apply to all objects.
-    //vloat ka = 0.63;
-    //vloat kd = 1.0;
-    //vloat ks = 0.2;
-    //vloat shininess = 20.0;
-
-    //vec4 ambient_product = ka * intensity * ambientColor;
-    //vec4 diffuse_product = kd * intensity * diffuseColor;
-    //vec4 specular_product = ks * intensity * specularColor;
-
     float vegHeight = vAmount * maxHeight;
 
 	if (vegHeight <= vegMaxHeight && vegHeight > vegMinHeight) {
     	vec4 myColor = texture2D(tex, vUV);
-    	if (myColor.a == 0.0) {  // if alpha is 0, discard
+    	if (myColor.a <= 0.3) {  // if alpha is 0, discard
     		discard;
     	}
     	else {
@@ -68,7 +51,7 @@ void main() {
         
             vec4 ambient = vec4(ambientProduct, 1.0)*myColor;
         
-            float diffDot = max(dot(L, N), 0.0);
+            float diffDot = max(dot(L, N), diffuseScale);
             vec4 diffuse = diffDot*vec4(diffuseProduct, 1.0)*myColor;
         
             float specDot = pow(max(dot(N, H), 0.0), shininess);
