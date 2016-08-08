@@ -92,14 +92,15 @@ def run_st_sim(st_scenario, veg_slider_values_state_class_dict):
     
     # Run ST-Sim with initial conditions and user specified scenario.
     st_initial_conditions_command="--import --lib=" + st_library + \
-        " --sheet=STSim_InitialConditionsNonSpatialDistribution table_name --file="  + st_initial_conditions_file +  " --sid=" + st_scenario
+        " --sheet=STSim_InitialConditionsNonSpatialDistribution --file="  + st_initial_conditions_file +  " --sid=" + st_scenario
     sub_proc.call(st_exe + " " + st_initial_conditions_command, shell=True)
 
-    os.remove(st_initial_conditions_file)
+    #os.remove(st_initial_conditions_file)
 
     # Run the model process
     # use Popen since we want to handle the output on the live
     st_run_model_command="--run --lib=" + st_library + " --sid="+st_scenario
+    print st_exe + " " + st_run_model_command
     test_model_run = sub_proc.Popen(st_exe + " " + st_run_model_command, shell=True, stdout=sub_proc.PIPE)
     result = ""
 
@@ -128,15 +129,23 @@ def run_st_sim(st_scenario, veg_slider_values_state_class_dict):
     reader=csv.reader(open(st_model_results_dir + os.sep + st_model_output_file))
     reader.next()
 
-    for row in reader:
-        key=row[3]
-        if key in results_dict:
-            results_dict[key]=results_dict[key]+ float(row[9])
-        else:
-            results_dict[key]=float(row[9])
 
-    rounded_dict = {k:round(v,1) for k, v in results_dict.items()}
-    sorted_dict=OrderedDict(sorted(rounded_dict.items(), key=lambda t: t[0]))
+    results_dict={}
+    for row in reader:
+        if row[1] not in results_dict:
+            # Iteration
+            results_dict[row[1]]={}
+        if row[2] not in results_dict[row[1]]:
+            # Timestep
+            results_dict[row[1]][row[2]]={}
+        if row[3] not in results_dict[row[1]][row[2]]:
+            # Stratum
+            results_dict[row[1]][row[2]][row[3]]={}
+        results_dict[row[1]][row[2]][row[3]][row[5]]=row[9]
+
+    #print results_dict['1']
+
+    sorted_dict=OrderedDict(sorted(results_dict.items(), key=lambda t: t[0]))
     results_json=json.dumps(sorted_dict)
     #print "\nResults: "
     #print results_json

@@ -15,6 +15,8 @@
     <script src="//code.jquery.com/jquery-1.10.2.js"></script>
     <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
 
+    <script type="text/javascript" src="{{STATIC_URL}}deps/tablesorter/jquery.tablesorter.js"></script>
+
     <!-- My CSS -->
     <link rel="stylesheet" href="{{STATIC_URL}}css/base.css" />
     <link href="{{STATIC_URL}}css/buttons.css" rel="stylesheet" type="text/css" />
@@ -35,7 +37,7 @@
             <!--<table style="width:100%" id="initial_conditions_table"><tr></tr></table>-->
             <div style="display:none" id="input_initial_veg">
                 <div class="steps">2. Specify Initial Vegetation Cover</div>
-                <table id="sliderTable">
+                <table id="sliderTable" class="tablesorter">
                      <tr>
                          <td>
                              <label for="amount_veg1"><span class="imageOverlayLink">Basin Big Sagebrush Upland</span></label>

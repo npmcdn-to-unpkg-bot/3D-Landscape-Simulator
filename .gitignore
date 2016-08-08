@@ -5,3 +5,6 @@ todo.txt
 ts_old/
 static/deps/*
 static/st_sim/*
+Archive/
+*.bat
+/static/docs/*
