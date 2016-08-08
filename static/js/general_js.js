@@ -1,5 +1,6 @@
 $(document).ready(function() {
 
+
     $(".current_slider_setting").val(0);
 
     // Tooltip popup on management scenarios
@@ -108,6 +109,9 @@ function show_input_options (){
 
 }
 
+iteration=1
+timestep=0
+
 // Send the scenario and initial conditions to ST-Sim.
 function run_st_sim(feature_id) {
     //$("#results_table").empty()
@@ -127,22 +131,59 @@ function run_st_sim(feature_id) {
         success: function (json) {
             $("#results_loading").empty()
             var response = JSON.parse(json)
-            var results_data_json = JSON.parse(response["results_json"])
+            results_data_json = JSON.parse(response["results_json"])
             var scenario_label = $("input:checked + label").text();
+
+            // sum state class values for display in scene and table header
+            results_data_json_totals={}
+            $.each(results_data_json[iteration][timestep], function(key,value){
+                var total=0
+                $.each(value, function(state_class,pct_cover) {
+                    total = total+parseFloat(pct_cover)
+                });
+                results_data_json_totals[key] = total * 100
+            });
+
+            // Create the Results Table
             if (typeof previous_feature_id == "undefined" || previous_feature_id != feature_id) {
                 $("#results_table").append("<tr><th colspan='3'>County: " + feature_id + "</th></tr>");
             }
-            $("#results_table").append("<tr><td class='sub_th' colspan='3'>" + scenario_label + "</td></tr>");
-            $.each(results_data_json, function(key,value) {
-                //console.log(key + ": " + value);
-                $("results_table").find("tr:gt(0)").remove();
-                $('#results_table').append('<tr><td>' + key + '</td><td>' + value + '%</td></tr>');
+            $("#results_table").append("<tr><td class='scenario_th' colspan='3'>Scenario: " + scenario_label + "</td></tr>");
+
+            // Create a list of all the veg types and create a sorted list.
+            var veg_type_list = new Array()
+            $.each(results_data_json[iteration][timestep], function(key,value){
+                veg_type_list.push(key)
+            })
+            var sorted_veg_type_list=veg_type_list.sort()
+
+            // Go through each sorted veg_type
+            $.each(sorted_veg_type_list, function(index, value) {
+                var veg_type=value
+                $("#results_table").append("<tr><td class='veg_type_th' colspan='3'>" + value + " " + (results_data_json_totals[value]).toFixed(2) + "%</td></tr>");
+
+                    // Create a list of all the state classes and create a sorted list.
+                    var state_list = new Array()
+                    $.each(results_data_json[iteration][timestep][value], function(key,value){
+                        state_list.push(key)
+                    })
+                    var sorted_state_list=state_list.sort()
+
+                    // Go through each sorted state class within the veg_type in this loop and write out the values
+                    $.each(sorted_state_list, function(index,value) {
+                        //console.log(key + ": " + value);
+                        $("results_table").find("tr:gt(0)").remove();
+                        $('#results_table').append('<tr><td>' + value + '</td><td>' + (results_data_json[iteration][timestep][veg_type][value] * 100).toFixed(1) + '%</td></tr>');
+                    });
             });
 
             $("#running_st_sim").html("ST-Sim Model Results")
 
-            landscape_viewer.updateVegetation(results_data_json)
+
+            landscape_viewer.updateVegetation(results_data_json_totals)
             previous_feature_id=feature_id
+
+            $("#results_table").tablesorter();
 
         },
 

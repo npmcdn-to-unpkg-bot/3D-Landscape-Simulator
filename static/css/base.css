@@ -4,6 +4,7 @@ body {
     overflow-x:hidden;
     font-family:Helvetica;
     font-size:.9em;
+    overflow-y: scroll;
 }
 
 canvas {
@@ -41,7 +42,8 @@ canvas {
 #button_container {
 	position: relative;
 	height: 79%;
-	width: 56.5%;
+    width:calc(100% - 695px);
+    left:0px;
 	top: -38px;
 	float: left;
 	border-radius: 5px;
@@ -57,6 +59,7 @@ canvas {
 }
 
 #scene {
+    position:relative;
     top:-10px;
     border-radius:5px;
     width: 100%;
@@ -65,11 +68,12 @@ canvas {
 
 #output {
 	position: relative;
-	width: 22%;
+	width: 350px;
 	float: right;
 	left: 5px;
     margin-right:1px;
 }
+
 #selected_features {
 	margin-top: 10px;
 	margin-bottom: 10px;
@@ -171,7 +175,15 @@ label, td{
     background-image: linear-gradient(top, rgba(255,255,255,0), rgba(255,255,255,0));
 }
 
-.sub_th{
+.scenario_th{
+    background-color:#4C9ED9;
+    color:white;
+    font-weight:bold;
+    text-align:center;
+    height:25px;
+}
+
+.veg_type_th{
     background-color:#DDDDDD;
     font-weight:bold;
     text-align:center;
