@@ -133,17 +133,9 @@ function run_st_sim(feature_id) {
             results_data_json = JSON.parse(response["results_json"])
             var scenario_label = $("input:checked + label").text();
 
-            // sum state class values for display in scene and table header
-            results_data_json_totals={}
-            $.each(results_data_json[iteration][timestep], function(key,value){
-                var total=0
-                $.each(value, function(state_class,pct_cover) {
-                    total = total+parseFloat(pct_cover)
-                });
-                results_data_json_totals[key] = total * 100
-            });
 
-            update_results_table(scenario_label)
+
+            update_results_table(scenario_label, timestep)
 
             landscape_viewer.updateVegetation(results_data_json_totals)
             previous_feature_id=feature_id
@@ -159,7 +151,17 @@ function run_st_sim(feature_id) {
     });
 }
 
-function update_results_table(scenario_label) {
+function update_results_table(scenario_label, timestep) {
+
+     // sum state class values for display in scene and table header
+    results_data_json_totals={}
+    $.each(results_data_json[iteration][timestep], function(key,value){
+        var total=0
+        $.each(value, function(state_class,pct_cover) {
+            total = total+parseFloat(pct_cover)
+        });
+        results_data_json_totals[key] = total * 100
+    });
 
     // Create the Results Table
     if (typeof previous_feature_id == "undefined" || previous_feature_id != feature_id) {
@@ -184,7 +186,7 @@ function update_results_table(scenario_label) {
         var veg_type = value
 
         // Write veg type and % headers
-        $("#results_table").append("<tr class='veg_type_percent_tr'><td class='veg_type_th' colspan='3'>" + value + " " + (results_data_json_totals[value]).toFixed(2) + "%" +
+        $("#results_table").append("<tr class='veg_type_percent_tr'><td class='veg_type_th' colspan='3'>" + value + " " + (results_data_json_totals[value]).toFixed(1) + "%" +
             "<span class='show_state_classes_results_link'> <img class='dropdown_arrows' src='" + static_url + "img/down_arrow.png'></span>" +
             "</td></tr>");
 
@@ -261,7 +263,7 @@ $(function() {
           total_percent_action(total_input_percent + ui.value)
           landscape_viewer.updateVegetation(veg_slider_values)
 
-          veg_proportion1=(ui.value/18).toFixed(1)
+          veg_proportion1=(ui.value/18).toFixed(2)
           for (i=1; i <= 18; i++) {
               $("#veg_1_"+i).val(veg_proportion1)
           }
@@ -297,7 +299,7 @@ $(function() {
           total_percent_action(total_input_percent + ui.value)
           landscape_viewer.updateVegetation(veg_slider_values)
 
-          veg_proportion2=(ui.value/18).toFixed(1)
+          veg_proportion2=(ui.value/18).toFixed(2)
           for (i=1; i <= 18; i++) {
               $("#veg_2_"+i).val(veg_proportion2)
           }
@@ -331,7 +333,7 @@ $(function() {
             total_percent_action(total_input_percent + ui.value)
             landscape_viewer.updateVegetation(veg_slider_values)
 
-            veg_proportion3=(ui.value/18).toFixed(1)
+            veg_proportion3=(ui.value/18).toFixed(2)
             for (i=1; i <= 18; i++) {
                 $("#veg_3_"+i).val(veg_proportion3)
             }
@@ -365,7 +367,7 @@ $(function() {
             total_percent_action(total_input_percent + ui.value)
             landscape_viewer.updateVegetation(veg_slider_values)
 
-            veg_proportion4=(ui.value/18).toFixed(1)
+            veg_proportion4=(ui.value/18).toFixed(2)
             for (i=1; i <= 18; i++) {
                 $("#veg_4_"+i).val(veg_proportion4)
             }
@@ -399,7 +401,7 @@ $(function() {
             total_percent_action(total_input_percent + ui.value)
             landscape_viewer.updateVegetation(veg_slider_values)
 
-            veg_proportion5=(ui.value/18).toFixed(1)
+            veg_proportion5=(ui.value/18).toFixed(2)
             for (i=1; i <= 18; i++) {
                 $("#veg_5_"+i).val(veg_proportion5)
             }
@@ -433,7 +435,7 @@ $(function() {
             total_percent_action(total_input_percent + ui.value)
             landscape_viewer.updateVegetation(veg_slider_values)
 
-            veg_proportion6=(ui.value/18).toFixed(1)
+            veg_proportion6=(ui.value/18).toFixed(2)
             for (i=1; i <= 18; i++) {
                 $("#veg_6_"+i).val(veg_proportion6)
             }
@@ -467,7 +469,7 @@ $(function() {
             total_percent_action(total_input_percent + ui.value)
             landscape_viewer.updateVegetation(veg_slider_values)
 
-            veg_proportion7=(ui.value/18).toFixed(1)
+            veg_proportion7=(ui.value/18).toFixed(2)
             for (i=1; i <= 18; i++) {
                 $("#veg_7_"+i).val(veg_proportion7)
             }

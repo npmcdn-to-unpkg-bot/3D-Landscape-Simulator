@@ -163,9 +163,11 @@ label, td{
 }
 
 #results_table th {
+    background-color: #1954ad;
 	background-color: #ff6f20;
 	height: 30px;
 	color: white;
+    font-size:.9em;
 	font-weight: bold;
 	letter-spacing: 2px;
 	background-image: -webkit-linear-gradient(top, rgba(255,255,255,0), rgba(255,255,255,0));
