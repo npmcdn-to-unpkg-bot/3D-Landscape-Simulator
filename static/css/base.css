@@ -163,16 +163,16 @@ label, td{
 }
 
 #results_table th {
-    background-color: #0092D1;
-    height: 30px;
-    color: #FFF;
-    font-weight: bold;
-    letter-spacing: 2px;
-    background-image: -webkit-linear-gradient(top, rgba(255,255,255,0), rgba(255,255,255,0));
-    background-image: -moz-linear-gradient(top, rgba(255,255,255,0), rgba(255,255,255,0));
-    background-image: -ms-linear-gradient(top, rgba(255,255,255,0), rgba(255,255,255,0));
-    background-image: -o-linear-gradient(top, rgba(255,255,255,0), rgba(255,255,255,0));
-    background-image: linear-gradient(top, rgba(255,255,255,0), rgba(255,255,255,0));
+	background-color: #ff6f20;
+	height: 30px;
+	color: white;
+	font-weight: bold;
+	letter-spacing: 2px;
+	background-image: -webkit-linear-gradient(top, rgba(255,255,255,0), rgba(255,255,255,0));
+	background-image: -moz-linear-gradient(top, rgba(255,255,255,0), rgba(255,255,255,0));
+	background-image: -ms-linear-gradient(top, rgba(255,255,255,0), rgba(255,255,255,0));
+	background-image: -o-linear-gradient(top, rgba(255,255,255,0), rgba(255,255,255,0));
+	background-image: linear-gradient(top, rgba(255,255,255,0), rgba(255,255,255,0));
 }
 
 .scenario_th{
@@ -184,9 +184,9 @@ label, td{
 }
 
 .veg_type_th{
-    background-color:#DDDDDD;
-    font-weight:bold;
-    text-align:center;
+    background-color:#E9E7E7;
+    font-weight:normal;
+    text-align:left;
     height:25px;
 }
 
@@ -275,6 +275,24 @@ div#pop-up {
 
 .sub_slider_table td{
    font-size:.8em;
+}
+
+.show_state_classes_results_link {
+	font-size: .7em;
+	color: #007BB0;
+	cursor: pointer;
+	float: right;
+	position: relative;
+	right: 8px;
+	top: 5px;
+}
+
+.state_class_tr{
+    display:none;
+}
+
+.state_class_tr td{
+    padding-left:10px;
 }
 
 .show_state_classes_link {
