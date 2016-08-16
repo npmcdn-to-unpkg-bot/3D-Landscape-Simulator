@@ -1,5 +1,4 @@
 $(document).ready(function() {
-
     // Tooltip popup on management scenarios
     $(".scenario_radio_label").hover(function(e) {
         var moveLeft = 50;
@@ -74,6 +73,7 @@ $(document).ready(function() {
 
             $("#total_input_percent").html(">100%");
             total_percent_action(9999)
+
         }
 
         else {
@@ -82,6 +82,12 @@ $(document).ready(function() {
             total_percent_action(total_input_percent.toFixed(0))
 
         }
+
+        if (total_input_cover != 100) {
+            $("#run_button").addClass('disabled');
+            $('input:submit').attr("disabled", true);
+        }
+
 
 
     });
@@ -96,11 +102,6 @@ $(window).load(function(){
 $(document).ajaxStart(function(){
     $("#run_button").addClass('disabled');
     $('input:submit').attr("disabled", true);
-});
-
-$(document).ajaxComplete(function() {
-    $("#run_button").removeClass('disabled');
-    $('input:submit').attr("disabled", false);
 });
 
 function show_input_options (){
@@ -140,6 +141,10 @@ timestep=0
 
 // Send the scenario and initial conditions to ST-Sim.
 function run_st_sim(feature_id) {
+
+    $(document).ajaxStart(function(){
+        $("#run_button").val('Please Wait...');
+    });
     //$("#results_table").empty()
     $("#output").show()
     $("#results_loading").html("<img src='"+static_url + "img/spinner.gif'>")
@@ -174,6 +179,15 @@ function run_st_sim(feature_id) {
             console.log(xhr.status + ": " + xhr.responseText);
         }
     });
+
+    // Required here in order to disable button on page load.
+
+    $(document).ajaxComplete(function() {
+        $("#run_button").val('Run Model');
+        $("#run_button").removeClass('disabled');
+        $('input:submit').attr("disabled", false);
+    });
+
 }
 
 function update_results_table(scenario_label, timestep) {
@@ -363,9 +377,17 @@ function create_slider(iterator, veg_type, state_class_count) {
 function total_percent_action(value){
     if (value == 100 ){
         $("#total_input_percent").css('background-color', '#1EBA36')
+        $("#total_input_percent").css('color', 'white')
+        $("#run_button").removeClass('disabled');
+        $('input:submit').attr("disabled", false);
+        $("#run_button").val('Run Model');
     }
     else {
         $("#total_input_percent").css('background-color','#E47369')
+        $("#total_input_percent").css('color', '#444343')
+        $("#run_button").addClass('disabled');
+        $('input:submit').attr("disabled", true);
+        $("#run_button").val('Total Percent Cover Must Equal 100%');
     }
 }
 
@@ -383,5 +405,4 @@ function activate_scene(){
     $("#map").hide()
 
 }
-
 
