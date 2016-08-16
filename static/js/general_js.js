@@ -1,7 +1,5 @@
 $(document).ready(function() {
 
-    $(".current_slider_setting").val(0);
-
     // Tooltip popup on management scenarios
     $(".scenario_radio_label").hover(function(e) {
         var moveLeft = 50;
@@ -31,38 +29,42 @@ $(document).ready(function() {
         }
     });
 
-    // Function for moving slider bar and calling 3D function on state class entry
+    // On state class value entry move slider bar and call 3D function on state class entry
     $(".veg_state_class_entry").keyup(function(){
-        if (typeof this.id != "undefined") {
-            veg_type_id=this.id.split("_")[1]
-        }
-        else {
-            veg_type_id = "1"
-        }
-        veg_type=this.closest('table').title
-        veg_slider_values_state_class[veg_type]=[]
-        veg_state_class_value_totals=0
-        for (i = 1; i < 18; i++){
-            veg_state_class_value=$("#veg_"+veg_type_id+"_"+i).val()
-            veg_state_class_value_totals+=parseFloat(veg_state_class_value)
-            veg_slider_values_state_class[veg_type].push(veg_state_class_value)
 
-        }
+        veg_type_id=this.id.split("_")[1]
+        veg_type=this.closest('table').title
+
+        veg_slider_values_state_class[veg_type]={}
+        veg_state_class_value_totals=0
+
+        // On keyup, go through each state class in the given veg type and add the values in each text entry field to the veg_slider_values_state_class dictionary
+        $.each(veg_type_state_classes_json[veg_type],function(index, state_class){
+            var veg_state_class_id=index+1
+            var veg_state_class_value=$("#veg_"+veg_type_id+"_"+veg_state_class_id).val()
+            veg_state_class_value_totals+=parseFloat(veg_state_class_value)
+            veg_slider_values_state_class[veg_type][state_class]=veg_state_class_value
+
+        })
+
         // To avoid initialization error
         if ($("#veg" + veg_type_id + "_slider").slider()) {
             $("#veg" + veg_type_id + "_slider").slider("value", veg_state_class_value_totals)
-            // Unable to trigger slide callback on state class input
-            // $('#veg1_slider').trigger('change');
-            // $('#veg1_slider').trigger('slidechange');
             var this_veg_slider_value=$("#veg" + veg_type_id  + "_slider").slider("option", "value");
             veg_slider_values[veg_type]=this_veg_slider_value
             if (landscape_viewer.isInitialized()) {
                 landscape_viewer.updateVegetation(veg_slider_values)
             }
         }
-        $( "#veg" + veg_type_id + "_label" ).val( parseInt(veg_state_class_value_totals) + "%");
-    }).keyup();
 
+
+        $( "#veg" + veg_type_id + "_label" ).val( parseInt(veg_state_class_value_totals) + "%");
+    });
+
+});
+
+$(window).load(function(){
+    $(".current_slider_setting").val(0);
 });
 
 // Disable Run Model button on model run.
@@ -133,8 +135,6 @@ function run_st_sim(feature_id) {
             results_data_json = JSON.parse(response["results_json"])
             var scenario_label = $("input:checked + label").text();
 
-
-
             update_results_table(scenario_label, timestep)
 
             landscape_viewer.updateVegetation(results_data_json_totals)
@@ -186,7 +186,8 @@ function update_results_table(scenario_label, timestep) {
         var veg_type = value
 
         // Write veg type and % headers
-        $("#results_table").append("<tr class='veg_type_percent_tr'><td class='veg_type_th' colspan='3'>" + value + " " + (results_data_json_totals[value]).toFixed(1) + "%" +
+       //$("#results_table").append("<tr class='veg_type_percent_tr'><td class='veg_type_th' colspan='3'>" + value + " " + (results_data_json_totals[value]).toFixed(1) + "%" +
+        $("#results_table").append("<tr class='veg_type_percent_tr'><td class='veg_type_th' colspan='3'>" + value +
             "<span class='show_state_classes_results_link'> <img class='dropdown_arrows' src='" + static_url + "img/down_arrow.png'></span>" +
             "</td></tr>");
 
@@ -249,245 +250,90 @@ var landscape_viewer = require('app').default('scene', veg_slider_values);
 
 var veg_slider_values_state_class={}
 
-$(function() {
-    $( "#veg1_slider" ).slider({
-      range: "min",
-      value: veg1_slider,
-      min: 0,
-      max: 100,
-      step:1,
-      slide: function( event, ui ) {
-          veg_slider_values["Basin Big Sagebrush Upland"]=ui.value
-          $( "#veg1_label" ).val( ui.value + "%");
-          $( "#total_input_percent").html(total_input_percent + ui.value + "%");
-          total_percent_action(total_input_percent + ui.value)
-          landscape_viewer.updateVegetation(veg_slider_values)
 
-          veg_proportion1=(ui.value/18).toFixed(2)
-          for (i=1; i <= 18; i++) {
-              $("#veg_1_"+i).val(veg_proportion1)
-          }
+veg_iteration=1;
 
-          veg_slider_values_state_class["Basin Big Sagebrush Upland"]=[]
+$.each(veg_type_state_classes_json, function (veg_type, state_class_list) {
 
-      },
-      start:function(event, ui){
-            total_input_percent=total_input_percent-ui.value
-      },
-      stop:function(event, ui){
-            total_input_percent=total_input_percent+ui.value
+    // Count the number of state classes
+    var state_class_count=state_class_list.length
 
-            for (i = 0; i < 18; i++){
-                  veg_slider_values_state_class["Basin Big Sagebrush Upland"].push(veg_proportion1)
-            }
+    //Create a skeleton to house the intital conditions slider bar and  state class input table.
+    veg_table_id=veg_type.replace(/ /g, "_").replace(/&/g, "__")
+    $("#sliderTable").append("<tr><td><label for='amount_veg1'><span class='imageOverlayLink'>" + veg_type + " </span></label>" +
+        "<input type='text' id='veg" + veg_iteration + "_label' class='current_slider_setting' readonly>" +
+        "<span class='show_state_classes_link'> <img class='dropdown_arrows' src='" + static_url + "img/down_arrow.png'></span>" +
+        "<div class='slider_bars' id='veg" + veg_iteration + "_slider'></div>" +
+        "<div class='sub_slider_text_inputs' style='display:none'>" +
+        "<table id='" + veg_table_id + "' class='sub_slider_table' title='" + veg_type  + "'><table>" +
+        "</div></td></tr>"
+    );
 
-      }
+    // Create a slider bar
+    create_slider(veg_iteration, veg_type, state_class_count)
+
+    // Make a row for each state class.
+    var state_class_count=1;
+    $.each(state_class_list, function (index, state_class) {
+        $("#"+veg_table_id).append("<tr><td>" + state_class + " </td><td><input class='veg_state_class_entry' id='" + "veg_"  + veg_iteration + "_" + state_class_count + "' type='text' size='2' value='0'>%</td></tr>" )
+        state_class_count++
     });
+
+    $("#sliderTable").append("</td></td>")
+
+    veg_iteration++;
+
 });
 
-$(function() {
-  $( "#veg2_slider" ).slider({
-      range: "min",
-      value: veg2_slider,
-      min: 0,
-      max: 100,
-      step:1,
-      slide: function( event, ui ) {
-          veg_slider_values["Curleaf Mountain Mahogany"]=ui.value
-          $( "#veg2_label" ).val( ui.value + "%");
-          $( "#total_input_percent").html(total_input_percent + ui.value + "%");
-          total_percent_action(total_input_percent + ui.value)
-          landscape_viewer.updateVegetation(veg_slider_values)
+slider_values={}
+veg_proportion={}
 
-          veg_proportion2=(ui.value/18).toFixed(2)
-          for (i=1; i <= 18; i++) {
-              $("#veg_2_"+i).val(veg_proportion2)
-          }
+function create_slider(iterator, veg_type, state_class_count) {
 
-          veg_slider_values_state_class["Curleaf Mountain Mahogany"]=[]
-      },
-      start:function(event, ui){
-          total_input_percent=total_input_percent-ui.value
-      },
-      stop:function(event, ui){
-          total_input_percent=total_input_percent+ui.value
+    $(function () {
+        slider_values[iterator] = 0
+        veg_proportion[iterator] = 0
+        counter_variable = "veg" + iterator + "_slider"
 
-          for (i = 0; i < 18; i++){
-              veg_slider_values_state_class["Curleaf Mountain Mahogany"].push(veg_proportion2)
-          }
-      }
-  });
-});
+        $("#veg" + iterator + "_slider").slider({
+            range: "min",
+            value: slider_values[iterator],
+            min: 0,
+            max: 100,
+            step: 1,
+            slide: function (event, ui) {
+                veg_slider_values[veg_type] = ui.value
+                $("#veg" + iterator + "_label").val(ui.value + "%");
+                $("#total_input_percent").html(total_input_percent + ui.value + "%");
+                total_percent_action(total_input_percent + ui.value)
 
-$(function() {
-    $( "#veg3_slider" ).slider({
-        range: "min",
-        value: veg3_slider,
-        min: 0,
-        max: 100,
-        step:1,
-        slide: function( event, ui ) {
-            veg_slider_values["Low Sagebrush"]=ui.value
-            $( "#veg3_label" ).val( ui.value + "%");
-            $( "#total_input_percent").html(total_input_percent + ui.value + "%");
-            total_percent_action(total_input_percent + ui.value)
-            landscape_viewer.updateVegetation(veg_slider_values)
+                landscape_viewer.updateVegetation(veg_slider_values)
 
-            veg_proportion3=(ui.value/18).toFixed(2)
-            for (i=1; i <= 18; i++) {
-                $("#veg_3_"+i).val(veg_proportion3)
+                // Populate state class values equally
+                veg_proportion[iterator] = (ui.value / state_class_count).toFixed(2)
+                for (i = 1; i <= state_class_count; i++) {
+                    $("#veg_" + iterator + "_" + i).val(veg_proportion[iterator])
+                }
+
+                veg_slider_values_state_class[veg_type] = {}
+            },
+            start: function (event, ui) {
+                total_input_percent = total_input_percent - ui.value
+            },
+            stop: function (event, ui) {
+                total_input_percent = total_input_percent + ui.value
+
+                $.each(veg_type_state_classes_json[veg_type], function (index, state_class)
+                {
+                    veg_slider_values_state_class[veg_type][state_class]=veg_proportion[iterator]
+
+                })
+
             }
+        });
 
-            veg_slider_values_state_class["Low Sagebrush"]=[]
-        },
-        start:function(event, ui){
-            total_input_percent=total_input_percent-ui.value
-        },
-        stop:function(event, ui){
-            total_input_percent=total_input_percent+ui.value
-
-            for (i = 0; i < 18; i++){
-                veg_slider_values_state_class["Low Sagebrush"].push(veg_proportion3)
-            }
-        }
     });
-});
-
-$(function() {
-    $( "#veg4_slider" ).slider({
-        range: "min",
-        value: veg4_slider,
-        min: 0,
-        max: 100,
-        step:1,
-        slide: function( event, ui ) {
-            veg_slider_values["Montane Sagebrush Upland"]=ui.value
-            $( "#veg4_label" ).val( ui.value + "%");
-            $( "#total_input_percent").html(total_input_percent + ui.value + "%");
-            total_percent_action(total_input_percent + ui.value)
-            landscape_viewer.updateVegetation(veg_slider_values)
-
-            veg_proportion4=(ui.value/18).toFixed(2)
-            for (i=1; i <= 18; i++) {
-                $("#veg_4_"+i).val(veg_proportion4)
-            }
-
-            veg_slider_values_state_class["Montane Sagebrush Upland"]=[]
-        },
-        start:function(event, ui){
-            total_input_percent=total_input_percent-ui.value
-        },
-        stop:function(event, ui){
-            total_input_percent=total_input_percent+ui.value
-
-            for (i = 0; i < 18; i++){
-                veg_slider_values_state_class["Montane Sagebrush Upland"].push(veg_proportion4)
-            }
-        }
-    });
-});
-
-$(function() {
-    $( "#veg5_slider" ).slider({
-        range: "min",
-        value: veg5_slider,
-        min: 0,
-        max: 100,
-        step:1,
-        slide: function( event, ui ) {
-            veg_slider_values["Montane Sagebrush Upland With Trees"]=ui.value
-            $( "#veg5_label" ).val( ui.value + "%");
-            $( "#total_input_percent").html(total_input_percent + ui.value + "%");
-            total_percent_action(total_input_percent + ui.value)
-            landscape_viewer.updateVegetation(veg_slider_values)
-
-            veg_proportion5=(ui.value/18).toFixed(2)
-            for (i=1; i <= 18; i++) {
-                $("#veg_5_"+i).val(veg_proportion5)
-            }
-
-            veg_slider_values_state_class["Montane Sagebrush Upland With Trees"]=[]
-        },
-        start:function(event, ui){
-            total_input_percent=total_input_percent-ui.value
-        },
-        stop:function(event, ui){
-            total_input_percent=total_input_percent+ui.value
-
-            for (i = 0; i < 18; i++){
-                veg_slider_values_state_class["Montane Sagebrush Upland With Trees"].push(veg_proportion5)
-            }
-        }
-    });
-});
-
-$(function() {
-    $( "#veg6_slider" ).slider({
-        range: "min",
-        value: veg6_slider,
-        min: 0,
-        max: 100,
-        step:1,
-        slide: function( event, ui ) {
-            veg_slider_values["Western Juniper Woodland & Savannah"]=ui.value
-            $( "#veg6_label" ).val( ui.value + "%");
-            $( "#total_input_percent").html(total_input_percent + ui.value + "%");
-            total_percent_action(total_input_percent + ui.value)
-            landscape_viewer.updateVegetation(veg_slider_values)
-
-            veg_proportion6=(ui.value/18).toFixed(2)
-            for (i=1; i <= 18; i++) {
-                $("#veg_6_"+i).val(veg_proportion6)
-            }
-
-            veg_slider_values_state_class["Western Juniper Woodland & Savannah"]=[]
-        },
-        start:function(event, ui){
-            total_input_percent=total_input_percent-ui.value
-        },
-        stop:function(event, ui){
-            total_input_percent=total_input_percent+ui.value
-
-            for (i = 0; i < 18; i++){
-                veg_slider_values_state_class["Western Juniper Woodland & Savannah"].push(veg_proportion6)
-            }
-        }
-    });
-});
-
-$(function() {
-    $( "#veg7_slider" ).slider({
-        range: "min",
-        value: veg7_slider,
-        min: 0,
-        max: 100,
-        step:1,
-        slide: function( event, ui ) {
-            veg_slider_values["Wyoming and Basin Big Sagebrush Upland"]=ui.value
-            $( "#veg7_label" ).val( ui.value + "%");
-            $( "#total_input_percent").html(total_input_percent + ui.value + "%");
-            total_percent_action(total_input_percent + ui.value)
-            landscape_viewer.updateVegetation(veg_slider_values)
-
-            veg_proportion7=(ui.value/18).toFixed(2)
-            for (i=1; i <= 18; i++) {
-                $("#veg_7_"+i).val(veg_proportion7)
-            }
-
-            veg_slider_values_state_class["Wyoming and Basin Big Sagebrush Upland"]=[]
-        },
-        start:function(event, ui){
-            total_input_percent=total_input_percent-ui.value
-        },
-        stop:function(event, ui){
-            total_input_percent=total_input_percent+ui.value
-
-            for (i = 0; i < 18; i++){
-                veg_slider_values_state_class["Wyoming and Basin Big Sagebrush Upland"].push(veg_proportion7)
-            }
-        }
-    });
-});
+}
 
 function total_percent_action(value){
     if (value > 100 ){
@@ -512,4 +358,5 @@ function activate_scene(){
     $("#map").hide()
 
 }
+
 

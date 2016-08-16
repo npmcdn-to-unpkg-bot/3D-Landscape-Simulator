@@ -48,7 +48,22 @@ def index(request):
     st_scenario=str(request.POST.get('scenario'))
 
     if st_scenario == "None":
-        return render(request, 'index.html')
+
+        # Create dictionary of veg type/state classes
+        st_state_classes_file=static_files_dir + "/st_sim/state_classes/castle_creek.csv"
+        st_state_classes_reader=csv.reader(open(st_state_classes_file))
+        st_state_classes_reader.next()
+
+        veg_type_state_classes_dict={}
+        for row in st_state_classes_reader:
+            veg_type=row[0]
+            if veg_type not in veg_type_state_classes_dict:
+                veg_type_state_classes_dict[veg_type]=[]
+            veg_type_state_classes_dict[veg_type].append(row[1])
+
+        veg_type_state_classes_json=json.dumps(OrderedDict(sorted(veg_type_state_classes_dict.items(), key=lambda t: t[0])))
+
+        return render(request, 'index.html', {'veg_type_state_classes_json':veg_type_state_classes_json})
 
     else:
 
@@ -63,7 +78,6 @@ def index(request):
 
 #def run_st_sim(st_scenario,feature_id): # for csv initial conditions
 def run_st_sim(st_scenario, veg_slider_values_state_class_dict):
-    print veg_slider_values_state_class_dict
 
     st_initial_conditions_file=static_files_dir + "/st_sim/initial_conditions/user_defined_temp" + str(time.time()) +".csv"
 
@@ -74,9 +88,10 @@ def run_st_sim(st_scenario, veg_slider_values_state_class_dict):
     #for key,value in veg_slider_values_dict.iteritems():
     #    st_initial_conditions_file_handle.write(key+",Ann Gr Mono:Open,"+str(value) +"\n")
 
-    for key,value in veg_slider_values_state_class_dict.iteritems():
-        for i in range(0,17):
-            st_initial_conditions_file_handle.write(key+","+state_classes[i]+","+str(value[i]) +"\n")
+    for veg_type,state_class_dict in veg_slider_values_state_class_dict.iteritems():
+        print veg_type,state_class_dict
+        for state_class,value in state_class_dict.iteritems():
+            st_initial_conditions_file_handle.write(veg_type+","+state_class+"," + value +"\n")
 
     st_initial_conditions_file_handle.close()
 
@@ -151,7 +166,7 @@ def run_st_sim(st_scenario, veg_slider_values_state_class_dict):
     #print results_json
 
     context={
-        'results_json':results_json
+        'results_json':results_json,
     }
 
     return HttpResponse(json.dumps(context))
