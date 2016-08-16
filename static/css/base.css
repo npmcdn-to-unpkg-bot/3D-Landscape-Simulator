@@ -241,6 +241,7 @@ label, td{
 }
 
 #total_input_percent {
+    background-color: #E47369;
 	border-radius: 100%;
 	padding: 8px 5px 8px 5px;
 	display: inline-block;
@@ -308,7 +309,7 @@ div#pop-up {
 }
 
 .current_slider_setting {
-  width:30px;
+  width:49px;
   border:0;
 }
 

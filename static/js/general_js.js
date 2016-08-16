@@ -35,8 +35,12 @@ $(document).ready(function() {
         veg_type_id=this.id.split("_")[1]
         veg_type=this.closest('table').title
 
+        //Subtract the current slider value from the total percent
+        //total_input_percent=total_input_percent - veg_slider_values[veg_type]
+        total_input_percent = total_input_percent - veg_slider_values[veg_type];
+
         veg_slider_values_state_class[veg_type]={}
-        veg_state_class_value_totals=0
+        veg_state_class_value_totals=0.0
 
         // On keyup, go through each state class in the given veg type and add the values in each text entry field to the veg_slider_values_state_class dictionary
         $.each(veg_type_state_classes_json[veg_type],function(index, state_class){
@@ -58,7 +62,28 @@ $(document).ready(function() {
         }
 
 
-        $( "#veg" + veg_type_id + "_label" ).val( parseInt(veg_state_class_value_totals) + "%");
+        $( "#veg" + veg_type_id + "_label" ).val( veg_state_class_value_totals.toFixed(0) + "%");
+
+        //Add the current slider value from the total percent
+        //total_input_percent=total_input_percent + veg_slider_values[veg_type]
+        //total_input_percent = total_input_percent + $("#veg" + veg_type_id + "_slider").slider("option", "value");
+
+        total_input_percent = total_input_percent + veg_slider_values[veg_type];
+
+        if (veg_state_class_value_totals > 100){
+
+            $("#total_input_percent").html(">100%");
+            total_percent_action(9999)
+        }
+
+        else {
+
+            $("#total_input_percent").html(total_input_percent.toFixed(0) + "%");
+            total_percent_action(total_input_percent.toFixed(0))
+
+        }
+
+
     });
 
 });
@@ -300,7 +325,7 @@ function create_slider(iterator, veg_type, state_class_count) {
             value: slider_values[iterator],
             min: 0,
             max: 100,
-            step: 1,
+            step:1,
             slide: function (event, ui) {
                 veg_slider_values[veg_type] = ui.value
                 $("#veg" + iterator + "_label").val(ui.value + "%");
@@ -336,11 +361,11 @@ function create_slider(iterator, veg_type, state_class_count) {
 }
 
 function total_percent_action(value){
-    if (value > 100 ){
-        $("#total_input_percent").css('background-color','#E47369')
+    if (value == 100 ){
+        $("#total_input_percent").css('background-color', '#1EBA36')
     }
     else {
-        $("#total_input_percent").css('background-color', 'white')
+        $("#total_input_percent").css('background-color','#E47369')
     }
 }
 
