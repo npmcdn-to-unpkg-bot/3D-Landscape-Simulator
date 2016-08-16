@@ -12,7 +12,7 @@ $(document).ready(function() {
 
       // On mouse out
     },function(e){
-            $('div#pop-up').hide()
+            $('div#pop-up').hide();
             $(this).css("background-color", "white");
         }
     );
@@ -31,20 +31,23 @@ $(document).ready(function() {
     // On state class value entry move slider bar and call 3D function on state class entry
     $(".veg_state_class_entry").keyup(function(){
 
-        veg_type_id=this.id.split("_")[1]
-        veg_type=this.closest('table').title
+        veg_type_id=this.id.split("_")[1];
+        veg_type=this.closest('table').title;
 
         //Subtract the current slider value from the total percent
         //total_input_percent=total_input_percent - veg_slider_values[veg_type]
         total_input_percent = total_input_percent - veg_slider_values[veg_type];
 
-        veg_slider_values_state_class[veg_type]={}
-        veg_state_class_value_totals=0.0
+        veg_slider_values_state_class[veg_type]={};
+        veg_state_class_value_totals=0.0;
 
         // On keyup, go through each state class in the given veg type and add the values in each text entry field to the veg_slider_values_state_class dictionary
         $.each(veg_type_state_classes_json[veg_type],function(index, state_class){
             var veg_state_class_id=index+1
             var veg_state_class_value=$("#veg_"+veg_type_id+"_"+veg_state_class_id).val()
+            if (veg_state_class_value == ''){
+                veg_state_class_value = 0;
+            }
             veg_state_class_value_totals+=parseFloat(veg_state_class_value)
             veg_slider_values_state_class[veg_type][state_class]=veg_state_class_value
 
