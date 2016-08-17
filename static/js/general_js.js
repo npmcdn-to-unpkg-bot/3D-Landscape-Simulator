@@ -173,6 +173,9 @@ function run_st_sim(feature_id) {
             landscape_viewer.updateVegetation(results_data_json_totals)
             previous_feature_id=feature_id
 
+            create_area_charts(results_data_json)
+
+
         },
 
         // handle a non-successful response
@@ -408,4 +411,8 @@ function activate_scene(){
     $("#map").hide()
 
 }
+
+
+
+
 

@@ -15,7 +15,8 @@
     <script src="//code.jquery.com/jquery-1.10.2.js"></script>
     <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
 
-    <script type="text/javascript" src="{{STATIC_URL}}deps/tablesorter/jquery.tablesorter.js"></script>
+    <!-- Highcharts -->
+    <script src="http://code.highcharts.com/highcharts.js"></script>
 
     <!-- My CSS -->
     <link rel="stylesheet" href="{{STATIC_URL}}css/base.css" />
@@ -67,9 +68,10 @@
                 <div id="scene" style="display:none"></div>
         </div>
 
+        <div id="output" style="display:block">
 
-        <div id="output" style="display:none">
-            <div id="results">
+            <div id="area_chart"></div>
+            <div id="results" style="display:none">
                 <div id="running_st_sim">Running ST-Sim...</div>
                 <div id="results_header"></div>
                 <table id="results_table"><tr></tr></table>
@@ -89,10 +91,14 @@
     <script src="{{STATIC_URL}}js/vendor/almond.min.js"></script>
     <script src="{{STATIC_URL}}js/landscape-viewer.js"></script>
 
+    <script src="{{STATIC_URL}}leaflet/leaflet_map.js"></script>
+
     <!-- General Javascript Functions -->
     <script src="{{STATIC_URL}}js/general_js.js"></script>
 
-    <script src="{{STATIC_URL}}leaflet/leaflet_map.js"></script>
+    <script src="{{STATIC_URL}}highcharts/stacked_area.js"></script>
+    <script>
+    </script>
 
 </body>
 
