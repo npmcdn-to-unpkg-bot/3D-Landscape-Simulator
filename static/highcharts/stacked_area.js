@@ -5,10 +5,16 @@ function createAreaChart(veg_type, chart_div_id) {
             chart: {
                 type: 'area',
                 width:320,
-                height:320
+                height:320,
+                marginBottom: 50,
             },
             title: {
-                text: veg_type
+                text: veg_type,
+                margin:5,
+                x:25,
+                style: {
+                    fontSize: '1.1em',
+                },
             },
             credits: {
                 enabled:false
@@ -25,6 +31,9 @@ function createAreaChart(veg_type, chart_div_id) {
                 tickInterval:1,
                 title: {
                     text: 'Year'
+                },
+                style: {
+                    "textOverflow": "none"
                 }
             },
             yAxis: {
