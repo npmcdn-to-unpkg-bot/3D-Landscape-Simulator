@@ -1,14 +1,14 @@
-function createAreaChart(title) {
+function createAreaChart(veg_type, chart_div_id) {
 
     $(function () {
-       $('#area_chart').highcharts({
+       $('#' + chart_div_id).highcharts({
             chart: {
                 type: 'area',
                 width:320,
                 height:320
             },
             title: {
-                text: title
+                text: veg_type
             },
             credits: {
                 enabled:false
@@ -20,28 +20,49 @@ function createAreaChart(title) {
                 enabled:false,
             },
             xAxis: {
-                categories: ['1', '2', '3', '4', '5', '6', '7'],
-                tickmarkPlacement: 'on',
+                startOnTick: false,
+                endOnTick: false,
+                tickInterval:1,
                 title: {
-                    enabled: false
+                    text: 'Year'
                 }
             },
             yAxis: {
+                endOnTick:false,
                 title: {
                     text: 'Percent of Landscape'
                 },
                 labels: {
                     formatter: function () {
-                        return this.value / 1000;
+                        return this.value;
                     }
                 }
             },
             tooltip: {
                 shared: true,
-                valueSuffix: '%'
+                formatter: function () {
+                    var points = this.points;
+                    var pointsLength = points.length;
+                    var tooltipMarkup = '<div id="areaChartTooltipContainer">';
+                    tooltipMarkup += pointsLength ? '<span style="font-size: 12px">Year: ' + points[0].key + '</span><br/>' : '';
+                    var index;
+                    var y_value;
+
+                    for(index = 0; index < pointsLength; index += 1) {
+                        y_value = (points[index].y).toFixed(2)
+
+                        if (y_value > 0) {
+                            tooltipMarkup += '<span style="color:' + points[index].series.color + '">\u25CF</span> ' + points[index].series.name + ': <b>' + y_value + '%</b><br/>';
+                        }
+                    }
+                   tooltipMarkup += '</div>';
+
+                   return tooltipMarkup;
+                }
             },
             plotOptions: {
                 area: {
+                    pointStart:1,
                     stacking: 'normal',
                     lineColor: '#666666',
                     lineWidth: 1,
@@ -49,18 +70,16 @@ function createAreaChart(title) {
                         enabled:false,
                         lineWidth: 1,
                         lineColor: '#666666'
-                    }
-                }
+                    },
+                },
             },
         });
     });
 
 }
 
-
 function create_area_charts(results_data_json) {
 
-        //test_results=results_data_json
         test_results=results_data_json
 
         test_results1 = {
@@ -2716,17 +2735,23 @@ function create_area_charts(results_data_json) {
                     if (typeof chart_dict[veg_type][key] == "undefined") {
                         chart_dict[veg_type][key] = []
                     }
-                    chart_dict[veg_type][key].push(parseFloat(value))
+                    chart_dict[veg_type][key].push((parseFloat(value) * 100))
                 })
             })
-        })
+        });
 
+        // Go through each veg type in the results
+        chart_count=1
         $.each(chart_dict, function(veg_type,value) {
 
-            veg_type_title=veg_type
-            createAreaChart(veg_type_title)
+            chart_div_id="chart_" + chart_count
 
-            ac = $('#area_chart').highcharts()
+            //add a new chart div
+            $("#area_charts").append("<div id='" + chart_div_id + "'></div>")
+
+            createAreaChart(veg_type,chart_div_id)
+
+            ac = $('#'+chart_div_id).highcharts()
 
             $.each(chart_dict[veg_type], function (state_class_name, values_array) {
                 var veg_color = "blue"
@@ -2737,21 +2762,18 @@ function create_area_charts(results_data_json) {
                     //color: veg_color,
                     data: values_array,
                     lineWidth: 0,
-                    stacking: 'percent',
+                    stacking: 'normal',
                     point: {
                         events: {
                             mouseOver: function () {
-                                //layerToAddName = "VTYPE_" + actualModelName + "_" + years[this.x]; // onclick get the x index and use it to find the URL
-                                //vegClassName = this.series.userOptions.name; // onclick get the modelName (used in leaflet_map.js to get the Data Basin layer index)
-                                //console.log(layerToAddName)
-                                //swapImageOverlay(layerToAddName)
-                                //swapLegend(layerToAddName, null, "Veg","Veg")
                             },
                         }
                     }
                 })
-            })
-        })
+            });
+
+            chart_count++;
+        });
 
 }
 
