@@ -18,6 +18,9 @@
     <!-- Highcharts -->
     <script src="http://code.highcharts.com/highcharts.js"></script>
 
+    <!-- JSPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.2.61/jspdf.min.js"></script>
+
     <!-- My CSS -->
     <link rel="stylesheet" href="{{STATIC_URL}}css/base.css" />
     <link href="{{STATIC_URL}}css/buttons.css" rel="stylesheet" type="text/css" />
@@ -70,13 +73,14 @@
 
         <div id="output" style="display:block">
 
-            <div id="area_charts"> </div>
-
-            <div id="results" style="display:none">
-                <div id="running_st_sim">Running ST-Sim...</div>
-                <div id="results_header"></div>
-                <table id="results_table"><tr></tr></table>
+            <div id="results">
+                <div id="running_st_sim" style="display:none">Running ST-Sim...</div>
+                <table id="selected_location_table"><tr></tr></table>
+                <div id="area_charts"> </div>
                 <div id="results_loading"></div>
+            </div>
+            <div id="tabular_output" style="display:none">
+                <table id="results_table"><tr></tr></table>
             </div>
         </div>
 

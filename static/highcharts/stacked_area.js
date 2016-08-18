@@ -4,14 +4,16 @@ function createAreaChart(veg_type, chart_div_id) {
        $('#' + chart_div_id).highcharts({
             chart: {
                 type: 'area',
-                width:320,
-                height:320,
+                width:327,
+                height:290,
                 marginBottom: 50,
+                marginLeft:60,
+                marginRight:25,
             },
             title: {
                 text: veg_type,
                 margin:5,
-                x:25,
+                x:15,
                 style: {
                     fontSize: '1.1em',
                 },

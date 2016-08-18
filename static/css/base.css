@@ -156,13 +156,14 @@ label, td{
     letter-spacing: 2px;
 }
 
-#results_table {
+
+#results_table, #selected_location_table {
     width:100%;
     margin-bottom:20px;
     padding-right:12px;
 }
 
-#results_table th {
+#results_table th, #selected_location_table th {
     background-color: #1954ad;
 	background-color: #ff6f20;
 	height: 30px;

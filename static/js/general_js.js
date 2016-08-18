@@ -147,8 +147,10 @@ function run_st_sim(feature_id) {
 
     $(document).ajaxStart(function(){
         $("#run_button").val('Please Wait...');
+        $("#running_st_sim").show()
     });
     //$("#results_table").empty()
+    $("#runnin_st_sim").show()
     $("#output").show()
     $("#results_loading").html("<img src='"+static_url + "img/spinner.gif'>")
     var scenario=$("input[name=scenario]:checked").val()
@@ -210,10 +212,13 @@ function update_results_table(scenario_label, timestep) {
 
     // Create the Results Table
     if (typeof previous_feature_id == "undefined" || previous_feature_id != feature_id) {
-        $("#results_table").append("<tr><th colspan='3'>County: " + feature_id + "</th></tr>");
+        $("#results_table").append("<tr><th colspan='3'>Location: " + feature_id + "</th></tr>");
     }
 
     $("#results_table").append("<tr class='veg_type_percent_tr'><td class='scenario_th' colspan='3'>Scenario: " + scenario_label + "</td></tr>");
+
+    $("#selected_location_table").html("<tr><th colspan='3'>County: " + feature_id + "</th></tr>");
+    $("#selected_location_table").append("<tr class='veg_type_percent_tr'><td class='scenario_th' colspan='3'>Scenario: " + scenario_label + "</td></tr>");
 
     // Create a list of all the veg types and create a sorted list.
     var veg_type_list = new Array()
@@ -411,8 +416,4 @@ function activate_scene(){
     $("#map").hide()
 
 }
-
-
-
-
 
