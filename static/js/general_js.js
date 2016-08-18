@@ -177,7 +177,6 @@ function run_st_sim(feature_id) {
 
             create_area_charts(results_data_json)
 
-
         },
 
         // handle a non-successful response
