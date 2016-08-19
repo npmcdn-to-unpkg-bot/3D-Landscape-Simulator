@@ -151,6 +151,7 @@ function run_st_sim(feature_id) {
     //$("#results_table").empty()
     $("#runnin_st_sim").show()
     $("#output").show()
+    $("#running_st_sim").html("Running ST-Sim...")
     $("#results_loading").html("<img src='"+static_url + "img/spinner.gif'>")
     var scenario=$("input[name=scenario]:checked").val()
     veg_slider_values_string=JSON.stringify(veg_slider_values)
