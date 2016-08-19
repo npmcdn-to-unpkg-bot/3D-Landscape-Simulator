@@ -111,10 +111,18 @@ function create_area_chart(veg_type, chart_div_id) {
                     lineColor: '#666666',
                     lineWidth: 1,
                     marker: {
+                        radius:1,
                         enabled:false,
                         lineWidth: 1,
-                        lineColor: '#666666'
+                        lineColor: '#666666',
+                        states: {
+                            hover: {
+                                radius:5,
+                            }
+                        }
+
                     },
+
                 },
             },
         });

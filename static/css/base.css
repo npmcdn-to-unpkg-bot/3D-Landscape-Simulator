@@ -135,9 +135,9 @@ canvas {
 	top: 4px;
 }
 
-.area_charts{
+#area_charts{
     position:relative;
-    left: 2px;
+    top:-10px;
 }
 
 label {
