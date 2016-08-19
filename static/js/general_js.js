@@ -146,10 +146,10 @@ function run_st_sim(feature_id) {
 
     $(document).ajaxStart(function(){
         $("#run_button").val('Please Wait...');
+        $("#run_button").addClass('please_wait');
         $("#running_st_sim").show()
     });
     //$("#results_table").empty()
-    $("#runnin_st_sim").show()
     $("#output").show()
     $("#running_st_sim").html("Running ST-Sim...")
     $("#results_loading").html("<img src='"+static_url + "img/spinner.gif'>")
@@ -191,6 +191,7 @@ function run_st_sim(feature_id) {
     $(document).ajaxComplete(function() {
         $("#run_button").val('Run Model');
         $("#run_button").removeClass('disabled');
+        $("#run_button").removeClass('please_wait');
         $('input:submit').attr("disabled", false);
     });
 

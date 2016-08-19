@@ -34,12 +34,12 @@ function create_area_chart(veg_type, chart_div_id) {
        $('#' + chart_div_id).highcharts({
             chart: {
                 type: 'area',
-                width:327,
+                width:308,
                 height:230,
                 marginBottom: 50,
-                marginLeft:60,
-                marginRight:25,
-                marginTop:0,
+                marginLeft:55,
+                marginRight:10,
+                marginTop:5,
             },
             title: {
                 enabled:false,

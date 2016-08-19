@@ -135,9 +135,9 @@ canvas {
 	top: 4px;
 }
 
-#area_charts{
+.area_charts{
     position:relative;
-    top:-10px;
+    left: 2px;
 }
 
 label {
@@ -219,7 +219,13 @@ label, td{
 	font-size: 1em !important;
 	color: #777575 !important;
     font-weight:normal;
+    text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.5) !important;
 }
+
+.please_wait{
+    font-size: 20px !important;
+}
+
 
 .my-button {
 	border-radius: 4px;
