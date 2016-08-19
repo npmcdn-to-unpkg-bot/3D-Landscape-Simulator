@@ -83,6 +83,7 @@ function create_area_chart(veg_type, chart_div_id) {
             },
             tooltip: {
                 shared: true,
+                hideDelay:100,
                 formatter: function () {
                     var points = this.points;
                     var pointsLength = points.length;
