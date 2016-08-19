@@ -15,7 +15,6 @@ colors=[
     "#BB845B"
 ];
 
-
 // Makes state class colors consistent across all charts.
 i=0;
 state_class_color_map={};
@@ -29,7 +28,7 @@ $.each(veg_type_state_classes_json, function(veg_type,state_classes){
     });
 });
 
-function createAreaChart(veg_type, chart_div_id) {
+function create_area_chart(veg_type, chart_div_id) {
 
     $(function () {
        $('#' + chart_div_id).highcharts({
@@ -40,9 +39,11 @@ function createAreaChart(veg_type, chart_div_id) {
                 marginBottom: 50,
                 marginLeft:60,
                 marginRight:25,
+                marginTop:0,
             },
             title: {
-                text: veg_type,
+                enabled:false,
+                text: "", //veg_type,
                 margin:5,
                 x:15,
                 style: {
@@ -138,19 +139,25 @@ function create_area_charts(results_data_json) {
             })
         });
 
+        $("#area_charts").empty()
+
         // Go through each veg type in the results and make a chart out of the state class values
         chart_count=1
         $.each(chart_dict, function(veg_type,value) {
 
             chart_div_id="chart_" + chart_count
 
+            $("#area_charts").append("<div class='stacked_area_chart_title' id='stacked_area_chart_title_" + chart_count +"'>" + veg_type + "</span>" )
+            $("#area_charts").append("<span class='show_stacked_area_chart_link' id='show_stacked_area_chart_link_" + chart_count + "'> <img class='dropdown_arrows' src='" + static_url + "img/up_arrow.png'></span>")
             //add a new chart div
-            $("#area_charts").append("<div id='" + chart_div_id + "'></div>")
+            $("#area_charts").append("<div id='" + chart_div_id + "' class='area_charts'></div>")
 
-            createAreaChart(veg_type,chart_div_id)
+            // Create the chart
+            create_area_chart(veg_type,chart_div_id)
 
             ac = $('#'+chart_div_id).highcharts()
 
+            // Add a series for each state class
             $.each(chart_dict[veg_type], function (state_class_name, values_array) {
                 ac.addSeries({
                     name: state_class_name,
@@ -167,9 +174,26 @@ function create_area_charts(results_data_json) {
                 })
             });
 
+            bind_click_to_collapse(chart_div_id)
             chart_count++;
+
         });
 }
+
+function bind_click_to_collapse(chart_div_id) {
+
+    $("#show_stacked_area_chart_link_" + chart_count).click(function () {
+        if ($("#" + chart_div_id).is(":visible")) {
+            $(this).html(" <img class='dropdown_arrows' src='" + static_url + "img/down_arrow.png'>")
+            $("#" + chart_div_id).hide()
+        }
+        else {
+            $(this).html(" <img class='dropdown_arrows' src='" + static_url + "img/up_arrow.png'>")
+            $("#" + chart_div_id).show()
+        }
+    });
+}
+
 
 
 

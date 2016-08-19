@@ -4,7 +4,6 @@ body {
     overflow-x:hidden;
     font-family:Helvetica;
     font-size:.9em;
-    overflow-y: scroll;
 }
 
 canvas {
@@ -119,15 +118,18 @@ canvas {
     margin-bottom: 10px;
 }
 
-#results{
-    margin-right:10px
+#results {
+	margin-right: 10px;
+	height: 850px;
+	overflow-y: scroll;
+    overflow-x: hidden;
 }
 
 #results_loading {
 	margin-left: auto;
 	margin-right: auto;
 	text-align: center;
-	width: 100%;
+	width: 315px;
 	top: 60px;
 	position: absolute;
 	background-color: white;
@@ -294,14 +296,30 @@ div#pop-up {
    font-size:.8em;
 }
 
-.show_state_classes_results_link {
+.stacked_area_chart_title {
+	font-size: 0.9em;
+	text-align: center;
+	width: 308px;
+	background-color: #E9E9E9;
+	margin-left: 2px;
+	height: 25px;
+	line-height: 25px;
+	position: relative;
+	display: inline-block;
+	font-weight: bold;
+	color: #595959;
+    margin-bottom:3px;
+}
+
+.show_stacked_area_chart_link {
 	font-size: .7em;
 	color: #007BB0;
 	cursor: pointer;
 	float: right;
 	position: relative;
-	right: 8px;
-	top: 5px;
+	right: 22px;
+	z-index: 999;
+	top: 10px;
 }
 
 .state_class_tr{

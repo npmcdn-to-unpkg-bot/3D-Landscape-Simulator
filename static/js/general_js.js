@@ -63,7 +63,6 @@ $(document).ready(function() {
             }
         }
 
-
         $( "#veg" + veg_type_id + "_label" ).val( veg_state_class_value_totals.toFixed(0) + "%");
 
         //Add the current slider value from the total percent
@@ -188,7 +187,6 @@ function run_st_sim(feature_id) {
     });
 
     // Required here in order to disable button on page load.
-
     $(document).ajaxComplete(function() {
         $("#run_button").val('Run Model');
         $("#run_button").removeClass('disabled');
