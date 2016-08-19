@@ -127,6 +127,7 @@ function show_input_options (){
     $("#scene").show()
     $("#map").hide()
     $("#button_list").css("visibility", "visible")
+    $(".leaflet-draw-section").addClass("modified_leaflet_control_position")
 
     landscape_viewer.resize()
 

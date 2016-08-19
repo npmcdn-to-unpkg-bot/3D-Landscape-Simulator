@@ -4,6 +4,10 @@
     <link rel="stylesheet" href="https://npmcdn.com/leaflet@1.0.0-rc.1/dist/leaflet.css" />
     <script src="https://npmcdn.com/leaflet@1.0.0-rc.1/dist/leaflet.js"></script>
 
+    <!-- Leaflet.draw -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/0.3.2/leaflet.draw.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/0.3.2/leaflet.draw.css" />
+
     <!-- geoJSON file -->
     <script src="{{STATIC_URL}}json/Sagebrush_Reporting_Units_Counties_2_Simplify.json"></script>
 
@@ -35,7 +39,7 @@
     <div id="contents">
 
         <div id="input">
-            <div class="steps">1. Select a County</div>
+            <div class="steps">1. Click a County or Draw a Box</div>
             <div id="selected_features"></div>
             <!--<table style="width:100%" id="initial_conditions_table"><tr></tr></table>-->
             <div style="display:none" id="input_initial_veg">

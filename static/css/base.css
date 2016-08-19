@@ -365,3 +365,8 @@ div#pop-up {
 	left: 2px;
 }
 
+.modified_leaflet_control_position {
+	position: relative;
+	top: 54px;
+	left: 1px;
+}
