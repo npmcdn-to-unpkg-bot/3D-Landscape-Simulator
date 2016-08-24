@@ -406,21 +406,28 @@ $.each(probabilistic_transitions_json, function (transition_type, state_class_li
 
 });
 
-probability_labels=["Very Low", "Low", "Moderately Low", "Default Probabilities", "Moderately High", "High", "Very High"]
+probability_labels={}
+probability_labels[-1]="0% Probability"
+probability_labels[-.75]="Very Low (-30%)"
+probability_labels[-.50]="Low (-20%)"
+probability_labels[-.25]="Moderately Low (-10%)"
+probability_labels[0]="Default Probabilities"
+probability_labels[.25]="Moderately High (+25%)"
+probability_labels[.50]="High (+50%)"
+probability_labels[.75]="Very High (+75%)"
+probability_labels[1]="100% Probability"
 
 probabilistic_transitions_slider_values={}
 
 function create_probability_slider(iterator, transition_type) {
 
     $(function () {
-        counter_variable = "probabilistic_transition" + iterator + "_slider"
-
         $("#probabilistic_transition" + iterator + "_slider").slider({
             range: "min",
             value: 0,
-            min: -3,
-            max: 3,
-            step:1,
+            min: -1,
+            max:1,
+            step:.25,
             slide: function (event, ui) {
                 probabilistic_transitions_slider_values[transition_type] = ui.value
                 $("#probabilistic_transition" + iterator + "_label").val(probability_labels[ui.value]);

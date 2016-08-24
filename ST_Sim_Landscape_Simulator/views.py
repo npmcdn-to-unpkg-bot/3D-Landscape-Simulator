@@ -2,6 +2,7 @@ import os
 import csv
 import json
 import time
+from shutil import copyfile
 
 import subprocess32 as sub_proc # for handling return codes better than os.system
 
@@ -31,6 +32,15 @@ def index(request):
 
     if st_scenario == "None":
 
+        # Selectively choose transition types to expose.
+        probabilistic_transition_types=["Replacement Fire", "Annual Grass Invasion","Insect/Disease"]
+        probabilistic_transitions_dict={}
+        for transition_type in probabilistic_transition_types:
+            if transition_type not in probabilistic_transitions_dict:
+                probabilistic_transitions_dict[transition_type]=0
+
+        probabilistic_transitions_json=json.dumps(OrderedDict(sorted(probabilistic_transitions_dict.items(), key=lambda t: t[0])))
+
         # Create dictionary of veg type/state classes
         st_state_classes_file=static_files_dir + "/st_sim/state_classes/castle_creek.csv"
         st_state_classes_reader=csv.reader(open(st_state_classes_file))
@@ -45,40 +55,30 @@ def index(request):
 
         veg_type_state_classes_json=json.dumps(OrderedDict(sorted(veg_type_state_classes_dict.items(), key=lambda t: t[0])))
 
-        return render(request, 'index.html', {'veg_type_state_classes_json':veg_type_state_classes_json})
+        return render(request, 'index.html', {'veg_type_state_classes_json':veg_type_state_classes_json, 'probabilistic_transitions_json': probabilistic_transitions_json})
 
     else:
 
         veg_slider_values_state_class=request.POST.get('veg_slider_values_state_class')
         veg_slider_values_state_class_dict=json.loads(veg_slider_values_state_class)
 
-        fire_slider=float(request.POST.get('fire_slider'))
-        print fire_slider
+        probabilistic_transitions_slider_values=request.POST.get('probabilistic_transitions_slider_values')
+        probabilistic_transitions_slider_values_dict=json.loads(probabilistic_transitions_slider_values)
+
+        print probabilistic_transitions_slider_values_dict
 
         # for csv initial conditions
         # feature_id=request.POST.get('feature_id')
         # context=run_st_sim(st_scenario,feature_id)
-        context=run_st_sim(st_scenario, veg_slider_values_state_class_dict,fire_slider)
+        context=run_st_sim(st_scenario, veg_slider_values_state_class_dict, probabilistic_transitions_slider_values_dict)
         return HttpResponse(context)
 
 #def run_st_sim(st_scenario,feature_id): # for csv initial conditions
-def run_st_sim(st_scenario, veg_slider_values_state_class_dict, fire_slider):
+def run_st_sim(st_scenario, veg_slider_values_state_class_dict, probabilistic_transitions_slider_values_dict):
 
-    st_initial_conditions_file=static_files_dir + "/st_sim/initial_conditions/user_defined_temp" + str(time.time()) +".csv"
+    unique_session_id=str(time.time())
 
-    # Only for user defined initial conditions. Write initial conditions slider values to csv.
-    st_initial_conditions_file_handle=open(st_initial_conditions_file,'w')
-    st_initial_conditions_file_handle.write('StratumID,StateClassID,RelativeAmount\n')
-    # Random state class. Values directly from sliders
-    #for key,value in veg_slider_values_dict.iteritems():
-    #    st_initial_conditions_file_handle.write(key+",Ann Gr Mono:Open,"+str(value) +"\n")
-
-    for veg_type,state_class_dict in veg_slider_values_state_class_dict.iteritems():
-        print veg_type,state_class_dict
-        for state_class,value in state_class_dict.iteritems():
-            st_initial_conditions_file_handle.write(veg_type+","+state_class+"," + value +"\n")
-
-    st_initial_conditions_file_handle.close()
+    ############################################ ST-Sim Configuration #################################################
 
     # Handle running under mono on linux machines
     os_prefix = 'sudo mono ' if os.name == 'posix' else ''
@@ -88,57 +88,69 @@ def run_st_sim(st_scenario, veg_slider_values_state_class_dict, fire_slider):
     st_library_file="ST-Sim-Sample-V3-0-24.ssim"
     st_library=st_library_path+os.sep+st_library_file
 
-    #print "\nRunning scenario sid:" + st_scenario
-    
-    # Run ST-Sim with initial conditions and user specified scenario.
+
+    ############################################## Define initial conditions ###########################################
+
+    st_initial_conditions_file=static_files_dir + "/st_sim/initial_conditions/user_defined_temp" + unique_session_id +".csv"
+
+    # Only for user defined initial conditions. Write initial conditions slider values to csv.
+    st_initial_conditions_file_handle=open(st_initial_conditions_file,'w')
+    st_initial_conditions_file_handle.write('StratumID,StateClassID,RelativeAmount\n')
+
+    for veg_type,state_class_dict in veg_slider_values_state_class_dict.iteritems():
+        print veg_type,state_class_dict
+        for state_class,value in state_class_dict.iteritems():
+            st_initial_conditions_file_handle.write(veg_type+","+state_class+"," + value +"\n")
+
+    st_initial_conditions_file_handle.close()
+
     st_initial_conditions_command="--import --lib=" + st_library + \
         " --sheet=STSim_InitialConditionsNonSpatialDistribution --file="  + st_initial_conditions_file +  " --sid=" + st_scenario
     sub_proc.call(st_exe + " " + st_initial_conditions_command, shell=True)
 
     os.remove(st_initial_conditions_file)
 
-    # Define probabalistic transitions
-    st_probabalistic_transitions_file_original=static_files_dir + "/st_sim/probabalistic_transitions/original/castle_creek_probabalistic_transitions.csv"
+    ########################################## Define probabilistic transitions ########################################
 
-    if fire_slider == 0:
+    st_probabilistic_transitions_file_original=static_files_dir + "/st_sim/probabilistic_transitions/original/castle_creek_probabilistic_transitions.csv"
 
-        print "default"
-        st_probabalistic_transitions_command ="--import --lib=" + st_library + \
-                                              " --sheet=STSim_Transition --file=" + st_probabalistic_transitions_file_original + " --sid=" + st_scenario
+    if not probabilistic_transitions_slider_values_dict or all(value == 0 for value in probabilistic_transitions_slider_values_dict.values()):
+
+        print "Using default probabilities"
+        st_probabilistic_transitions_command ="--import --lib=" + st_library + \
+                                              " --sheet=STSim_Transition --file=" + st_probabilistic_transitions_file_original + " --sid=" + st_scenario
+        sub_proc.call(st_exe + " " + st_probabilistic_transitions_command, shell=True)
+
     else:
-        probability_factor=0.16666666666
-        fire_slider = float(fire_slider) * probability_factor
 
-        file_reader=csv.reader(open(st_probabalistic_transitions_file_original))
+        print "Using user defined probabilities"
+        st_probabilistic_transitions_file_user_defined=static_files_dir + "/st_sim/probabilistic_transitions/user_defined/castle_creek_probabilistic_transitions_" + unique_session_id + ".csv"
+        copyfile(st_probabilistic_transitions_file_original,st_probabilistic_transitions_file_user_defined)
 
-        st_probabalistic_transitions_file_user_defined=static_files_dir + "/st_sim/probabalistic_transitions/user_defined/castle_creek_probabalistic_transitions.csv"
-        st_probabalistic_transitions_file_user_defined_handle=open(st_probabalistic_transitions_file_user_defined, "wb")
-        file_writer=csv.writer(st_probabalistic_transitions_file_user_defined_handle)
+        file_reader=csv.reader(open(st_probabilistic_transitions_file_original))
+        st_probabilistic_transitions_file_user_defined_handle=open(st_probabilistic_transitions_file_user_defined, "wb")
+        file_writer=csv.writer(st_probabilistic_transitions_file_user_defined_handle)
 
-        # The required field header names don't match what you get when you export to an Excel file.
-        # Need to get field names with SyncroSim.Console.exe --export --lib=<lib name> --file=<output file> --sheet=STSim_Transition --pid=2 --sid=10
-        st_probabalistic_transitions_field_headers=["StratumIDSource", "StateClassIDSource", "StratumIDDest", "StateClassIDDest", "TransitionTypeID", "Probability", "Proportion", "AgeMin", "AgeMax", "AgeRelative", "AgeReset", "TSTMin", "TSTMax", "TSTRelative"]
-        file_writer.writerow(st_probabalistic_transitions_field_headers)
+        for key,value in probabilistic_transitions_slider_values_dict.iteritems():
+            for line in file_reader:
+                new_array=line
+                if line[4] == key:
+                    new_array[5]=float(new_array[5])+value
+                print new_array
+                file_writer.writerow(new_array)
 
-        file_reader.next()
+        st_probabilistic_transitions_file_user_defined_handle.close()
+        # Import probabilistic transitions into user specified scenario.
+        st_probabilistic_transitions_command ="--import --lib=" + st_library + \
+                                      " --sheet=STSim_Transition --file=" + st_probabilistic_transitions_file_user_defined + " --sid=" + st_scenario
+        sub_proc.call(st_exe + " " + st_probabilistic_transitions_command, shell=True)
 
-        for line in file_reader:
-            new_array=line
-            if line[4] == 'Replacement Fire':
-                new_array[5]=fire_slider
-            print new_array
-            file_writer.writerow(new_array)
+        os.remove(st_probabilistic_transitions_file_user_defined)
 
-        st_probabalistic_transitions_file_user_defined_handle.close()
-        # Import probabalistic transitions into user specified scenario.
-        st_probabalistic_transitions_command ="--import --lib=" + st_library + \
-                                      " --sheet=STSim_Transition --file=" + st_probabalistic_transitions_file_user_defined + " --sid=" + st_scenario
 
-    sub_proc.call(st_exe + " " + st_probabalistic_transitions_command, shell=True)
+    ################################################## Run ST-Sim ######################################################
 
-    print st_probabalistic_transitions_command
-
-    # Run the model process
+    # Run ST-Sim with initial conditions, probabilistic transitions, and user specified scenario.
     # use Popen since we want to handle the output on the live
     st_run_model_command="--run --lib=" + st_library + " --sid="+st_scenario
     print st_exe + " " + st_run_model_command
@@ -169,7 +181,6 @@ def run_st_sim(st_scenario, veg_slider_values_state_class_dict, fire_slider):
 
     reader=csv.reader(open(st_model_results_dir + os.sep + st_model_output_file))
     reader.next()
-
 
     results_dict={}
     for row in reader:
