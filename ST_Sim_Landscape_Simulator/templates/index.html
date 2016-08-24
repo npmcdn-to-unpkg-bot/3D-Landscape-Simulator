@@ -31,6 +31,7 @@
     <script>
         static_url={{STATIC_URL}};
         veg_type_state_classes_json={{veg_type_state_classes_json | safe}}
+        probabilistic_transitions_json={{probabilistic_transitions_json | safe}}
     </script>
 
 </head>
@@ -46,11 +47,14 @@
             <!--<table style="width:100%" id="initial_conditions_table"><tr></tr></table>-->
             <div style="display:none" id="input_initial_veg">
                 <div class="steps">2. Specify Initial Vegetation Cover</div>
-                <table id="sliderTable" class="tablesorter"></table>
+                <table id="vegTypeSliderTable" class="sliderTable"></table>
                 <div id="total_input_percent_div">Total Percent Cover: <div id="total_input_percent">0%</div></div>
                 <div class="steps">3. Transition Probabilities</div>
+                <table id="probabilisticTransitionSliderTable" class="sliderTable"></table>
+                <!--
                 Replacement Fire: <input type='text' id='fire_slider_label' value="defaults" class='current_probability_slider_setting' readonly>
                 <div id ="fire_slider" class="slider_bars"></div>
+                -->
             </div>
             <br>
 

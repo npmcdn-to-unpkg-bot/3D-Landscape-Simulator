@@ -157,11 +157,13 @@ function run_st_sim(feature_id) {
     veg_slider_values_string=JSON.stringify(veg_slider_values)
     veg_slider_values_state_class_string=JSON.stringify(veg_slider_values_state_class)
 
+    probabilistic_transitions_slider_values_string=JSON.stringify(probabilistic_transitions_slider_values)
+
     $.ajax({
         url: "", // the endpoint (for a specific view configured in urls.conf /view_name/)
         type: "POST", // http method
         //data: {'scenario': scenario, 'veg_slider_values':veg_slider_values_string, 'veg_slider_values_state_class':veg_slider_values_state_class_string},
-        data: {'scenario': scenario, 'veg_slider_values_state_class':veg_slider_values_state_class_string, 'fire_slider': fire_slider},
+        data: {'scenario': scenario, 'veg_slider_values_state_class':veg_slider_values_state_class_string, 'probabilistic_transitions_slider_values': probabilistic_transitions_slider_values_string},
 
         // handle a successful response
         success: function (json) {
@@ -299,7 +301,6 @@ var landscape_viewer = require('app').default('scene', veg_slider_values);
 
 var veg_slider_values_state_class={}
 
-
 veg_iteration=1;
 
 $.each(veg_type_state_classes_json, function (veg_type, state_class_list) {
@@ -309,7 +310,7 @@ $.each(veg_type_state_classes_json, function (veg_type, state_class_list) {
 
     //Create a skeleton to house the intital conditions slider bar and  state class input table.
     veg_table_id=veg_type.replace(/ /g, "_").replace(/&/g, "__")
-    $("#sliderTable").append("<tr><td><label for='amount_veg1'><span class='imageOverlayLink'>" + veg_type + " </span></label>" +
+    $("#vegTypeSliderTable").append("<tr><td><label for='amount_veg1'><span class='imageOverlayLink'>" + veg_type + " </span></label>" +
         "<input type='text' id='veg" + veg_iteration + "_label' class='current_slider_setting' readonly>" +
         "<span class='show_state_classes_link'> <img class='dropdown_arrows' src='" + static_url + "img/down_arrow.png'></span>" +
         "<div class='slider_bars' id='veg" + veg_iteration + "_slider'></div>" +
@@ -328,7 +329,7 @@ $.each(veg_type_state_classes_json, function (veg_type, state_class_list) {
         state_class_count++
     });
 
-    $("#sliderTable").append("</td></td>")
+    $("#vegTypeSliderTable").append("</td></td>")
 
     veg_iteration++;
 
@@ -384,22 +385,50 @@ function create_slider(iterator, veg_type, state_class_count) {
     });
 }
 
-probability_labels=["Default Probabilities", "Very Low", "Low", "Moderately Low", "Moderately High", "High", "Very High"]
+probability_iteration=1;
 
-fire_slider=0
-$(function() {
-    $( "#fire_slider" ).slider({
-      range: "min",
-      value: fire_slider,
-      min: 0,
-      max: 6,
-      step: 1,
-      slide: function (event, ui) {
-          fire_slider=ui.value
-          $("#fire_slider_label").val(probability_labels[fire_slider]);
-      }
-    });
+$.each(probabilistic_transitions_json, function (transition_type, state_class_list) {
+
+    //Create a skeleton to house the intital conditions slider bar and  state class input table.
+    probabilistic_transitions_table_id=transition_type.replace(/ /g, "_").replace(/&/g, "__")
+    $("#probabilisticTransitionSliderTable").append("<tr><td><label for='amount_veg1'><span class='imageOverlayLink'>" + transition_type + ": </span></label>" +
+        "<input type='text' id='probabilistic_transition" + probability_iteration + "_label' class='current_probability_slider_setting' readonly>" +
+        "<div class='slider_bars' id='probabilistic_transition" + probability_iteration + "_slider'></div>" +
+        "</td></tr>"
+    );
+
+    // Create a slider bar
+    create_probability_slider(probability_iteration, transition_type, 0)
+
+    $("#probabilisticTransitionSliderTable").append("</td></td>")
+
+    probability_iteration++;
+
 });
+
+probability_labels=["Very Low", "Low", "Moderately Low", "Default Probabilities", "Moderately High", "High", "Very High"]
+
+probabilistic_transitions_slider_values={}
+
+function create_probability_slider(iterator, transition_type) {
+
+    $(function () {
+        counter_variable = "probabilistic_transition" + iterator + "_slider"
+
+        $("#probabilistic_transition" + iterator + "_slider").slider({
+            range: "min",
+            value: 0,
+            min: -3,
+            max: 3,
+            step:1,
+            slide: function (event, ui) {
+                probabilistic_transitions_slider_values[transition_type] = ui.value
+                $("#probabilistic_transition" + iterator + "_label").val(probability_labels[ui.value]);
+            },
+        });
+
+    });
+}
 
 function total_percent_action(value){
     if (value == 100 ){

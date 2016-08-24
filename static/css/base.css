@@ -282,8 +282,9 @@ div#pop-up {
     border-radius: 5px;
 }
 
-#sliderTable {
-    position: relative;
+.sliderTable{
+    position:relative;
+    width:308px
 }
 
 .slider_bars {
