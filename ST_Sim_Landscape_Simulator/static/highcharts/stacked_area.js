@@ -157,7 +157,7 @@ function create_area_charts(results_data_json) {
             chart_div_id="chart_" + chart_count
 
             $("#area_charts").append("<div class='stacked_area_chart_title' id='stacked_area_chart_title_" + chart_count +"'>" + veg_type + "</span>" )
-            $("#area_charts").append("<span class='show_stacked_area_chart_link' id='show_stacked_area_chart_link_" + chart_count + "'> <img class='dropdown_arrows' src='" + static_url + "img/up_arrow.png'></span>")
+            $("#area_charts").append("<span class='show_stacked_area_chart_link' id='show_stacked_area_chart_link_" + chart_count + "'> <img class='dropdown_arrows' src='/static/img/up_arrow.png'></span>")
             //add a new chart div
             $("#area_charts").append("<div id='" + chart_div_id + "' class='area_charts'></div>")
 
@@ -193,11 +193,11 @@ function bind_click_to_collapse(chart_div_id) {
 
     $("#show_stacked_area_chart_link_" + chart_count).click(function () {
         if ($("#" + chart_div_id).is(":visible")) {
-            $(this).html(" <img class='dropdown_arrows' src='" + static_url + "img/down_arrow.png'>")
+            $(this).html(" <img class='dropdown_arrows' src='/static/img/down_arrow.png'>")
             $("#" + chart_div_id).hide()
         }
         else {
-            $(this).html(" <img class='dropdown_arrows' src='" + static_url + "img/up_arrow.png'>")
+            $(this).html(" <img class='dropdown_arrows' src='/static/img/up_arrow.png'>")
             $("#" + chart_div_id).show()
         }
     });

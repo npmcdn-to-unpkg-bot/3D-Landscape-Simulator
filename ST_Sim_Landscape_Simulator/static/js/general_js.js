@@ -153,7 +153,7 @@ function run_st_sim(feature_id) {
     //$("#results_table").empty()
     $("#output").show()
     $("#running_st_sim").html("Running ST-Sim...")
-    $("#results_loading").html("<img src='/img/spinner.gif'>")
+    $("#results_loading").html("<img src='/static/img/spinner.gif'>")
     var scenario=$("input[name=scenario]:checked").val()
     veg_slider_values_string=JSON.stringify(veg_slider_values)
     veg_slider_values_state_class_string=JSON.stringify(veg_slider_values_state_class)
@@ -238,7 +238,7 @@ function update_results_table(scenario_label, timestep) {
         // Write veg type and % headers
        //$("#results_table").append("<tr class='veg_type_percent_tr'><td class='veg_type_th' colspan='3'>" + value + " " + (results_data_json_totals[value]).toFixed(1) + "%" +
         $("#results_table").append("<tr class='veg_type_percent_tr'><td class='veg_type_th' colspan='3'>" + value +
-            "<span class='show_state_classes_results_link'> <img class='dropdown_arrows' src='/img/down_arrow.png'></span>" +
+            "<span class='show_state_classes_results_link'> <img class='dropdown_arrows' src='/static/img/down_arrow.png'></span>" +
             "</td></tr>");
 
         // Create a list of all the state classes and create a sorted list.
