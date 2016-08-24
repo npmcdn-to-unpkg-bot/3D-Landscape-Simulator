@@ -52,7 +52,8 @@ def index(request):
         veg_slider_values_state_class=request.POST.get('veg_slider_values_state_class')
         veg_slider_values_state_class_dict=json.loads(veg_slider_values_state_class)
 
-        fire_slider=(float(request.POST.get('fire_slider'))/100)
+        fire_slider=float(request.POST.get('fire_slider'))
+        print fire_slider
 
         # for csv initial conditions
         # feature_id=request.POST.get('feature_id')
@@ -99,7 +100,14 @@ def run_st_sim(st_scenario, veg_slider_values_state_class_dict, fire_slider):
     # Define probabalistic transitions
     st_probabalistic_transitions_file_original=static_files_dir + "/st_sim/probabalistic_transitions/original/castle_creek_probabalistic_transitions.csv"
 
-    if fire_slider >= 0:
+    if fire_slider == 0:
+
+        print "default"
+        st_probabalistic_transitions_command ="--import --lib=" + st_library + \
+                                              " --sheet=STSim_Transition --file=" + st_probabalistic_transitions_file_original + " --sid=" + st_scenario
+    else:
+        probability_factor=0.16666666666
+        fire_slider = float(fire_slider) * probability_factor
 
         file_reader=csv.reader(open(st_probabalistic_transitions_file_original))
 
@@ -125,10 +133,6 @@ def run_st_sim(st_scenario, veg_slider_values_state_class_dict, fire_slider):
         # Import probabalistic transitions into user specified scenario.
         st_probabalistic_transitions_command ="--import --lib=" + st_library + \
                                       " --sheet=STSim_Transition --file=" + st_probabalistic_transitions_file_user_defined + " --sid=" + st_scenario
-    else:
-        print "default"
-        st_probabalistic_transitions_command ="--import --lib=" + st_library + \
-                                              " --sheet=STSim_Transition --file=" + st_probabalistic_transitions_file_original + " --sid=" + st_scenario
 
     sub_proc.call(st_exe + " " + st_probabalistic_transitions_command, shell=True)
 

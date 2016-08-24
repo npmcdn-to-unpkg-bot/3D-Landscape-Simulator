@@ -96,7 +96,7 @@ $(document).ready(function() {
 
 $(window).load(function(){
     $(".current_slider_setting").val(0);
-    $(".current_probability_slider_setting").val("Default Values");
+    $(".current_probability_slider_setting").val("Default Probabilities");
 });
 
 // Disable Run Model button on model run.
@@ -384,17 +384,19 @@ function create_slider(iterator, veg_type, state_class_count) {
     });
 }
 
-fire_slider=-1
+probability_labels=["Default Probabilities", "Very Low", "Low", "Moderately Low", "Moderately High", "High", "Very High"]
+
+fire_slider=0
 $(function() {
     $( "#fire_slider" ).slider({
       range: "min",
       value: fire_slider,
       min: 0,
-      max: 100,
-      step:1,
+      max: 6,
+      step: 1,
       slide: function (event, ui) {
-          fire_slider = ui.value;
-          $("#fire_slider_label").val(ui.value + "%");
+          fire_slider=ui.value
+          $("#fire_slider_label").val(probability_labels[fire_slider]);
       }
     });
 });

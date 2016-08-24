@@ -37,7 +37,7 @@ function create_area_chart(veg_type, chart_div_id) {
                 width:308,
                 height:230,
                 marginBottom: 50,
-                marginLeft:55,
+                marginLeft:58,
                 marginRight:10,
                 marginTop:5,
             },

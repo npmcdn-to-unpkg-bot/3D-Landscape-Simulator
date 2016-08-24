@@ -1,3 +1,5 @@
+<!DOCTYPE html>
+
 <head>
 
     <!-- Leaflet -->
@@ -46,13 +48,14 @@
                 <div class="steps">2. Specify Initial Vegetation Cover</div>
                 <table id="sliderTable" class="tablesorter"></table>
                 <div id="total_input_percent_div">Total Percent Cover: <div id="total_input_percent">0%</div></div>
-                Probability of Fire: <input type='text' id='fire_slider_label' value="defaults" class='current_probability_slider_setting' readonly>
+                <div class="steps">3. Transition Probabilities</div>
+                Replacement Fire: <input type='text' id='fire_slider_label' value="defaults" class='current_probability_slider_setting' readonly>
                 <div id ="fire_slider" class="slider_bars"></div>
             </div>
             <br>
 
             <div style="display:none" id="input_management_scenario">
-                <div class="steps">3.&nbsp;Choose a Management Scenario</div>
+                <div class="steps">4.&nbsp;Choose a Management Scenario</div>
                 <form method="post">
                     <input type="radio" name="scenario" value="10" checked><label for="10" class="scenario_radio_label" id="Treatments focus on thinning of trees in areas that are encroached by pinion and juniper.">Current Management </label><br>
                     <input type="radio" name="scenario" value="188"><label for="188" class="scenario_radio_label" id="No management actions take place in this scenario.">No Management </label><br>
@@ -109,4 +112,4 @@
     <!-- Stacked Area Chart -->
     <script src="{{STATIC_URL}}highcharts/stacked_area.js"></script>
 </body>
-
+</html>

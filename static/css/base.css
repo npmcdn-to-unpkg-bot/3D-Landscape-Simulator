@@ -40,7 +40,7 @@ canvas {
 
 #button_container {
 	position: relative;
-	height: 79%;
+    height: 79vh;
     width:calc(100% - 695px);
     left:0px;
 	top: -38px;
@@ -299,7 +299,7 @@ div#pop-up {
 }
 
 .sub_slider_table td{
-   font-size:.8em;
+   font-size:1em;
 }
 
 .stacked_area_chart_title {
