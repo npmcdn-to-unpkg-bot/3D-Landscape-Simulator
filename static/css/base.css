@@ -164,6 +164,10 @@ label, td{
     letter-spacing: 2px;
 }
 
+#selected_location_table th {
+    font-size:1em !important;
+}
+
 
 #results_table, #selected_location_table {
     width:100%;
@@ -176,7 +180,7 @@ label, td{
 	background-color: #ff6f20;
 	height: 30px;
 	color: white;
-    font-size:.9em;
+    font-size:1em;
 	font-weight: bold;
 	letter-spacing: 2px;
 	background-image: -webkit-linear-gradient(top, rgba(255,255,255,0), rgba(255,255,255,0));
@@ -210,6 +214,7 @@ label, td{
     color: white;
     font-weight:bold;
     background-color: #1EBA36;
+    margin-top:10px;
 }
 
 .disabled {
