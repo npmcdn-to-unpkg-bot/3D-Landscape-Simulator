@@ -1,7 +1,6 @@
 import os
 import json
 import time
-from pprint import pprint
 from django.views.generic import TemplateView, View
 from django.conf import settings
 from json import encoder
@@ -14,10 +13,12 @@ encoder.FLOAT_REPR = lambda o: format(o, '.2f')
 # Declare the stsim console we want to work with
 # TODO - make the library user selectable? Could be selected when we choose ecoregions...
 static_files_dir = settings.STATICFILES_DIRS[0]
+st_exe = os.path.join(static_files_dir, "deps", "st_sim", "syncrosim-linux-1-0-24-x64", "SyncroSim.Console.exe" )
 st_library_path = os.path.join(static_files_dir, "st_sim", "libraries")
 st_library_file = "ST-Sim-Sample-V3-0-24.ssim"
 st_library = os.path.join(st_library_path, st_library_file)
-stsim = STSimConsole(lib_path=os.path.join(static_files_dir, st_library))
+stsim = STSimConsole(lib_path=os.path.join(static_files_dir, st_library),
+                     exe=st_exe)
 
 
 class HomepageView(TemplateView):
@@ -35,9 +36,13 @@ class STSimRunnerView(View):
 
     http_method_names = ['post']
 
+    def __init__(self):
+
+        self.sid = None
+        super().__init__()
+
     def post(self, request, *args, **kwargs):
         values_dict = json.loads(request.POST['veg_slider_values_state_class'])
-        pprint(values_dict)
         return HttpResponse(json.dumps(run_st_sim(self.sid, values_dict)))
 
     def dispatch(self, request, *args, **kwargs):
