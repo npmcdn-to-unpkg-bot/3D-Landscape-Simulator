@@ -159,11 +159,12 @@ function run_st_sim(feature_id) {
     veg_slider_values_state_class_string=JSON.stringify(veg_slider_values_state_class)
 
     $.ajax({
-        url: "", // the endpoint (for a specific view configured in urls.conf /view_name/)
+        //url: "", // the endpoint (for a specific view configured in urls.conf /view_name/)
+        url: "/run_st_sim/" + scenario,
         type: "POST", // http method
         //data: {'scenario': scenario, 'veg_slider_values':veg_slider_values_string, 'veg_slider_values_state_class':veg_slider_values_state_class_string},
-        data: {'scenario': scenario, 'veg_slider_values_state_class':veg_slider_values_state_class_string},
-
+        //data: {'scenario': scenario, 'veg_slider_values_state_class':veg_slider_values_state_class_string},
+        data: {'veg_slider_values_state_class':veg_slider_values_state_class_string},
         // handle a successful response
         success: function (json) {
             $("#results_loading").empty()

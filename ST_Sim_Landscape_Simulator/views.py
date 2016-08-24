@@ -1,12 +1,11 @@
 import os
 import json
 import time
+from pprint import pprint
+from django.views.generic import TemplateView, View
 from django.conf import settings
 from json import encoder
 from django.http import HttpResponse
-from django.shortcuts import render
-from django.views.decorators.gzip import gzip_page
-from django.views.decorators.csrf import csrf_exempt
 from stsimpy import STSimConsole
 
 # Two decimal places when dumping to JSON
@@ -21,29 +20,29 @@ st_library = os.path.join(st_library_path, st_library_file)
 stsim = STSimConsole(lib_path=os.path.join(static_files_dir, st_library))
 
 
-@gzip_page
-@csrf_exempt
-def index(request):
+class HomepageView(TemplateView):
 
-    st_scenario = str(request.POST.get('scenario'))
+    template_name = 'index.html'
 
-    if st_scenario == "None":
-        # get default state classes
+    def get_context_data(self, **kwargs):
+        context = super(HomepageView, self).get_context_data(**kwargs)
         default_sid = stsim.list_scenarios()[0]
-        veg_type_state_classes_json = json.dumps(stsim.export_vegstate_classes(default_sid))
-        return render(request, 'index.html', {'veg_type_state_classes_json': veg_type_state_classes_json})
+        context['veg_type_state_classes_json'] = json.dumps(stsim.export_vegstate_classes(default_sid))
+        return context
 
-    else:
 
-        veg_slider_values_state_class = request.POST.get('veg_slider_values_state_class')
-        veg_slider_values_state_class_dict = json.loads(veg_slider_values_state_class)
+class STSimRunnerView(View):
 
-        # for csv initial conditions
-        # feature_id=request.POST.get('feature_id')
-        # context=run_st_sim(st_scenario,feature_id)
-        context = run_st_sim(st_scenario, veg_slider_values_state_class_dict)
-        return HttpResponse(context)
-        # TODO - alternatively, we can just use JsonResponse to serve up the results
+    http_method_names = ['post']
+
+    def post(self, request, *args, **kwargs):
+        values_dict = json.loads(request.POST['veg_slider_values_state_class'])
+        pprint(values_dict)
+        return HttpResponse(json.dumps(run_st_sim(self.sid, values_dict)))
+
+    def dispatch(self, request, *args, **kwargs):
+        self.sid = kwargs.get('scenario_id')
+        return super(STSimRunnerView, self).dispatch(request, *args, **kwargs)
 
 
 def run_st_sim(st_scenario, veg_slider_values_state_class_dict):
@@ -59,10 +58,4 @@ def run_st_sim(st_scenario, veg_slider_values_state_class_dict):
     st_model_output_file = os.path.join(st_model_results_dir, "stateclass-summary-" + st_model_output_sid + ".csv")
     results_json = json.dumps(stsim.export_stateclass_summary(sid=st_model_output_sid,
                                                               report_path=st_model_output_file))
-
-    context = {
-        'results_json': results_json,
-    }
-
-    return HttpResponse(json.dumps(context))
-    # TODO - JsonResponse?
+    return {'results_json': results_json}
