@@ -2,45 +2,21 @@ import os
 import csv
 import json
 import time
-
-import subprocess32 as sub_proc # for handling return codes better than os.system
-
+# TODO - replace with stsimpy.py for working with stsim
+#import subprocess32 as sub_proc # for handling return codes better than os.system
+import subprocess as sub_proc
 from django.conf import settings
 from collections import OrderedDict
-
 #Two decimal places when dumping to JSON
 from json import encoder
 encoder.FLOAT_REPR = lambda o: format(o, '.2f')
-
 from django.http import HttpResponse
-
 from django.shortcuts import render
-from django.db import connection
-
 from django.views.decorators.gzip import gzip_page
-
 from django.views.decorators.csrf import csrf_exempt
 
 static_files_dir = settings.STATICFILES_DIRS[0]
 
-state_classes=["Ann Gr Mono:Open",
-               "Ann Gr:Open",
-               "Crst Wht Gr:Open",
-               "Early:Open",
-               "Late 2:Open",
-               "Late:Closed",
-               "Late:Open",
-               "Mid 2:Open",
-               "Mid:Closed",
-               "Mid:Open",
-               "Seeded:Open",
-               "Sh Ann Gr:Closed",
-               "Sh Dpl:Closed",
-               "Tr Ann Gr:Closed",
-               "Tr Ann Gr:Open",
-               "Tr Enc Thr:Closed",
-               "Tr Enc:Open"
-               ]
 @gzip_page
 @csrf_exempt
 def index(request):
@@ -50,18 +26,18 @@ def index(request):
     if st_scenario == "None":
 
         # Create dictionary of veg type/state classes
-        st_state_classes_file=static_files_dir + "/st_sim/state_classes/castle_creek.csv"
-        st_state_classes_reader=csv.reader(open(st_state_classes_file))
-        st_state_classes_reader.next()
+        st_state_classes_file = os.path.join(static_files_dir,os.sep.join(['st_sim', 'state_classes', 'castle_creek.csv']))
+        print(st_state_classes_file)
+        with open(st_state_classes_file) as f:
+            st_state_classes_reader = csv.DictReader(f)
+            veg_type_state_classes_dict={}
+            for row in st_state_classes_reader:
+                veg_type = row['StratumIDSource']
+                if veg_type not in veg_type_state_classes_dict:
+                    veg_type_state_classes_dict[veg_type] = list()
+                veg_type_state_classes_dict[veg_type].append(row['StateClassIDSource'])
 
-        veg_type_state_classes_dict={}
-        for row in st_state_classes_reader:
-            veg_type=row[0]
-            if veg_type not in veg_type_state_classes_dict:
-                veg_type_state_classes_dict[veg_type]=[]
-            veg_type_state_classes_dict[veg_type].append(row[1])
-
-        veg_type_state_classes_json=json.dumps(OrderedDict(sorted(veg_type_state_classes_dict.items(), key=lambda t: t[0])))
+            veg_type_state_classes_json=json.dumps(OrderedDict(sorted(veg_type_state_classes_dict.items(), key=lambda t: t[0])))
 
         return render(request, 'index.html', {'veg_type_state_classes_json':veg_type_state_classes_json})
 
@@ -78,30 +54,28 @@ def index(request):
 
 #def run_st_sim(st_scenario,feature_id): # for csv initial conditions
 def run_st_sim(st_scenario, veg_slider_values_state_class_dict):
-
-    st_initial_conditions_file=static_files_dir + "/st_sim/initial_conditions/user_defined_temp" + str(time.time()) +".csv"
+    print('running stsim')
+    st_initial_conditions_file=os.path.join(static_files_dir,"st_sim","initial_conditions", "user_defined_temp" + str(time.time()) +".csv")
 
     # Only for user defined initial conditions. Write initial conditions slider values to csv.
     st_initial_conditions_file_handle=open(st_initial_conditions_file,'w')
     st_initial_conditions_file_handle.write('StratumID,StateClassID,RelativeAmount\n')
-    # Random state class. Values directly from sliders
-    #for key,value in veg_slider_values_dict.iteritems():
-    #    st_initial_conditions_file_handle.write(key+",Ann Gr Mono:Open,"+str(value) +"\n")
 
-    for veg_type,state_class_dict in veg_slider_values_state_class_dict.iteritems():
-        print veg_type,state_class_dict
-        for state_class,value in state_class_dict.iteritems():
+    for veg_type in veg_slider_values_state_class_dict.keys():
+        state_class_dict = veg_slider_values_state_class_dict[veg_type]
+        for state_class in state_class_dict.keys():
+            value = state_class_dict[state_class]
             st_initial_conditions_file_handle.write(veg_type+","+state_class+"," + value +"\n")
 
     st_initial_conditions_file_handle.close()
 
     # Handle running under mono on linux machines
     os_prefix = 'sudo mono ' if os.name == 'posix' else ''
-    st_exe= os_prefix + static_files_dir + "/deps/st_sim/syncrosim-linux-1-0-24-x64/SyncroSim.Console.exe"
+    st_exe= os_prefix + os.path.join(static_files_dir, "deps", "st_sim", "syncrosim-linux-1-0-24-x64","SyncroSim.Console.exe")
 
-    st_library_path=static_files_dir + "/st_sim/libraries"
+    st_library_path=os.path.join(static_files_dir, "st_sim", "libraries")
     st_library_file="ST-Sim-Sample-V3-0-24.ssim"
-    st_library=st_library_path+os.sep+st_library_file
+    st_library=os.path.join(st_library_path,st_library_file)
 
     #print "\nRunning scenario sid:" + st_scenario
     
@@ -115,7 +89,7 @@ def run_st_sim(st_scenario, veg_slider_values_state_class_dict):
     # Run the model process
     # use Popen since we want to handle the output on the live
     st_run_model_command="--run --lib=" + st_library + " --sid="+st_scenario
-    print st_exe + " " + st_run_model_command
+    print(st_exe + " " + st_run_model_command)
     test_model_run = sub_proc.Popen(st_exe + " " + st_run_model_command, shell=True, stdout=sub_proc.PIPE)
     result = ""
 
@@ -127,12 +101,12 @@ def run_st_sim(st_scenario, veg_slider_values_state_class_dict):
             break;
 
     st_model_output_sid = result.split(" ")[-1].strip()
-    st_model_results_dir=static_files_dir + "/st_sim/model_results"
+    st_model_results_dir=os.path.join(static_files_dir,"st_sim", "model_results")
     st_model_output_file="stateclass-summary-" + st_model_output_sid + ".csv"
 
     # Generate a report (csv) from ST-Sim for the model run above
     st_report_command=" --console=stsim --create-report --name=stateclass-summary --lib=" \
-     + st_library + " --file=" + st_model_results_dir + os.sep + st_model_output_file \
+     + st_library + " --file=" + os.path.join(st_model_results_dir, st_model_output_file) \
      + " --sids=" + st_model_output_sid
     sub_proc.call(st_exe + " " + st_report_command, shell=True)
 
@@ -141,7 +115,7 @@ def run_st_sim(st_scenario, veg_slider_values_state_class_dict):
     #print "\nOutput file location: "
     #print st_model_results_dir + os.sep + st_model_output_file
 
-    reader=csv.reader(open(st_model_results_dir + os.sep + st_model_output_file))
+    reader=csv.reader(open(os.path.join(st_model_results_dir,st_model_output_file)))
     reader.next()
 
 

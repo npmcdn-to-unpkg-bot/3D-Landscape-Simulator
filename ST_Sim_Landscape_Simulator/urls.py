@@ -1,4 +1,4 @@
-from django.conf.urls import patterns, include, url
+from django.conf.urls import include, url
 
 from ST_Sim_Landscape_Simulator import views
 
@@ -6,7 +6,7 @@ from ST_Sim_Landscape_Simulator import views
 # from django.contrib import admin
 # admin.autodiscover()
 
-urlpatterns = patterns('',
+urlpatterns = [
     # Examples:
     # url(r'^$', 'Sagebrush.views.home', name='home'),
     # url(r'^Sagebrush/', include('Sagebrush.foo.urls')),
@@ -18,4 +18,4 @@ urlpatterns = patterns('',
     # url(r'^admin/', include(admin.site.urls)),
     url(r'^run_st_sim$', views.run_st_sim, name='st_sim'),
     url(r'', views.index, name='index'),
-)
+]

@@ -1,5 +1,6 @@
-from django.conf.urls import patterns, include, url
-
+from django.conf.urls import include, url
+from django.views.generic import TemplateView
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from ST_Sim_Landscape_Simulator import views
 from Heightmaps.views import generate_heightmap, heightmap_stats
 
@@ -10,7 +11,8 @@ from Heightmaps.views import generate_heightmap, heightmap_stats
 heightmap_path = r'^heightmap/(?P<nlat>\d+\.\d+)/(?P<slat>\d+\.\d+)/(?P<elon>\-\d+\.\d+)/(?P<wlon>\-\d+\.\d+)'
 
 
-urlpatterns = patterns('',
+urlpatterns = [
+    #url(r'^$', TemplateView.as_view(template_name='index.html'), name='home')
     # Examples:
     # url(r'^$', 'Sagebrush.views.home', name='home'),
     # url(r'^Sagebrush/', include('Sagebrush.foo.urls')),
@@ -26,4 +28,6 @@ urlpatterns = patterns('',
     # Heightmap generation service
     url(heightmap_path + '$', generate_heightmap, name='heightmap-src'),
     url(heightmap_path + '/stats$', heightmap_stats, name='heightmap-stats'),
-)
+]
+
+urlpatterns += staticfiles_urlpatterns()
