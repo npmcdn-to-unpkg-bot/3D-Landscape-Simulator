@@ -8,6 +8,7 @@ static/st_sim/*
 ST_Sim_Landscape_Simulator/static/st_sim/imports/*
 ST_Sim_Landscape_Simulator/static/st_sim/initial_conditions/*
 ST_Sim_Landscape_Simulator/static/st_sim/model_results/*
+ST_Sim_Landscape_Simulator/static/st_sim/libraries/*
 ST_Sim_Landscape_Simulator/static/node_modules/*
 Archive/
 *.bat
