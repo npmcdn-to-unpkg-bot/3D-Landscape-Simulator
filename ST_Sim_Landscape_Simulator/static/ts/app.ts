@@ -123,8 +123,8 @@ export default function run(container_id: string, params: VegParams) {
 					scene.remove(scene.getObjectByName(key))
 				}
 			}
-			let srcPath = 'heightmap/' + extent.join('/')
-			let statsPath = srcPath + '/stats'
+			let srcPath = 'heightmap/' + extent.join('/') + '/'
+			let statsPath = srcPath + 'stats/'
 			loader.load({
 				textures: [
 					{name: 'heightmap', url: srcPath}

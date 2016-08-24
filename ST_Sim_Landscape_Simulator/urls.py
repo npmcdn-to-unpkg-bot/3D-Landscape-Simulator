@@ -1,21 +1,12 @@
-from django.conf.urls import include, url
+from django.conf.urls import url, include
+from ST_Sim_Landscape_Simulator.views import HomepageView, STSimRunnerView
+from django.views.decorators.csrf import csrf_exempt
 
-from ST_Sim_Landscape_Simulator import views
-
-# Uncomment the next two lines to enable the admin:
-# from django.contrib import admin
-# admin.autodiscover()
 
 urlpatterns = [
-    # Examples:
-    # url(r'^$', 'Sagebrush.views.home', name='home'),
-    # url(r'^Sagebrush/', include('Sagebrush.foo.urls')),
+    # Home
+    url(r'^$', HomepageView.as_view(), name='home'),
 
-    # Uncomment the admin/doc line below to enable admin documentation:
-    # url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
-
-    # Uncomment the next line to enable the admin:
-    # url(r'^admin/', include(admin.site.urls)),
-    url(r'^run_st_sim$', views.run_st_sim, name='st_sim'),
-    url(r'', views.index, name='index'),
+    # ST-Sim Model Runner
+    url(r'^run_st_sim/(?P<scenario_id>\d+)$', csrf_exempt(STSimRunnerView.as_view()), name='run_st_sim'),
 ]

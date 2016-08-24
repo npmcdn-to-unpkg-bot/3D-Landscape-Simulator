@@ -496,8 +496,8 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asse
                         scene.remove(scene.getObjectByName(key));
                     }
                 }
-                let srcPath = 'heightmap/' + extent.join('/');
-                let statsPath = srcPath + '/stats';
+                let srcPath = 'heightmap/' + extent.join('/') + '/';
+                let statsPath = srcPath + 'stats/';
                 loader.load({
                     textures: [
                         { name: 'heightmap', url: srcPath }
