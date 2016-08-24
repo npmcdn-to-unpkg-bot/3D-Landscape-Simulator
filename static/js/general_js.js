@@ -90,14 +90,13 @@ $(document).ready(function() {
             $('input:submit').attr("disabled", true);
         }
 
-
-
     });
 
 });
 
 $(window).load(function(){
     $(".current_slider_setting").val(0);
+    $(".current_probability_slider_setting").val("Default Values");
 });
 
 // Disable Run Model button on model run.
@@ -162,7 +161,7 @@ function run_st_sim(feature_id) {
         url: "", // the endpoint (for a specific view configured in urls.conf /view_name/)
         type: "POST", // http method
         //data: {'scenario': scenario, 'veg_slider_values':veg_slider_values_string, 'veg_slider_values_state_class':veg_slider_values_state_class_string},
-        data: {'scenario': scenario, 'veg_slider_values_state_class':veg_slider_values_state_class_string},
+        data: {'scenario': scenario, 'veg_slider_values_state_class':veg_slider_values_state_class_string, 'fire_slider': fire_slider},
 
         // handle a successful response
         success: function (json) {
@@ -384,6 +383,21 @@ function create_slider(iterator, veg_type, state_class_count) {
 
     });
 }
+
+fire_slider=-1
+$(function() {
+    $( "#fire_slider" ).slider({
+      range: "min",
+      value: fire_slider,
+      min: 0,
+      max: 100,
+      step:1,
+      slide: function (event, ui) {
+          fire_slider = ui.value;
+          $("#fire_slider_label").val(ui.value + "%");
+      }
+    });
+});
 
 function total_percent_action(value){
     if (value == 100 ){

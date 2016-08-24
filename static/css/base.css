@@ -351,6 +351,13 @@ div#pop-up {
   border:0;
 }
 
+.current_probability_slider_setting {
+  width:140px;
+  border:0;
+  font-size:1em;
+  color:#444343;
+}
+
 .dropdown_arrows{
    position:relative;
    left:2px

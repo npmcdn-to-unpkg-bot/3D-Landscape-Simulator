@@ -23,24 +23,6 @@ from django.views.decorators.csrf import csrf_exempt
 
 static_files_dir = settings.STATICFILES_DIRS[0]
 
-state_classes=["Ann Gr Mono:Open",
-               "Ann Gr:Open",
-               "Crst Wht Gr:Open",
-               "Early:Open",
-               "Late 2:Open",
-               "Late:Closed",
-               "Late:Open",
-               "Mid 2:Open",
-               "Mid:Closed",
-               "Mid:Open",
-               "Seeded:Open",
-               "Sh Ann Gr:Closed",
-               "Sh Dpl:Closed",
-               "Tr Ann Gr:Closed",
-               "Tr Ann Gr:Open",
-               "Tr Enc Thr:Closed",
-               "Tr Enc:Open"
-               ]
 @gzip_page
 @csrf_exempt
 def index(request):
@@ -70,14 +52,16 @@ def index(request):
         veg_slider_values_state_class=request.POST.get('veg_slider_values_state_class')
         veg_slider_values_state_class_dict=json.loads(veg_slider_values_state_class)
 
+        fire_slider=(float(request.POST.get('fire_slider'))/100)
+
         # for csv initial conditions
         # feature_id=request.POST.get('feature_id')
         # context=run_st_sim(st_scenario,feature_id)
-        context=run_st_sim(st_scenario, veg_slider_values_state_class_dict)
+        context=run_st_sim(st_scenario, veg_slider_values_state_class_dict,fire_slider)
         return HttpResponse(context)
 
 #def run_st_sim(st_scenario,feature_id): # for csv initial conditions
-def run_st_sim(st_scenario, veg_slider_values_state_class_dict):
+def run_st_sim(st_scenario, veg_slider_values_state_class_dict, fire_slider):
 
     st_initial_conditions_file=static_files_dir + "/st_sim/initial_conditions/user_defined_temp" + str(time.time()) +".csv"
 
@@ -110,7 +94,45 @@ def run_st_sim(st_scenario, veg_slider_values_state_class_dict):
         " --sheet=STSim_InitialConditionsNonSpatialDistribution --file="  + st_initial_conditions_file +  " --sid=" + st_scenario
     sub_proc.call(st_exe + " " + st_initial_conditions_command, shell=True)
 
-    #os.remove(st_initial_conditions_file)
+    os.remove(st_initial_conditions_file)
+
+    # Define probabalistic transitions
+    st_probabalistic_transitions_file_original=static_files_dir + "/st_sim/probabalistic_transitions/original/castle_creek_probabalistic_transitions.csv"
+
+    if fire_slider >= 0:
+
+        file_reader=csv.reader(open(st_probabalistic_transitions_file_original))
+
+        st_probabalistic_transitions_file_user_defined=static_files_dir + "/st_sim/probabalistic_transitions/user_defined/castle_creek_probabalistic_transitions.csv"
+        st_probabalistic_transitions_file_user_defined_handle=open(st_probabalistic_transitions_file_user_defined, "wb")
+        file_writer=csv.writer(st_probabalistic_transitions_file_user_defined_handle)
+
+        # The required field header names don't match what you get when you export to an Excel file.
+        # Need to get field names with SyncroSim.Console.exe --export --lib=<lib name> --file=<output file> --sheet=STSim_Transition --pid=2 --sid=10
+        st_probabalistic_transitions_field_headers=["StratumIDSource", "StateClassIDSource", "StratumIDDest", "StateClassIDDest", "TransitionTypeID", "Probability", "Proportion", "AgeMin", "AgeMax", "AgeRelative", "AgeReset", "TSTMin", "TSTMax", "TSTRelative"]
+        file_writer.writerow(st_probabalistic_transitions_field_headers)
+
+        file_reader.next()
+
+        for line in file_reader:
+            new_array=line
+            if line[4] == 'Replacement Fire':
+                new_array[5]=fire_slider
+            print new_array
+            file_writer.writerow(new_array)
+
+        st_probabalistic_transitions_file_user_defined_handle.close()
+        # Import probabalistic transitions into user specified scenario.
+        st_probabalistic_transitions_command ="--import --lib=" + st_library + \
+                                      " --sheet=STSim_Transition --file=" + st_probabalistic_transitions_file_user_defined + " --sid=" + st_scenario
+    else:
+        print "default"
+        st_probabalistic_transitions_command ="--import --lib=" + st_library + \
+                                              " --sheet=STSim_Transition --file=" + st_probabalistic_transitions_file_original + " --sid=" + st_scenario
+
+    sub_proc.call(st_exe + " " + st_probabalistic_transitions_command, shell=True)
+
+    print st_probabalistic_transitions_command
 
     # Run the model process
     # use Popen since we want to handle the output on the live
