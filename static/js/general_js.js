@@ -408,9 +408,9 @@ $.each(probabilistic_transitions_json, function (transition_type, state_class_li
 
 probability_labels={}
 probability_labels[-1]="0% Probability"
-probability_labels[-.75]="Very Low (-30%)"
-probability_labels[-.50]="Low (-20%)"
-probability_labels[-.25]="Moderately Low (-10%)"
+probability_labels[-.75]="Very Low (-75%)"
+probability_labels[-.50]="Low (-50%)"
+probability_labels[-.25]="Moderately Low (-25%)"
 probability_labels[0]="Default Probabilities"
 probability_labels[.25]="Moderately High (+25%)"
 probability_labels[.50]="High (+50%)"
