@@ -177,11 +177,11 @@ label, td{
 }
 
 .results_table th, .selected_location_table th {
-    background-color: #1954ad;
+	background-color: #1954ad;
 	background-color: #ff6f20;
 	height: 30px;
 	color: white;
-    font-size:1em;
+	font-size: .9em;
 	font-weight: bold;
 	letter-spacing: 2px;
 	background-image: -webkit-linear-gradient(top, rgba(255,255,255,0), rgba(255,255,255,0));
@@ -189,15 +189,72 @@ label, td{
 	background-image: -ms-linear-gradient(top, rgba(255,255,255,0), rgba(255,255,255,0));
 	background-image: -o-linear-gradient(top, rgba(255,255,255,0), rgba(255,255,255,0));
 	background-image: linear-gradient(top, rgba(255,255,255,0), rgba(255,255,255,0));
+	text-align: right;
+	padding-right: 5px;
 }
 
-.scenario_th{
-    background-color:#4C9ED9;
-    color:white;
-    font-weight:bold;
-    text-align:center;
-    height:25px;
+.results_table td{
+    background-color:#E9E9E9;
+    padding-left:5px;
 }
+
+.location_tr td {
+   background-color:#FF6F20;
+    text-align: left;
+    color: white;
+    font-weight: bold;
+}
+
+.scenario_tr td {
+	background-color: #4C9ED9;
+	text-align: left;
+	color: white;
+	font-weight: bold;
+}
+
+.probabilistic_transitions_tr td {
+    font-style:italic;
+}
+
+.probabilistic_transitions_th {
+	background-color: #DE5448 !important;
+	font-weight: bold;
+	text-align: center;
+	height: 25px;
+	color: white;
+    padding-left: 9px !important;
+    font-style:normal !important;
+    letter-spacing: 1px;
+}
+
+.probabilistic_transitions_values {
+	text-align: right;
+	font-size: .8em;
+	color: #444343;
+	padding-right: 5px;
+	/* font-weight: bold; */
+	letter-spacing: .5px;
+	font-style: italic;
+}
+
+.scenario_th {
+	background-color: #4C9ED9 !important;
+	color: white;
+	font-weight: bold;
+	text-align: right;
+	height: 25px;
+	padding-right: 5px;
+}
+
+.veg_output_th {
+    background-color: #1EBA36 !important;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    line-height: 32px;
+    letter-spacing: 1px;
+}
+
 
 .veg_type_th{
     background-color:#E9E7E7;
@@ -321,9 +378,8 @@ div#pop-up {
 	display: inline-block;
 	font-weight: bold;
 	color: #595959;
-    margin-bottom:3px;
+	margin-bottom: 3px;
 }
-
 
 .show_stacked_area_chart_link {
 	font-size: .7em;

@@ -184,7 +184,13 @@ function run_st_sim(feature_id) {
 
             document.getElementById("view" + run + "_link").click()
 
-            run+=1
+            // Maximum of 4 model runs
+            if (run==4){
+                run=1;
+            }
+            else {
+                run+=1;
+            }
 
 
         },
@@ -221,17 +227,38 @@ function update_results_table(scenario_label, timestep,run) {
     });
 
     // Create the Results Table
-    $("#results_table_" + run).append("<tr><th colspan='3'>Location: " + feature_id + "</th></tr>");
+    $("#results_table_" + run).html("<tr class='location_tr'><th class='location_th' colspan='2'>Location </th><td>" + feature_id + "</td></tr>");
 
     $("#view"+run).append("<table id='selected_location_table_" + run + "' class='selected_location_table' ><tr></tr></table> <div id='area_charts_" + run +"' class='area_charts'> </div>")
 
-    $("#results_table_" + run).append("<tr class='veg_type_percent_tr'><td class='scenario_th' colspan='3'>Scenario: " + scenario_label + "</td></tr>");
-
+    $("#results_table_" + run).append("<tr class='scenario_tr'><th class='scenario_th' colspan='2'>Scenario </th><td>" + scenario_label + "</td></tr>");
 
     /*
     $("#selected_location_table_" + run).html("<tr><th colspan='3'>County: " + feature_id + "</th></tr>");
     $("#selected_location_table_" + run).append("<tr class='veg_type_percent_tr'><td class='scenario_th' colspan='3'>Scenario: " + scenario_label + "</td></tr>");
     */
+
+    if (typeof probabilistic_transitions_slider_values != "undefined") {
+        var sum_probabilities=0
+
+        $.each(probabilistic_transitions_slider_values, function (transition_type, probability) {
+            sum_probabilities+=Math.abs(probability)
+        })
+
+        if (sum_probabilities != 0) {
+            $("#results_table_" + run).append("<tr class='probabilistic_transitions_tr'><td class='probabilistic_transitions_th' colspan='3'>Disturbance Probabilities</td></tr>");
+            var sign;
+            $.each(probabilistic_transitions_slider_values, function (transition_type, probability) {
+                if (probability > 0) {
+                    sign="+"
+                }
+                else {
+                    sign = ""
+                }
+                $("#results_table_" + run).append("<tr class='probabilistic_transitions_tr'><td class='probabilistic_transitions_values' colspan='2'>" + transition_type + "</td><td>" + sign + (probability * 100) + "%</td></tr>");
+            });
+        }
+    }
 
     // Create a list of all the veg types and create a sorted list.
     var veg_type_list = new Array()
@@ -243,6 +270,7 @@ function update_results_table(scenario_label, timestep,run) {
 
     $("#running_st_sim").html("ST-Sim Model Results")
 
+    $("#results_table_" + run).append("<tr class='veg_output_tr'><td class='veg_output_th' colspan='3'>Vegetation Cover</td></tr>");
     // Go through each sorted veg_type
     $.each(sorted_veg_type_list, function (index, value) {
 
@@ -250,7 +278,7 @@ function update_results_table(scenario_label, timestep,run) {
 
         // Write veg type and % headers
        //$("#results_table").append("<tr class='veg_type_percent_tr'><td class='veg_type_th' colspan='3'>" + value + " " + (results_data_json_totals[value]).toFixed(1) + "%" +
-        $("#results_table").append("<tr class='veg_type_percent_tr'><td class='veg_type_th' colspan='3'>" + value +
+        $("#results_table").html("<tr class='veg_type_percent_tr'><td class='veg_type_th' colspan='3'>" + value +
             "<span class='show_state_classes_results_link'> <img class='dropdown_arrows' src='" + static_url + "img/down_arrow.png'></span>" +
             "</td></tr>");
 

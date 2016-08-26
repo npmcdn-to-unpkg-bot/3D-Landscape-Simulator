@@ -33,7 +33,7 @@ def index(request):
     if st_scenario == "None":
 
         # Selectively choose transition types to expose.
-        probabilistic_transition_types=["Replacement Fire", "Annual Grass Invasion","Insect/Disease"]
+        probabilistic_transition_types=["Replacement Fire", "Annual Grass Invasion","Insect/Disease", "Wind/Weather/Stress"]
         probabilistic_transitions_dict={}
         for transition_type in probabilistic_transition_types:
             if transition_type not in probabilistic_transitions_dict:
@@ -136,7 +136,6 @@ def run_st_sim(st_scenario, veg_slider_values_state_class_dict, probabilistic_tr
                 new_array=line
                 if line[4] == key:
                     new_array[5]=float(new_array[5])+value
-                print new_array
                 file_writer.writerow(new_array)
 
         st_probabilistic_transitions_file_user_defined_handle.close()
