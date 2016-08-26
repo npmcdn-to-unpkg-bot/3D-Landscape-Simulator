@@ -138,6 +138,7 @@ function show_input_options (){
 
 }
 
+run=1
 iteration=1
 timestep=0
 
@@ -172,12 +173,19 @@ function run_st_sim(feature_id) {
             results_data_json = JSON.parse(response["results_json"])
             var scenario_label = $("input:checked + label").text();
 
-            update_results_table(scenario_label, timestep)
+
+            $("#tab_container").css("display", "block")
+            update_results_table(scenario_label, timestep,run)
 
             landscape_viewer.updateVegetation(results_data_json_totals)
             previous_feature_id=feature_id
 
-            create_area_charts(results_data_json)
+            create_area_charts(results_data_json,run)
+
+            document.getElementById("view" + run + "_link").click()
+
+            run+=1
+
 
         },
 
@@ -197,9 +205,10 @@ function run_st_sim(feature_id) {
         $('input:submit').attr("disabled", false);
     });
 
+
 }
 
-function update_results_table(scenario_label, timestep) {
+function update_results_table(scenario_label, timestep,run) {
 
      // sum state class values for display in scene and table header
     results_data_json_totals={}
@@ -212,14 +221,17 @@ function update_results_table(scenario_label, timestep) {
     });
 
     // Create the Results Table
-    if (typeof previous_feature_id == "undefined" || previous_feature_id != feature_id) {
-        $("#results_table").append("<tr><th colspan='3'>Location: " + feature_id + "</th></tr>");
-    }
+    $("#results_table_" + run).append("<tr><th colspan='3'>Location: " + feature_id + "</th></tr>");
 
-    $("#results_table").append("<tr class='veg_type_percent_tr'><td class='scenario_th' colspan='3'>Scenario: " + scenario_label + "</td></tr>");
+    $("#view"+run).append("<table id='selected_location_table_" + run + "' class='selected_location_table' ><tr></tr></table> <div id='area_charts_" + run +"' class='area_charts'> </div>")
 
-    $("#selected_location_table").html("<tr><th colspan='3'>County: " + feature_id + "</th></tr>");
-    $("#selected_location_table").append("<tr class='veg_type_percent_tr'><td class='scenario_th' colspan='3'>Scenario: " + scenario_label + "</td></tr>");
+    $("#results_table_" + run).append("<tr class='veg_type_percent_tr'><td class='scenario_th' colspan='3'>Scenario: " + scenario_label + "</td></tr>");
+
+
+    /*
+    $("#selected_location_table_" + run).html("<tr><th colspan='3'>County: " + feature_id + "</th></tr>");
+    $("#selected_location_table_" + run).append("<tr class='veg_type_percent_tr'><td class='scenario_th' colspan='3'>Scenario: " + scenario_label + "</td></tr>");
+    */
 
     // Create a list of all the veg types and create a sorted list.
     var veg_type_list = new Array()

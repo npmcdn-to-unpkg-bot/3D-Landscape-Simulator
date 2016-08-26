@@ -130,7 +130,9 @@ function create_area_chart(veg_type, chart_div_id) {
 
 }
 
-function create_area_charts(results_data_json) {
+function create_area_charts(results_data_json, run) {
+
+        $("#view" + run +"_tab").css("display", "inline")
 
         //Restructure Dictionary
         chart_dict = {}
@@ -148,18 +150,20 @@ function create_area_charts(results_data_json) {
             })
         });
 
-        $("#area_charts").empty()
+        //$("#area_charts").empty()
 
         // Go through each veg type in the results and make a chart out of the state class values
         chart_count=1
         $.each(chart_dict, function(veg_type,value) {
 
-            chart_div_id="chart_" + chart_count
+            chart_div_id="chart_" + run + "_"  + chart_count
 
-            $("#area_charts").append("<div class='stacked_area_chart_title' id='stacked_area_chart_title_" + chart_count +"'>" + veg_type + "</span>" )
-            $("#area_charts").append("<span class='show_stacked_area_chart_link' id='show_stacked_area_chart_link_" + chart_count + "'> <img class='dropdown_arrows' src='" + static_url + "img/up_arrow.png'></span>")
+            $("#area_charts_" +run).append("<div class='stacked_area_chart_title' id='stacked_area_chart_title_" + chart_count +"'>" + veg_type +
+
+            "<span class='show_stacked_area_chart_link' id='show_stacked_area_chart_link_" + chart_count + "_" + run +"'> <img class='dropdown_arrows' src='" + static_url + "img/up_arrow.png'></span></div>")
+
             //add a new chart div
-            $("#area_charts").append("<div id='" + chart_div_id + "' class='area_charts'></div>")
+            $("#area_charts_" + run).append("<div id='" + chart_div_id + "'></div>")
 
             // Create the chart
             create_area_chart(veg_type,chart_div_id)
@@ -183,15 +187,15 @@ function create_area_charts(results_data_json) {
                 })
             });
 
-            bind_click_to_collapse(chart_div_id)
+            bind_click_to_collapse(chart_div_id, run)
             chart_count++;
 
         });
 }
 
-function bind_click_to_collapse(chart_div_id) {
+function bind_click_to_collapse(chart_div_id, run) {
 
-    $("#show_stacked_area_chart_link_" + chart_count).click(function () {
+    $("#show_stacked_area_chart_link_" + chart_count + "_" + run).click(function () {
         if ($("#" + chart_div_id).is(":visible")) {
             $(this).html(" <img class='dropdown_arrows' src='" + static_url + "img/down_arrow.png'>")
             $("#" + chart_div_id).hide()
