@@ -17,8 +17,11 @@ static_files_dir = settings.STATICFILES_DIRS[0]
 st_exe = os.path.join(static_files_dir, "deps", "st_sim", "syncrosim-linux-1-0-24-x64", "SyncroSim.Console.exe" )
 st_library_path = os.path.join(static_files_dir, "st_sim", "libraries")
 st_library_file = "ST-Sim-Sample-V3-0-24.ssim"
+st_library_orig_file = "ST-Sim-Sample-V3-0-24_Original.ssim"
 st_library = os.path.join(st_library_path, st_library_file)
+st_orig_library = os.path.join(st_library_path, st_library_orig_file)
 stsim = STSimConsole(lib_path=os.path.join(static_files_dir, st_library),
+                     orig_lib_path=os.path.join(static_files_dir, st_orig_library),
                      exe=st_exe)
 
 # defaults for this library
@@ -56,8 +59,11 @@ class STSimRunnerView(View):
 
     def post(self, request, *args, **kwargs):
         values_dict = json.loads(request.POST['veg_slider_values_state_class'])
-        transitions_dict = json.loads(request.POST['probabilistic_transitions_slider_values_dict'])
-        pprint(transitions_dict)
+        if 'probabilistic_transitions_slider_values_dict' in request.POST:
+            transitions_dict = json.loads(request.POST['probabilistic_transitions_slider_values_dict'])
+        else:
+            transitions_dict = None
+
         return HttpResponse(json.dumps(run_st_sim(self.sid, values_dict, transitions_dict)))
 
     def dispatch(self, request, *args, **kwargs):
@@ -71,6 +77,7 @@ def run_st_sim(st_scenario, veg_slider_values_state_class_dict, probabilistic_tr
     st_model_init_conditions_file = os.path.join(static_files_dir,
                                                  "st_sim", "initial_conditions",
                                                  "user_defined_temp" + str(time.time()) + ".csv")
+    pprint(veg_slider_values_state_class_dict)
 
     # initial PVT
     stsim.import_nonspatial_distribution(sid=st_scenario,
@@ -83,7 +90,7 @@ def run_st_sim(st_scenario, veg_slider_values_state_class_dict, probabilistic_tr
         transitions_path=st_model_init_conditions_file,
         orig=True)
 
-    if probabilistic_transitions_slider_values_dict:
+    if probabilistic_transitions_slider_values_dict is not None:
         # adjust the values of the default probabilites
         user_probabilities = default_probabilities
         for transition_type in probabilistic_transitions_slider_values_dict.keys():
