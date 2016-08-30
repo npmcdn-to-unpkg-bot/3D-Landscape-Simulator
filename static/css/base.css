@@ -141,12 +141,16 @@ canvas {
     top:-40px;
 }
 
+.scenario_radio_label{
+    font-size:.95em;
+}
+
 label {
     cursor:help;
 }
 
 label, td{
-    font-size:.9em;
+    font-size:.95em;
 }
 
 #initial_conditions_table {
@@ -376,11 +380,11 @@ div#pop-up {
 
 .sliderTable{
     position:relative;
-    width:308px
+    width:100%;
 }
 
 .slider_bars {
-    width:92%;
+    width:290px;
     margin:5px 0px 5px 5px;
 }
 
@@ -392,7 +396,7 @@ div#pop-up {
 }
 
 .sub_slider_table td{
-   font-size:1em;
+   font-size:.95em;
 }
 
 .stacked_area_chart_title {
@@ -434,8 +438,8 @@ div#pop-up {
 	cursor: pointer;
 	float: right;
 	position: relative;
+	right: 15px;
 	top: 28px;
-	left: 5px;
 }
 
 .current_slider_setting {
@@ -446,7 +450,6 @@ div#pop-up {
 .current_probability_slider_setting {
   width:140px;
   border:0;
-  font-size:1em;
   color:#444343;
 }
 
