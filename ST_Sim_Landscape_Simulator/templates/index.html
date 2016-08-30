@@ -1,5 +1,6 @@
+{% load staticfiles %}
 <!DOCTYPE html>
-
+<html>
 <head>
 
     <!-- Leaflet -->
@@ -11,37 +12,36 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/0.3.2/leaflet.draw.css" />
 
     <!-- geoJSON file -->
-    <script src="{{STATIC_URL}}json/Sagebrush_Reporting_Units_Counties_2_Simplify.json"></script>
+    <script src="{% static 'json/Sagebrush_Reporting_Units_Counties_2_Simplify.json' %}"></script>
 
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.1.0.min.js" integrity="sha256-cCueBR6CsyA4/9szpPfrX3s49M9vUU5BgtiJj06wt/s=" crossorigin="anonymous"></script>
 
     <!-- JQuery Slider -->
     <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
-    <script src="//code.jquery.com/jquery-1.10.2.js"></script>
-    <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+    <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+    <script src="https://code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
 
     <!-- Highcharts -->
     <script src="http://code.highcharts.com/highcharts.js"></script>
 
     <!-- Tabs -->
-    <script src="{{STATIC_URL}}deps/tab_content/tabcontent.js" type="text/javascript"></script>
-    <link href="{{STATIC_URL}}deps/tab_content/tabcontent.css" rel="stylesheet" type="text/css" />
+    <script src="{% static "js/vendor/tabcontent.js" %}" type="text/javascript"></script>
+    <link href="{% static "css/vendor/tabcontent.css" %}" rel="stylesheet" type="text/css" />
 
     <!-- My CSS -->
-    <link rel="stylesheet" href="{{STATIC_URL}}css/base.css" />
-    <link href="{{STATIC_URL}}css/buttons.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="{% static 'css/base.css'%}" />
+    <link href="{% static 'css/buttons.css' %}" rel="stylesheet" type="text/css" />
 
     <script>
-        static_url={{STATIC_URL}};
-        veg_type_state_classes_json={{veg_type_state_classes_json | safe}}
-        probabilistic_transitions_json={{probabilistic_transitions_json | safe}}
+        veg_type_state_classes_json = {{veg_type_state_classes_json | safe}}
+        probabilistic_transitions_json = {{probabilistic_transitions_json | safe}}
     </script>
 
 </head>
 
 <body>
-    <div id="header"><img id="site_icon" src="{{STATIC_URL}}img/site_icon.png">3D Landscape Simulator</div>
+    <div id="header"><img id="site_icon" src="{% static 'img/site_icon.png' %}">3D Landscape Simulator</div>
 
     <div id="contents">
 
@@ -133,19 +133,19 @@
     <div id="pop-up"></div>
 
     <!-- WebGL Landscape Viewer and dependencies -->
-    <script src="{{STATIC_URL}}js/vendor/three/three.min.js"></script>
-    <script src="{{STATIC_URL}}js/vendor/three/TGALoader.js"></script>
-    <script src="{{STATIC_URL}}js/vendor/three/OrbitControls.js"></script>
-    <script src="{{STATIC_URL}}js/vendor/almond.min.js"></script>
-    <script src="{{STATIC_URL}}js/landscape-viewer.js"></script>
+    <script src="{% static 'js/vendor/three/three.min.js' %}"></script>
+    <script src="{% static 'js/vendor/three/TGALoader.js' %}"></script>
+    <script src="{% static 'js/vendor/three/OrbitControls.js' %}"></script>
+    <script src="{% static 'js/vendor/almond.min.js' %}"></script>
+    <script src="{% static 'js/landscape-viewer.js' %}"></script>
 
     <!-- Leaflet Map -->
-    <script src="{{STATIC_URL}}leaflet/leaflet_map.js"></script>
+    <script src="{% static 'leaflet/leaflet_map.js' %}"></script>
 
     <!-- General Javascript Functions -->
-    <script src="{{STATIC_URL}}js/general_js.js"></script>
+    <script src="{% static 'js/general_js.js' %}"></script>
 
     <!-- Stacked Area Chart -->
-    <script src="{{STATIC_URL}}highcharts/stacked_area.js"></script>
+    <script src="{% static 'highcharts/stacked_area.js' %}"></script>
 </body>
 </html>

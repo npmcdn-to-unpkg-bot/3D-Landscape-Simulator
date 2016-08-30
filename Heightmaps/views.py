@@ -9,7 +9,7 @@ import numpy as np
 from PIL import Image
 from django.conf import settings
 
-path = os.path.join(settings.STATICFILES_DIRS[0], 'dems/WestUS_30AS.nc')
+path = os.path.join(settings.STATICFILES_DIRS[1], 'WestUS_30AS.nc')
 
 DEM_HEIGHT = 5000.0
 
@@ -21,7 +21,7 @@ def heightmap_stats(request, nlat=None, slat=None, elon=None, wlon=None):
     if request.method == u'GET':
         if nlat is not None and slat is not None and elon is not None and wlon is not None:
 
-            print nlat, slat, elon, wlon
+            #print(nlat, slat, elon, wlon)
 
             north_lat = float(nlat)
             south_lat = float(slat)
@@ -54,8 +54,6 @@ def heightmap_stats(request, nlat=None, slat=None, elon=None, wlon=None):
 
     return HttpResponse(json.dumps(response))
 
-
-
 @csrf_exempt
 def generate_heightmap(request, nlat=None, slat=None, elon=None, wlon=None):
 
@@ -64,7 +62,7 @@ def generate_heightmap(request, nlat=None, slat=None, elon=None, wlon=None):
     if request.method == u'GET':
         if nlat is not None and slat is not None and elon is not None and wlon is not None:
 
-            print nlat, slat, elon, wlon
+            #print(nlat, slat, elon, wlon)
 
             north_lat = float(nlat)
             south_lat = float(slat)
@@ -78,18 +76,17 @@ def generate_heightmap(request, nlat=None, slat=None, elon=None, wlon=None):
                     if not verify_coords(lats, lons, north_lat, south_lat, east_lon, west_lon):
                         image = Image.new('L', (64,64))
                         image.save(response, "PNG")
-                        print 'blah'
                     else:
                         elev = ds.variables['elev'][:].data
                         # collect indices
                         indices = get_indices(lats, lons, north_lat,south_lat, east_lon, west_lon)
-                        #print(indices)
+                        # print(indices)
                         # shape up our dem slice
                         dem_slice = elev[indices['w']:indices['e'],indices['n']:indices['s']]
-                        #//print(dem_slice.shape)
+                        # print(dem_slice.shape)
                         dem_flat = dem_slice.ravel().tolist()
                         dem_max = dem_slice.max()
-                        #dem_flat = [(x/dem_max) * 255 for x in dem_flat]
+                        # dem_flat = [(x/dem_max) * 255 for x in dem_flat]
                         dem_flat = [(x/DEM_HEIGHT) * 255 for x in dem_flat]
 
                         # write and save new image
@@ -98,14 +95,14 @@ def generate_heightmap(request, nlat=None, slat=None, elon=None, wlon=None):
                         #image = image.rotate(90, expand=True)
                         #return {'image' : image, 'dem': dem_flat}
                         image.save(response, "PNG")
-                        print 'made it'
 
     return response
 
-def verify_coords(lats, lons, nlat, slat, elon, wlon):
 
-       return not (nlat > lats[0] or nlat < lats[-1] or slat > lats[0] or slat < lats[-1] or elon < lons[0] or
+def verify_coords(lats, lons, nlat, slat, elon, wlon):
+    return not (nlat > lats[0] or nlat < lats[-1] or slat > lats[0] or slat < lats[-1] or elon < lons[0] or
                 elon > lons[-1] or wlon < lons[0] or wlon > lons[-1])
+
 
 def get_indices(lats, lons, nlat, slat, elon, wlon):
 

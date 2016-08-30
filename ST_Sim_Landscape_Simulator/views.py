@@ -1,214 +1,121 @@
 import os
-import csv
 import json
 import time
-from shutil import copyfile
-
-import subprocess32 as sub_proc # for handling return codes better than os.system
-
+from django.views.generic import TemplateView, View
 from django.conf import settings
-from collections import OrderedDict
-
-#Two decimal places when dumping to JSON
 from json import encoder
+from django.http import HttpResponse
+from stsimpy import STSimConsole
+from pprint import pprint
+
+# Two decimal places when dumping to JSON
 encoder.FLOAT_REPR = lambda o: format(o, '.2f')
 
-from django.http import HttpResponse
-
-from django.shortcuts import render
-from django.db import connection
-
-from django.views.decorators.gzip import gzip_page
-
-from django.views.decorators.csrf import csrf_exempt
-
+# Declare the stsim console we want to work with
+# TODO - make the library user selectable? Could be selected when we choose ecoregions...
 static_files_dir = settings.STATICFILES_DIRS[0]
+st_exe = os.path.join(static_files_dir, "deps", "st_sim", "syncrosim-linux-1-0-24-x64", "SyncroSim.Console.exe" )
+st_library_path = os.path.join(static_files_dir, "st_sim", "libraries")
+st_library_file = "ST-Sim-Sample-V3-0-24.ssim"
+st_library_orig_file = "ST-Sim-Sample-V3-0-24_Original.ssim"
+st_library = os.path.join(st_library_path, st_library_file)
+st_orig_library = os.path.join(st_library_path, st_library_orig_file)
+stsim = STSimConsole(lib_path=os.path.join(static_files_dir, st_library),
+                     orig_lib_path=os.path.join(static_files_dir, st_orig_library),
+                     exe=st_exe)
 
-@gzip_page
-@csrf_exempt
-def index(request):
+# defaults for this library. Run once and hold in memory.
+default_sid = stsim.list_scenarios()[0]
+all_veg_state_classes = stsim.export_veg_state_classes(default_sid)
+all_transition_types = stsim.export_probabilistic_transitions_types(default_sid)
 
-    st_scenario=str(request.POST.get('scenario'))
 
-    if st_scenario == "None":
+class HomepageView(TemplateView):
 
-        # Selectively choose transition types to expose.
-        probabilistic_transition_types=["Replacement Fire", "Annual Grass Invasion","Insect/Disease", "Wind/Weather/Stress"]
-        probabilistic_transitions_dict={}
-        for transition_type in probabilistic_transition_types:
-            if transition_type not in probabilistic_transitions_dict:
-                probabilistic_transitions_dict[transition_type]=0
+    template_name = 'index.html'
 
-        probabilistic_transitions_json=json.dumps(OrderedDict(sorted(probabilistic_transitions_dict.items(), key=lambda t: t[0])))
+    def get_context_data(self, **kwargs):
+        context = super(HomepageView, self).get_context_data(**kwargs)
 
-        # Create dictionary of veg type/state classes
-        st_state_classes_file=static_files_dir + "/st_sim/state_classes/castle_creek.csv"
-        st_state_classes_reader=csv.reader(open(st_state_classes_file))
-        st_state_classes_reader.next()
+        # veg state classes
+        context['veg_type_state_classes_json'] = json.dumps(all_veg_state_classes)
 
-        veg_type_state_classes_dict={}
-        for row in st_state_classes_reader:
-            veg_type=row[0]
-            if veg_type not in veg_type_state_classes_dict:
-                veg_type_state_classes_dict[veg_type]=[]
-            veg_type_state_classes_dict[veg_type].append(row[1])
+        # our probabilistic transition types for this application
+        probabilistic_transition_types = ["Replacement Fire",
+                                          "Annual Grass Invasion",
+                                          "Insect/Disease",
+                                          "Wind/Weather/Stress"]
 
-        veg_type_state_classes_json=json.dumps(OrderedDict(sorted(veg_type_state_classes_dict.items(), key=lambda t: t[0])))
+        if not all(value in all_transition_types for value in probabilistic_transition_types):
+            raise KeyError("Invalid transition type specified for this library. Supplied values: " +
+                           str([value for value in probabilistic_transition_types]))
 
-        return render(request, 'index.html', {'veg_type_state_classes_json':veg_type_state_classes_json, 'probabilistic_transitions_json': probabilistic_transitions_json})
+        probabilistic_transition_dict = {value: 0 for value in probabilistic_transition_types}
+        context['probabilistic_transitions_json'] = json.dumps(probabilistic_transition_dict)
+        return context
 
+
+class STSimRunnerView(View):
+
+    def __init__(self):
+
+        self.sid = None
+        super().__init__()
+
+    def post(self, request, *args, **kwargs):
+        values_dict = json.loads(request.POST['veg_slider_values_state_class'])
+        if 'probabilistic_transitions_slider_values' in request.POST:
+            transitions_dict = json.loads(request.POST['probabilistic_transitions_slider_values'])
+        else:
+            transitions_dict = None
+        return HttpResponse(json.dumps(run_st_sim(self.sid, values_dict, transitions_dict)))
+
+    def dispatch(self, request, *args, **kwargs):
+        self.sid = kwargs.get('scenario_id')
+        return super(STSimRunnerView, self).dispatch(request, *args, **kwargs)
+
+
+def run_st_sim(st_scenario, veg_slider_values_state_class_dict, probabilistic_transitions_slider_values_dict=None):
+
+    # working file path
+    st_model_init_conditions_file = os.path.join(static_files_dir,
+                                                 "st_sim", "initial_conditions",
+                                                 "user_defined_temp" + str(time.time()) + ".csv")
+
+    # initial PVT
+    stsim.import_nonspatial_distribution(sid=st_scenario,
+                                         values_dict=veg_slider_values_state_class_dict,
+                                         working_path=st_model_init_conditions_file)
+
+    # probabilistic transition probabilities
+    default_probabilities = stsim.export_probabilistic_transitions_map(
+        sid=default_sid,
+        transitions_path=st_model_init_conditions_file,
+        orig=True)
+
+    if probabilistic_transitions_slider_values_dict is not None and len(probabilistic_transitions_slider_values_dict.keys()) > 0:
+        user_probabilities = default_probabilities
+        # adjust the values of the default probabilites
+        for veg_type in user_probabilities.keys():
+            for state_class in user_probabilities[veg_type]:
+                transition_type = state_class['type']
+                if transition_type in probabilistic_transitions_slider_values_dict.keys():
+                    value = probabilistic_transitions_slider_values_dict[transition_type]
+                    state_class['probability'] += value
+
+        stsim.import_probabilistic_transitions(sid=st_scenario,
+                                               values_dict=user_probabilities,
+                                               working_path=st_model_init_conditions_file)
     else:
+        # use default probabilities
+        stsim.import_probabilistic_transitions(sid=st_scenario,
+                                               values_dict=default_probabilities,
+                                               working_path=st_model_init_conditions_file)
 
-        veg_slider_values_state_class=request.POST.get('veg_slider_values_state_class')
-        veg_slider_values_state_class_dict=json.loads(veg_slider_values_state_class)
-
-        probabilistic_transitions_slider_values=request.POST.get('probabilistic_transitions_slider_values')
-        probabilistic_transitions_slider_values_dict=json.loads(probabilistic_transitions_slider_values)
-
-        print probabilistic_transitions_slider_values_dict
-
-        # for csv initial conditions
-        # feature_id=request.POST.get('feature_id')
-        # context=run_st_sim(st_scenario,feature_id)
-        context=run_st_sim(st_scenario, veg_slider_values_state_class_dict, probabilistic_transitions_slider_values_dict)
-        return HttpResponse(context)
-
-#def run_st_sim(st_scenario,feature_id): # for csv initial conditions
-def run_st_sim(st_scenario, veg_slider_values_state_class_dict, probabilistic_transitions_slider_values_dict):
-
-    unique_session_id=str(time.time())
-
-    ############################################ ST-Sim Configuration #################################################
-
-    # Handle running under mono on linux machines
-    os_prefix = 'sudo mono ' if os.name == 'posix' else ''
-    st_exe= os_prefix + static_files_dir + "/deps/st_sim/syncrosim-linux-1-0-24-x64/SyncroSim.Console.exe"
-
-    st_library_path=static_files_dir + "/st_sim/libraries"
-    st_library_file="ST-Sim-Sample-V3-0-24.ssim"
-    st_library=st_library_path+os.sep+st_library_file
-
-
-    ############################################## Define initial conditions ###########################################
-
-    st_initial_conditions_file=static_files_dir + "/st_sim/initial_conditions/user_defined_temp" + unique_session_id +".csv"
-
-    # Only for user defined initial conditions. Write initial conditions slider values to csv.
-    st_initial_conditions_file_handle=open(st_initial_conditions_file,'w')
-    st_initial_conditions_file_handle.write('StratumID,StateClassID,RelativeAmount\n')
-
-    for veg_type,state_class_dict in veg_slider_values_state_class_dict.iteritems():
-        print veg_type,state_class_dict
-        for state_class,value in state_class_dict.iteritems():
-            st_initial_conditions_file_handle.write(veg_type+","+state_class+"," + value +"\n")
-
-    st_initial_conditions_file_handle.close()
-
-    st_initial_conditions_command="--import --lib=" + st_library + \
-        " --sheet=STSim_InitialConditionsNonSpatialDistribution --file="  + st_initial_conditions_file +  " --sid=" + st_scenario
-    sub_proc.call(st_exe + " " + st_initial_conditions_command, shell=True)
-
-    os.remove(st_initial_conditions_file)
-
-    ########################################## Define probabilistic transitions ########################################
-
-    st_probabilistic_transitions_file_original=static_files_dir + "/st_sim/probabilistic_transitions/original/castle_creek_probabilistic_transitions.csv"
-
-    if not probabilistic_transitions_slider_values_dict or all(value == 0 for value in probabilistic_transitions_slider_values_dict.values()):
-
-        print "Using default probabilities"
-        st_probabilistic_transitions_command ="--import --lib=" + st_library + \
-                                              " --sheet=STSim_Transition --file=" + st_probabilistic_transitions_file_original + " --sid=" + st_scenario
-        sub_proc.call(st_exe + " " + st_probabilistic_transitions_command, shell=True)
-
-    else:
-
-        print "Using user defined probabilities"
-        st_probabilistic_transitions_file_user_defined=static_files_dir + "/st_sim/probabilistic_transitions/user_defined/castle_creek_probabilistic_transitions_" + unique_session_id + ".csv"
-        copyfile(st_probabilistic_transitions_file_original,st_probabilistic_transitions_file_user_defined)
-
-        file_reader=csv.reader(open(st_probabilistic_transitions_file_original))
-        st_probabilistic_transitions_file_user_defined_handle=open(st_probabilistic_transitions_file_user_defined, "wb")
-        file_writer=csv.writer(st_probabilistic_transitions_file_user_defined_handle)
-
-        for key,value in probabilistic_transitions_slider_values_dict.iteritems():
-            for line in file_reader:
-                new_array=line
-                if line[4] == key:
-                    new_array[5]=float(new_array[5])+value
-                file_writer.writerow(new_array)
-
-        st_probabilistic_transitions_file_user_defined_handle.close()
-        # Import probabilistic transitions into user specified scenario.
-        st_probabilistic_transitions_command ="--import --lib=" + st_library + \
-                                      " --sheet=STSim_Transition --file=" + st_probabilistic_transitions_file_user_defined + " --sid=" + st_scenario
-        sub_proc.call(st_exe + " " + st_probabilistic_transitions_command, shell=True)
-
-        os.remove(st_probabilistic_transitions_file_user_defined)
-
-
-    ################################################## Run ST-Sim ######################################################
-
-    # Run ST-Sim with initial conditions, probabilistic transitions, and user specified scenario.
-    # use Popen since we want to handle the output on the live
-    st_run_model_command="--run --lib=" + st_library + " --sid="+st_scenario
-    print st_exe + " " + st_run_model_command
-    test_model_run = sub_proc.Popen(st_exe + " " + st_run_model_command, shell=True, stdout=sub_proc.PIPE)
-    result = ""
-
-    # wait for the process to end
-    while True: # TODO - implement a timeout? This should be handled VERY carefully...
-        out = test_model_run.stdout.read(1)
-        result += out
-        if out == '' and test_model_run.poll() != None:
-            break;
-
-    st_model_output_sid = result.split(" ")[-1].strip()
-    st_model_results_dir=static_files_dir + "/st_sim/model_results"
-    st_model_output_filename="stateclass-summary-" + st_model_output_sid + ".csv"
-    st_model_output_file=st_model_results_dir + os.sep + st_model_output_filename
-
-    # Generate a report (csv) from ST-Sim for the model run above
-    st_report_command=" --console=stsim --create-report --name=stateclass-summary --lib=" \
-     + st_library + " --file=" + st_model_output_file \
-     + " --sids=" + st_model_output_sid
-    sub_proc.call(st_exe + " " + st_report_command, shell=True)
-
-    # Get results out of ST-Sim csv report.
-    results_dict={}
-    #print "\nOutput file location: "
-    #print st_model_results_dir + os.sep + st_model_output_file
-
-    st_model_output_filehandle=open(st_model_output_file)
-    reader=csv.reader(st_model_output_filehandle)
-    reader.next()
-
-    results_dict={}
-    for row in reader:
-        if row[1] not in results_dict:
-            # Iteration
-            results_dict[row[1]]={}
-        if row[2] not in results_dict[row[1]]:
-            # Timestep
-            results_dict[row[1]][row[2]]={}
-        if row[3] not in results_dict[row[1]][row[2]]:
-            # Stratum
-            results_dict[row[1]][row[2]][row[3]]={}
-        results_dict[row[1]][row[2]][row[3]][row[5]]=row[9]
-
-    #print results_dict['1']
-
-
-    sorted_dict=OrderedDict(sorted(results_dict.items(), key=lambda t: t[0]))
-    results_json=json.dumps(sorted_dict)
-    #print "\nResults: "
-    #print results_json
-
-    st_model_output_filehandle.close()
-    os.remove(st_model_output_file)
-
-    context={
-        'results_json':results_json,
-    }
-
-    return HttpResponse(json.dumps(context))
+    # run model and collect results
+    st_model_output_sid = stsim.run_model(st_scenario)
+    st_model_results_dir = os.path.join(static_files_dir, "st_sim", "model_results")
+    st_model_output_file = os.path.join(st_model_results_dir, "stateclass-summary-" + st_model_output_sid + ".csv")
+    results_json = json.dumps(stsim.export_stateclass_summary(sid=st_model_output_sid,
+                                                              report_path=st_model_output_file))
+    return {'results_json': results_json}
