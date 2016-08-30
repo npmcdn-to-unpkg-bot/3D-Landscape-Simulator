@@ -90,14 +90,13 @@ $(document).ready(function() {
             $('input:submit').attr("disabled", true);
         }
 
-
-
     });
 
 });
 
 $(window).load(function(){
     $(".current_slider_setting").val(0);
+    $(".current_probability_slider_setting").val("Default Probabilities");
 });
 
 // Disable Run Model button on model run.
@@ -107,8 +106,6 @@ $(document).ajaxStart(function(){
 });
 
 function show_input_options (){
-
-    //$("#scene").html("<img style='position:relative; top:-10px; border-radius:6px;width:100%' src='" + static_url + "img/3D_scene.png'>")
 
     $("#selected_features").html("Currently Selected: " + feature_id);
 
@@ -139,6 +136,7 @@ function show_input_options (){
 
 }
 
+run=1
 iteration=1
 timestep=0
 
@@ -158,13 +156,13 @@ function run_st_sim(feature_id) {
     veg_slider_values_string=JSON.stringify(veg_slider_values)
     veg_slider_values_state_class_string=JSON.stringify(veg_slider_values_state_class)
 
+    probabilistic_transitions_slider_values_string=JSON.stringify(probabilistic_transitions_slider_values)
+
     $.ajax({
-        //url: "", // the endpoint (for a specific view configured in urls.conf /view_name/)
-        url: "/run_st_sim/" + scenario,
+        url: "/run_st_sim/" + scenario, // the endpoint (for a specific view configured in urls.conf /view_name/)
         type: "POST", // http method
-        //data: {'scenario': scenario, 'veg_slider_values':veg_slider_values_string, 'veg_slider_values_state_class':veg_slider_values_state_class_string},
-        //data: {'scenario': scenario, 'veg_slider_values_state_class':veg_slider_values_state_class_string},
-        data: {'veg_slider_values_state_class':veg_slider_values_state_class_string},
+        data: {'veg_slider_values_state_class':veg_slider_values_state_class_string, 'probabilistic_transitions_slider_values': probabilistic_transitions_slider_values_string},
+
         // handle a successful response
         success: function (json) {
             $("#results_loading").empty()
@@ -172,12 +170,25 @@ function run_st_sim(feature_id) {
             results_data_json = JSON.parse(response["results_json"])
             var scenario_label = $("input:checked + label").text();
 
-            update_results_table(scenario_label, timestep)
+
+            $("#tab_container").css("display", "block")
+            update_results_table(scenario_label, timestep,run)
 
             landscape_viewer.updateVegetation(results_data_json_totals)
             previous_feature_id=feature_id
 
-            create_area_charts(results_data_json)
+            create_area_charts(results_data_json,run)
+
+            document.getElementById("view" + run + "_link").click()
+
+            // Maximum of 4 model runs
+            if (run==4){
+                run=1;
+            }
+            else {
+                run+=1;
+            }
+
 
         },
 
@@ -197,9 +208,10 @@ function run_st_sim(feature_id) {
         $('input:submit').attr("disabled", false);
     });
 
+
 }
 
-function update_results_table(scenario_label, timestep) {
+function update_results_table(scenario_label, timestep,run) {
 
      // sum state class values for display in scene and table header
     results_data_json_totals={}
@@ -212,14 +224,43 @@ function update_results_table(scenario_label, timestep) {
     });
 
     // Create the Results Table
-    if (typeof previous_feature_id == "undefined" || previous_feature_id != feature_id) {
-        $("#results_table").append("<tr><th colspan='3'>Location: " + feature_id + "</th></tr>");
+    $("#results_table_" + run).html("<tr class='location_tr'><td class='location_th' colspan='1'>Location </td><td colspan='2'>" + feature_id + "</td></tr>");
+
+    $("#view"+run).append("<table id='selected_location_table_" + run + "' class='selected_location_table' ><tr></tr></table> <div id='area_charts_" + run +"' class='area_charts'> </div>")
+
+    $("#results_table_" + run).append("<tr class='scenario_tr'><td class='scenario_th' colspan='1'>Scenario </td><td colspan='2'><div class='overflow_ellipses'>" + scenario_label + "</div></td></tr>");
+
+    /*
+    $("#selected_location_table_" + run).html("<tr><th colspan='3'>County: " + feature_id + "</th></tr>");
+    $("#selected_location_table_" + run).append("<tr class='veg_type_percent_tr'><td class='scenario_th' colspan='3'>Scenario: " + scenario_label + "</td></tr>");
+    */
+
+    if (typeof probabilistic_transitions_slider_values != "undefined") {
+        var sum_probabilities=0
+
+        $.each(probabilistic_transitions_slider_values, function (transition_type, probability) {
+            sum_probabilities+=Math.abs(probability)
+        })
+
+        if (sum_probabilities != 0) {
+
+            $("#results_table_" + run).append("<tr class='probabilistic_transitions_tr'><td class='probabilistic_transitions_th' id='probabalistic_transitions_th_" + run + "' colspan='2'>Disturbance Probabilities</td><td class='probabilistic_transitions_values_header'> <span class='show_disturbance_probabilities_link'> <span class='show_disturbance_probabilities_link_text'>Show</span> <img class='dropdown_arrows_disturbance' src='/static/img/down_arrow.png'></span></td></tr>");
+            var sign;
+            $.each(probabilistic_transitions_slider_values, function (transition_type, probability) {
+                if (probability > 0) {
+                    sign="+"
+                }
+                else {
+                    sign = ""
+                }
+                $("#results_table_" + run).append("<tr class='probabilistic_transitions_tr_values'><td class='probabilistic_transitions_values' id='probabilistic_transitions_values_"  + run  + "' colspan='3'>" + transition_type + ": " + sign + (probability * 100) + "%</td></tr>");
+            });
+        }
+        else {
+            $("#results_table_" + run).append("<tr class='probabilistic_transitions_tr'><td class='probabilistic_transitions_th' id='probabalistic_transitions_th_" + run + "' colspan='2'>Disturbance Probabilities</td><td class='probabilistic_transitions_values_header'>Defaults</td></tr>");
+        }
     }
 
-    $("#results_table").append("<tr class='veg_type_percent_tr'><td class='scenario_th' colspan='3'>Scenario: " + scenario_label + "</td></tr>");
-
-    $("#selected_location_table").html("<tr><th colspan='3'>County: " + feature_id + "</th></tr>");
-    $("#selected_location_table").append("<tr class='veg_type_percent_tr'><td class='scenario_th' colspan='3'>Scenario: " + scenario_label + "</td></tr>");
 
     // Create a list of all the veg types and create a sorted list.
     var veg_type_list = new Array()
@@ -231,6 +272,7 @@ function update_results_table(scenario_label, timestep) {
 
     $("#running_st_sim").html("ST-Sim Model Results")
 
+    $("#results_table_" + run).append("<tr class='veg_output_tr'><td class='veg_output_th' colspan='3'>Vegetation Cover</td></tr>");
     // Go through each sorted veg_type
     $.each(sorted_veg_type_list, function (index, value) {
 
@@ -238,7 +280,7 @@ function update_results_table(scenario_label, timestep) {
 
         // Write veg type and % headers
        //$("#results_table").append("<tr class='veg_type_percent_tr'><td class='veg_type_th' colspan='3'>" + value + " " + (results_data_json_totals[value]).toFixed(1) + "%" +
-        $("#results_table").append("<tr class='veg_type_percent_tr'><td class='veg_type_th' colspan='3'>" + value +
+        $("#results_table").html("<tr class='veg_type_percent_tr'><td class='veg_type_th' colspan='3'>" + value +
             "<span class='show_state_classes_results_link'> <img class='dropdown_arrows' src='/static/img/down_arrow.png'></span>" +
             "</td></tr>");
 
@@ -271,6 +313,23 @@ function update_results_table(scenario_label, timestep) {
         }
         $(this).closest('tr').nextUntil('tr.veg_type_percent_tr').slideToggle(0);
     });
+
+    // Show/Hide run specific annual disturbances probabilities
+    $('.show_disturbance_probabilities_link').unbind('click');
+    $('.show_disturbance_probabilities_link').click(function () {
+
+        if ($(this).children('img').attr('src') == '/static/img/down_arrow.png') {
+
+            $(this).children('img').attr('src', '/static/img/up_arrow.png')
+            $(this).children('.show_disturbance_probabilities_link_text').html('Hide')
+
+        }
+        else {
+            $(this).children('img').attr('src', '/static/img/down_arrow.png')
+            $(this).children('.show_disturbance_probabilities_link_text').html('Show')
+        }
+        $(this).closest('tr').nextUntil('tr.veg_output_tr').slideToggle(0);
+    });
 }
 
 /*************************************************** Slider bars  ****************************************************/
@@ -301,7 +360,6 @@ var landscape_viewer = require('app').default('scene', veg_slider_values);
 
 var veg_slider_values_state_class={}
 
-
 veg_iteration=1;
 
 $.each(veg_type_state_classes_json, function (veg_type, state_class_list) {
@@ -311,7 +369,7 @@ $.each(veg_type_state_classes_json, function (veg_type, state_class_list) {
 
     //Create a skeleton to house the intital conditions slider bar and  state class input table.
     veg_table_id=veg_type.replace(/ /g, "_").replace(/&/g, "__")
-    $("#sliderTable").append("<tr><td><label for='amount_veg1'><span class='imageOverlayLink'>" + veg_type + " </span></label>" +
+    $("#vegTypeSliderTable").append("<tr><td><label for='amount_veg1'><span class='imageOverlayLink'>" + veg_type + " </span></label>" +
         "<input type='text' id='veg" + veg_iteration + "_label' class='current_slider_setting' readonly>" +
         "<span class='show_state_classes_link'> <img class='dropdown_arrows' src='/static/img/down_arrow.png'></span>" +
         "<div class='slider_bars' id='veg" + veg_iteration + "_slider'></div>" +
@@ -330,7 +388,7 @@ $.each(veg_type_state_classes_json, function (veg_type, state_class_list) {
         state_class_count++
     });
 
-    $("#sliderTable").append("</td></td>")
+    $("#vegTypeSliderTable").append("</td></td>")
 
     veg_iteration++;
 
@@ -381,6 +439,58 @@ function create_slider(iterator, veg_type, state_class_count) {
                 })
 
             }
+        });
+
+    });
+}
+
+probability_iteration=1;
+
+$.each(probabilistic_transitions_json, function (transition_type, state_class_list) {
+
+    //Create a skeleton to house the intital conditions slider bar and  state class input table.
+    probabilistic_transitions_table_id=transition_type.replace(/ /g, "_").replace(/&/g, "__")
+    $("#probabilisticTransitionSliderTable").append("<tr><td><label for='amount_veg1'><span class='imageOverlayLink'>" + transition_type + ": </span></label>" +
+        "<input type='text' id='probabilistic_transition" + probability_iteration + "_label' class='current_probability_slider_setting' readonly>" +
+        "<div class='slider_bars' id='probabilistic_transition" + probability_iteration + "_slider'></div>" +
+        "</td></tr>"
+    );
+
+    // Create a slider bar
+    create_probability_slider(probability_iteration, transition_type, 0)
+
+    $("#probabilisticTransitionSliderTable").append("</td></td>")
+
+    probability_iteration++;
+
+});
+
+probability_labels={}
+probability_labels[-1]="0% Probability"
+probability_labels[-.75]="Very Low (-75%)"
+probability_labels[-.50]="Low (-50%)"
+probability_labels[-.25]="Moderately Low (-25%)"
+probability_labels[0]="Default Probabilities"
+probability_labels[.25]="Moderately High (+25%)"
+probability_labels[.50]="High (+50%)"
+probability_labels[.75]="Very High (+75%)"
+probability_labels[1]="100% Probability"
+
+probabilistic_transitions_slider_values={}
+
+function create_probability_slider(iterator, transition_type) {
+
+    $(function () {
+        $("#probabilistic_transition" + iterator + "_slider").slider({
+            range: "min",
+            value: 0,
+            min: -1,
+            max:1,
+            step:.25,
+            slide: function (event, ui) {
+                probabilistic_transitions_slider_values[transition_type] = ui.value
+                $("#probabilistic_transition" + iterator + "_label").val(probability_labels[ui.value]);
+            },
         });
 
     });

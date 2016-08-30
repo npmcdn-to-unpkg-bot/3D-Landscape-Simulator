@@ -24,7 +24,7 @@ stsim = STSimConsole(lib_path=os.path.join(static_files_dir, st_library),
                      orig_lib_path=os.path.join(static_files_dir, st_orig_library),
                      exe=st_exe)
 
-# defaults for this library
+# defaults for this library. Run once and hold in memory.
 default_sid = stsim.list_scenarios()[0]
 all_veg_state_classes = stsim.export_veg_state_classes(default_sid)
 all_transition_types = stsim.export_probabilistic_transitions_types(default_sid)
@@ -40,13 +40,18 @@ class HomepageView(TemplateView):
         # veg state classes
         context['veg_type_state_classes_json'] = json.dumps(all_veg_state_classes)
 
-        # probabilistic transition types
-        probabilistic_transition_types = ["Replacement Fire", "Annual Grass Invasion", "Insect/Disease"]
+        # our probabilistic transition types for this application
+        probabilistic_transition_types = ["Replacement Fire",
+                                          "Annual Grass Invasion",
+                                          "Insect/Disease",
+                                          "Wind/Weather/Stress"]
+
         if not all(value in all_transition_types for value in probabilistic_transition_types):
             raise KeyError("Invalid transition type specified for this library. Supplied values: " +
                            str([value for value in probabilistic_transition_types]))
 
-        context['probabilistic_transitions_json'] = json.dumps(probabilistic_transition_types)
+        probabilistic_transition_dict = {value: 0 for value in probabilistic_transition_types}
+        context['probabilistic_transitions_json'] = json.dumps(probabilistic_transition_dict)
         return context
 
 
@@ -59,11 +64,10 @@ class STSimRunnerView(View):
 
     def post(self, request, *args, **kwargs):
         values_dict = json.loads(request.POST['veg_slider_values_state_class'])
-        if 'probabilistic_transitions_slider_values_dict' in request.POST:
-            transitions_dict = json.loads(request.POST['probabilistic_transitions_slider_values_dict'])
+        if 'probabilistic_transitions_slider_values' in request.POST:
+            transitions_dict = json.loads(request.POST['probabilistic_transitions_slider_values'])
         else:
             transitions_dict = None
-
         return HttpResponse(json.dumps(run_st_sim(self.sid, values_dict, transitions_dict)))
 
     def dispatch(self, request, *args, **kwargs):
@@ -77,7 +81,6 @@ def run_st_sim(st_scenario, veg_slider_values_state_class_dict, probabilistic_tr
     st_model_init_conditions_file = os.path.join(static_files_dir,
                                                  "st_sim", "initial_conditions",
                                                  "user_defined_temp" + str(time.time()) + ".csv")
-    pprint(veg_slider_values_state_class_dict)
 
     # initial PVT
     stsim.import_nonspatial_distribution(sid=st_scenario,
@@ -90,12 +93,16 @@ def run_st_sim(st_scenario, veg_slider_values_state_class_dict, probabilistic_tr
         transitions_path=st_model_init_conditions_file,
         orig=True)
 
-    if probabilistic_transitions_slider_values_dict is not None:
-        # adjust the values of the default probabilites
+    if probabilistic_transitions_slider_values_dict is not None and len(probabilistic_transitions_slider_values_dict.keys()) > 0:
         user_probabilities = default_probabilities
-        for transition_type in probabilistic_transitions_slider_values_dict.keys():
-            value = probabilistic_transitions_slider_values_dict[transition_type]
-            user_probabilities[transition_type]['probability'] += value
+        # adjust the values of the default probabilites
+        for veg_type in user_probabilities.keys():
+            for state_class in user_probabilities[veg_type]:
+                transition_type = state_class['type']
+                if transition_type in probabilistic_transitions_slider_values_dict.keys():
+                    value = probabilistic_transitions_slider_values_dict[transition_type]
+                    state_class['probability'] += value
+
         stsim.import_probabilistic_transitions(sid=st_scenario,
                                                values_dict=user_probabilities,
                                                working_path=st_model_init_conditions_file)

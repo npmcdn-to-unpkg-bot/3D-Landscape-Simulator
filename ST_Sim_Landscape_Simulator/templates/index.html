@@ -25,13 +25,17 @@
     <!-- Highcharts -->
     <script src="http://code.highcharts.com/highcharts.js"></script>
 
+    <!-- Tabs -->
+    <script src="{% static "js/vendor/tabcontent.js" %}" type="text/javascript"></script>
+    <link href="{% static "css/vendor/tabcontent.css" %}" rel="stylesheet" type="text/css" />
+
     <!-- My CSS -->
     <link rel="stylesheet" href="{% static 'css/base.css'%}" />
     <link href="{% static 'css/buttons.css' %}" rel="stylesheet" type="text/css" />
 
     <script>
-        veg_type_state_classes_json={{veg_type_state_classes_json | safe}}
-        console.log(veg_type_state_classes_json)
+        veg_type_state_classes_json = {{veg_type_state_classes_json | safe}}
+        probabilistic_transitions_json = {{probabilistic_transitions_json | safe}}
     </script>
 
 </head>
@@ -47,12 +51,19 @@
             <!--<table style="width:100%" id="initial_conditions_table"><tr></tr></table>-->
             <div style="display:none" id="input_initial_veg">
                 <div class="steps">2. Specify Initial Vegetation Cover</div>
-                <table id="sliderTable" class="tablesorter"></table>
+                <table id="vegTypeSliderTable" class="sliderTable"></table>
                 <div id="total_input_percent_div">Total Percent Cover: <div id="total_input_percent">0%</div></div>
+                <div class="steps">3. Annual Disturbance Probabilities</div>
+                <table id="probabilisticTransitionSliderTable" class="sliderTable"></table>
+                <!--
+                Replacement Fire: <input type='text' id='fire_slider_label' value="defaults" class='current_probability_slider_setting' readonly>
+                <div id ="fire_slider" class="slider_bars"></div>
+                -->
             </div>
+            <br>
 
             <div style="display:none" id="input_management_scenario">
-                <div class="steps">3.&nbsp;Choose a Management Scenario</div>
+                <div class="steps">4.&nbsp;Choose a Management Scenario</div>
                 <form method="post">
                     <input type="radio" name="scenario" value="10" checked><label for="10" class="scenario_radio_label" id="Treatments focus on thinning of trees in areas that are encroached by pinion and juniper.">Current Management </label><br>
                     <input type="radio" name="scenario" value="188"><label for="188" class="scenario_radio_label" id="No management actions take place in this scenario.">No Management </label><br>
@@ -80,11 +91,39 @@
             <div id="results">
                 <div id="results_loading"></div>
                 <div id="running_st_sim" style="display:none">Running ST-Sim...</div>
-                <table id="selected_location_table"><tr></tr></table>
-                <div id="area_charts"> </div>
-            </div>
-            <div id="tabular_output" style="display:none">
-                <table id="results_table"><tr></tr></table>
+
+                 <div id="tab_container">
+                    <!--data-persist="true" keeps the current tab active on page refresh-->
+                    <ul class="tabs" data-persist="false">
+                        <li id="view1_tab" style="display:none"><a id="view1_link" href="#view1">Run 1</a></li>
+                        <li id="view2_tab" style="display:none"><a id="view2_link" href="#view2">Run 2</a></li>
+                        <li id="view3_tab" style="display:none"><a id="view3_link" href="#view3">Run 3</a></li>
+                        <li id="view4_tab" style="display:none"><a id="view4_link" href="#view4">Run 4</a></li>
+                    </ul>
+                    <div class="tabcontents">
+                        <div id="view1" class="views">
+                            <div id="tabular_output_1">
+                                <table id="results_table_1" class="results_table"></table>
+                            </div>
+                        </div>
+                        <div id="view2" class="views">
+                            <div id="tabular_output_2">
+                                <table id="results_table_2" class="results_table"></table>
+                            </div>
+                        </div>
+                        <div id="view3" class="views">
+                            <div id="tabular_output_3">
+                                <table id="results_table_3" class="results_table"></table>
+                            </div>
+                        </div>
+                        <div id="view4" class="views">
+                            <div id="tabular_output_4">
+                                <table id="results_table_4" class="results_table"></table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
 

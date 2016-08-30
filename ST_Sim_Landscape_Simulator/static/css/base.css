@@ -40,7 +40,6 @@ canvas {
 
 #button_container {
 	position: relative;
-	/*height: 79%;*/
     height: 79vh;
     width:calc(100% - 695px);
     left:0px;
@@ -80,7 +79,7 @@ canvas {
 	padding: 4px;
 	margin-right: 10px;
 	border-radius: 5px;
-    background:white;
+    background:white
     transition:background-color 0.5s ease;
 }
 
@@ -121,9 +120,10 @@ canvas {
 
 #results {
 	margin-right: 10px;
-	height: 850px;
+	height: 855px;
 	overflow-y: scroll;
     overflow-x: hidden;
+    background-color:white;
 }
 
 #results_loading {
@@ -136,9 +136,9 @@ canvas {
 	top: 4px;
 }
 
-#area_charts{
+.area_charts{
     position:relative;
-    top:-10px;
+    top:-40px;
 }
 
 label {
@@ -165,35 +165,125 @@ label, td{
     letter-spacing: 2px;
 }
 
+.selected_location_table th {
+    font-size:1em !important;
+}
 
-#results_table, #selected_location_table {
+
+.results_table, .selected_location_table {
     width:100%;
+    width:324px;
     margin-bottom:20px;
     padding-right:12px;
 }
 
-#results_table th, #selected_location_table th {
-    background-color: #1954ad;
+.results_table th, .selected_location_table th {
+	background-color: #1954ad;
 	background-color: #ff6f20;
+	width: 40px;
+    max-width: 40px;
 	height: 30px;
 	color: white;
-    font-size:.9em;
+	font-size: .9em;
 	font-weight: bold;
-	letter-spacing: 2px;
+	letter-spacing: 1px;
 	background-image: -webkit-linear-gradient(top, rgba(255,255,255,0), rgba(255,255,255,0));
 	background-image: -moz-linear-gradient(top, rgba(255,255,255,0), rgba(255,255,255,0));
 	background-image: -ms-linear-gradient(top, rgba(255,255,255,0), rgba(255,255,255,0));
 	background-image: -o-linear-gradient(top, rgba(255,255,255,0), rgba(255,255,255,0));
 	background-image: linear-gradient(top, rgba(255,255,255,0), rgba(255,255,255,0));
+	text-align: right;
+	padding-right: 8px;
 }
 
-.scenario_th{
-    background-color:#4C9ED9;
-    color:white;
-    font-weight:bold;
-    text-align:center;
-    height:25px;
+.results_table td{
+    background-color: #A8A8A8;
+    background-color: #8C8CE4;
+    letter-spacing: 1px;
+    padding-left:8px;
+    line-height:24px;
+    max-width: 220px;
 }
+
+.location_tr td {
+    background-color:#FF6F20;
+    text-align: left;
+    color: white;
+    font-weight: bold;
+}
+
+.location_th{
+    width:40px;
+    max-width:40px;
+}
+
+.scenario_tr td {
+	background-color: #4C9ED9;
+	text-align: left;
+	color: white;
+	font-weight: bold;
+}
+
+.probabilistic_transitions_th {
+	background-color: #DE5448;
+	font-weight: bold;
+	text-align: left;
+	color: white;
+	padding-left: 8px !important;
+	font-style: normal !important;
+	letter-spacing: 1px;
+	min-width: 195px;
+}
+
+.probabilistic_transitions_tr_values{
+    display:none;
+}
+
+.show_disturbance_probabilities_link{
+    cursor:pointer;
+}
+
+.probabilistic_transitions_values_header {
+	background-color: #DE5448;
+	text-align: center;
+	width: 80px;
+	color: white;
+    font-weight:bold;
+}
+
+.probabilistic_transitions_values {
+	font-size: .8em;
+	color: #444343;
+	letter-spacing: .5px;
+	font-style: italic;
+	text-align: center;
+	line-height: 25px !important;
+	background-color: #DADAF8 !important;
+}
+.scenario_th {
+	background-color: #4C9ED9 !important;
+	color: white;
+	font-weight: bold;
+	text-align: right;
+	padding-right: 5px;
+}
+
+.overflow_ellipses{
+	text-overflow: ellipsis;
+	width: 210px;
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+.veg_output_th {
+    background-color: #1EBA36 !important;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    line-height: 32px;
+    letter-spacing: 1px;
+}
+
 
 .veg_type_th{
     background-color:#E9E7E7;
@@ -211,6 +301,7 @@ label, td{
     color: white;
     font-weight:bold;
     background-color: #1EBA36;
+    margin-top:10px;
 }
 
 .disabled {
@@ -283,8 +374,9 @@ div#pop-up {
     border-radius: 5px;
 }
 
-#sliderTable {
-    position: relative;
+.sliderTable{
+    position:relative;
+    width:308px
 }
 
 .slider_bars {
@@ -300,7 +392,7 @@ div#pop-up {
 }
 
 .sub_slider_table td{
-   font-size:.8em;
+   font-size:1em;
 }
 
 .stacked_area_chart_title {
@@ -315,7 +407,7 @@ div#pop-up {
 	display: inline-block;
 	font-weight: bold;
 	color: #595959;
-    margin-bottom:3px;
+	margin-bottom: 3px;
 }
 
 .show_stacked_area_chart_link {
@@ -323,12 +415,11 @@ div#pop-up {
 	color: #007BB0;
 	cursor: pointer;
 	float: right;
-	position: relative;
-	right: 22px;
 	z-index: 999;
-	top: 10px;
+	top: 4px;
+	right: 10px;
+	position: relative;
 }
-
 .state_class_tr{
     display:none;
 }
@@ -352,9 +443,23 @@ div#pop-up {
   border:0;
 }
 
+.current_probability_slider_setting {
+  width:140px;
+  border:0;
+  font-size:1em;
+  color:#444343;
+}
+
 .dropdown_arrows{
    position:relative;
-   left:2px
+   left:2px;
+   top:-5px;
+}
+
+.dropdown_arrows_disturbance{
+    position:relative;
+    top:-1px;
+    left:2px;
 }
 
 #site_icon {
@@ -370,4 +475,41 @@ div#pop-up {
 	position: relative;
 	top: 54px;
 	left: 1px;
+}
+
+#tab_container{
+    display:none;
+    margin-right:9px;
+}
+
+.views{
+    display:none;
+}
+
+div.tabcontents {
+    padding: 10px 0px;
+}
+
+ul.tabs li a {
+	font: normal 12px Verdana;
+	text-decoration: none;
+	position: relative;
+	padding: 7px 18px;
+    color: #6E6E6E;
+	outline: none;
+	background: #F6F6F9;
+	border: 1px solid #CCC;
+}
+
+ul.tabs li.selected a, ul.tabs li.selected a:hover {
+	top: 0px;
+	font-weight: normal;
+	background: #FFF;
+	border-bottom: 1px solid #FFF;
+	color: #6E6E6E;
+
+}
+
+li.selected a:hover {
+
 }
