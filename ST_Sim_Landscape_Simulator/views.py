@@ -165,11 +165,12 @@ def run_st_sim(st_scenario, veg_slider_values_state_class_dict, probabilistic_tr
 
     st_model_output_sid = result.split(" ")[-1].strip()
     st_model_results_dir=static_files_dir + "/st_sim/model_results"
-    st_model_output_file="stateclass-summary-" + st_model_output_sid + ".csv"
+    st_model_output_filename="stateclass-summary-" + st_model_output_sid + ".csv"
+    st_model_output_file=st_model_results_dir + os.sep + st_model_output_filename
 
     # Generate a report (csv) from ST-Sim for the model run above
     st_report_command=" --console=stsim --create-report --name=stateclass-summary --lib=" \
-     + st_library + " --file=" + st_model_results_dir + os.sep + st_model_output_file \
+     + st_library + " --file=" + st_model_output_file \
      + " --sids=" + st_model_output_sid
     sub_proc.call(st_exe + " " + st_report_command, shell=True)
 
@@ -178,7 +179,8 @@ def run_st_sim(st_scenario, veg_slider_values_state_class_dict, probabilistic_tr
     #print "\nOutput file location: "
     #print st_model_results_dir + os.sep + st_model_output_file
 
-    reader=csv.reader(open(st_model_results_dir + os.sep + st_model_output_file))
+    st_model_output_filehandle=open(st_model_output_file)
+    reader=csv.reader(st_model_output_filehandle)
     reader.next()
 
     results_dict={}
@@ -196,10 +198,14 @@ def run_st_sim(st_scenario, veg_slider_values_state_class_dict, probabilistic_tr
 
     #print results_dict['1']
 
+
     sorted_dict=OrderedDict(sorted(results_dict.items(), key=lambda t: t[0]))
     results_json=json.dumps(sorted_dict)
     #print "\nResults: "
     #print results_json
+
+    st_model_output_filehandle.close()
+    os.remove(st_model_output_file)
 
     context={
         'results_json':results_json,

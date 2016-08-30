@@ -227,11 +227,11 @@ function update_results_table(scenario_label, timestep,run) {
     });
 
     // Create the Results Table
-    $("#results_table_" + run).html("<tr class='location_tr'><th class='location_th' colspan='2'>Location </th><td>" + feature_id + "</td></tr>");
+    $("#results_table_" + run).html("<tr class='location_tr'><td class='location_th' colspan='1'>Location </td><td colspan='2'>" + feature_id + "</td></tr>");
 
     $("#view"+run).append("<table id='selected_location_table_" + run + "' class='selected_location_table' ><tr></tr></table> <div id='area_charts_" + run +"' class='area_charts'> </div>")
 
-    $("#results_table_" + run).append("<tr class='scenario_tr'><th class='scenario_th' colspan='2'>Scenario </th><td>" + scenario_label + "</td></tr>");
+    $("#results_table_" + run).append("<tr class='scenario_tr'><td class='scenario_th' colspan='1'>Scenario </td><td colspan='2'><div class='overflow_ellipses'>" + scenario_label + "</div></td></tr>");
 
     /*
     $("#selected_location_table_" + run).html("<tr><th colspan='3'>County: " + feature_id + "</th></tr>");
@@ -246,7 +246,8 @@ function update_results_table(scenario_label, timestep,run) {
         })
 
         if (sum_probabilities != 0) {
-            $("#results_table_" + run).append("<tr class='probabilistic_transitions_tr'><td class='probabilistic_transitions_th' colspan='3'>Disturbance Probabilities</td></tr>");
+
+            $("#results_table_" + run).append("<tr class='probabilistic_transitions_tr'><td class='probabilistic_transitions_th' id='probabalistic_transitions_th_" + run + "' colspan='2'>Disturbance Probabilities</td><td class='probabilistic_transitions_values_header'> <span class='show_disturbance_probabilities_link'> <span class='show_disturbance_probabilities_link_text'>Show</span> <img class='dropdown_arrows_disturbance' src='" + static_url + "img/down_arrow.png'></span></td></tr>");
             var sign;
             $.each(probabilistic_transitions_slider_values, function (transition_type, probability) {
                 if (probability > 0) {
@@ -255,10 +256,14 @@ function update_results_table(scenario_label, timestep,run) {
                 else {
                     sign = ""
                 }
-                $("#results_table_" + run).append("<tr class='probabilistic_transitions_tr'><td class='probabilistic_transitions_values' colspan='2'>" + transition_type + "</td><td>" + sign + (probability * 100) + "%</td></tr>");
+                $("#results_table_" + run).append("<tr class='probabilistic_transitions_tr_values'><td class='probabilistic_transitions_values' id='probabilistic_transitions_values_"  + run  + "' colspan='3'>" + transition_type + ": " + sign + (probability * 100) + "%</td></tr>");
             });
         }
+        else {
+            $("#results_table_" + run).append("<tr class='probabilistic_transitions_tr'><td class='probabilistic_transitions_th' id='probabalistic_transitions_th_" + run + "' colspan='2'>Disturbance Probabilities</td><td class='probabilistic_transitions_values_header'>Defaults</td></tr>");
+        }
     }
+
 
     // Create a list of all the veg types and create a sorted list.
     var veg_type_list = new Array()
@@ -310,6 +315,23 @@ function update_results_table(scenario_label, timestep,run) {
             $(this).children('img').attr('src', '/static/img/down_arrow.png')
         }
         $(this).closest('tr').nextUntil('tr.veg_type_percent_tr').slideToggle(0);
+    });
+
+    // Show/Hide run specific annual disturbances probabilities
+    $('.show_disturbance_probabilities_link').unbind('click');
+    $('.show_disturbance_probabilities_link').click(function () {
+
+        if ($(this).children('img').attr('src') == '/static/img/down_arrow.png') {
+
+            $(this).children('img').attr('src', '/static/img/up_arrow.png')
+            $(this).children('.show_disturbance_probabilities_link_text').html('Hide')
+
+        }
+        else {
+            $(this).children('img').attr('src', '/static/img/down_arrow.png')
+            $(this).children('.show_disturbance_probabilities_link_text').html('Show')
+        }
+        $(this).closest('tr').nextUntil('tr.veg_output_tr').slideToggle(0);
     });
 }
 

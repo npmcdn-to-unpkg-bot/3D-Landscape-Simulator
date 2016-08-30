@@ -179,30 +179,41 @@ label, td{
 .results_table th, .selected_location_table th {
 	background-color: #1954ad;
 	background-color: #ff6f20;
+	width: 40px;
+    max-width: 40px;
 	height: 30px;
 	color: white;
 	font-size: .9em;
 	font-weight: bold;
-	letter-spacing: 2px;
+	letter-spacing: 1px;
 	background-image: -webkit-linear-gradient(top, rgba(255,255,255,0), rgba(255,255,255,0));
 	background-image: -moz-linear-gradient(top, rgba(255,255,255,0), rgba(255,255,255,0));
 	background-image: -ms-linear-gradient(top, rgba(255,255,255,0), rgba(255,255,255,0));
 	background-image: -o-linear-gradient(top, rgba(255,255,255,0), rgba(255,255,255,0));
 	background-image: linear-gradient(top, rgba(255,255,255,0), rgba(255,255,255,0));
 	text-align: right;
-	padding-right: 5px;
+	padding-right: 8px;
 }
 
 .results_table td{
-    background-color:#E9E9E9;
-    padding-left:5px;
+    background-color: #A8A8A8;
+    background-color: #8C8CE4;
+    letter-spacing: 1px;
+    padding-left:8px;
+    line-height:24px;
+    max-width: 220px;
 }
 
 .location_tr td {
-   background-color:#FF6F20;
+    background-color:#FF6F20;
     text-align: left;
     color: white;
     font-weight: bold;
+}
+
+.location_th{
+    width:40px;
+    max-width:40px;
 }
 
 .scenario_tr td {
@@ -212,38 +223,55 @@ label, td{
 	font-weight: bold;
 }
 
-.probabilistic_transitions_tr td {
-    font-style:italic;
+.probabilistic_transitions_th {
+	background-color: #DE5448;
+	font-weight: bold;
+	text-align: left;
+	color: white;
+	padding-left: 8px !important;
+	font-style: normal !important;
+	letter-spacing: 1px;
+	min-width: 195px;
 }
 
-.probabilistic_transitions_th {
-	background-color: #DE5448 !important;
-	font-weight: bold;
+.probabilistic_transitions_tr_values{
+    display:none;
+}
+
+.show_disturbance_probabilities_link{
+    cursor:pointer;
+}
+
+.probabilistic_transitions_values_header {
+	background-color: #DE5448;
 	text-align: center;
-	height: 25px;
+	width: 80px;
 	color: white;
-    padding-left: 9px !important;
-    font-style:normal !important;
-    letter-spacing: 1px;
+    font-weight:bold;
 }
 
 .probabilistic_transitions_values {
-	text-align: right;
 	font-size: .8em;
 	color: #444343;
-	padding-right: 5px;
-	/* font-weight: bold; */
 	letter-spacing: .5px;
 	font-style: italic;
+	text-align: center;
+	line-height: 25px !important;
+	background-color: #E9E9E9 !important;
 }
-
 .scenario_th {
 	background-color: #4C9ED9 !important;
 	color: white;
 	font-weight: bold;
 	text-align: right;
-	height: 25px;
 	padding-right: 5px;
+}
+
+.overflow_ellipses{
+	text-overflow: ellipsis;
+	width: 210px;
+	white-space: nowrap;
+	overflow: hidden;
 }
 
 .veg_output_th {
@@ -425,6 +453,12 @@ div#pop-up {
    position:relative;
    left:2px;
    top:-5px;
+}
+
+.dropdown_arrows_disturbance{
+    position:relative;
+    top:-1px;
+    left:2px;
 }
 
 #site_icon {
