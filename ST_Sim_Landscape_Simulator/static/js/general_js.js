@@ -527,4 +527,3 @@ function activate_scene(){
     $("#map").hide()
 
 }
-
