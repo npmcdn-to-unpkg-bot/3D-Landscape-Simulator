@@ -19,11 +19,11 @@ $(document).ready(function() {
 
     $(".show_state_classes_link").click(function() {
         if ($(this).siblings(".sub_slider_text_inputs").is(":visible")) {
-            $(this).html(" <img class='dropdown_arrows' src='/static/img/down_arrow.png'>")
+            $(this).html(" <img class='dropdown_arrows_rotate' src='/static/img/down_arrow.png'>")
             $(this).siblings(".sub_slider_text_inputs").hide()
         }
         else {
-            $(this).html(" <img class='dropdown_arrows' src='/static/img/up_arrow.png'>")
+            $(this).html(" <img class='dropdown_arrows_rotate' src='/static/img/up_arrow.png'>")
             $(this).siblings(".sub_slider_text_inputs").show()
         }
     });
@@ -112,7 +112,7 @@ $(document).ajaxComplete(function() {
 
 function show_input_options (){
 
-    $("#selected_features").html("Currently Selected: " + feature_id);
+    $("#selected_features").html("Location: " + feature_id);
 
     $("#selected_features").animate({backgroundColor: '#DBDBDB'}, 400, function() {
         $('#selected_features').animate({backgroundColor: 'white'}, 400);
@@ -130,6 +130,9 @@ function show_input_options (){
     $("#map").hide()
     $("#button_list").css("visibility", "visible")
     $(".leaflet-draw-section").addClass("modified_leaflet_control_position")
+
+    $("#step1").hide()
+    $("#selected_features").show()
 
     landscape_viewer.resize()
 
@@ -252,13 +255,17 @@ function update_results_table(scenario_label, timestep,run) {
             $("#results_table_" + run).append("<tr class='probabilistic_transitions_tr'><td class='probabilistic_transitions_th' id='probabalistic_transitions_th_" + run + "' colspan='2'>Disturbance Probabilities</td><td class='probabilistic_transitions_values_header'> <span class='show_disturbance_probabilities_link'> <span class='show_disturbance_probabilities_link_text'>Show</span> <img class='dropdown_arrows_disturbance' src='/static/img/down_arrow.png'></span></td></tr>");
             var sign;
             $.each(probabilistic_transitions_slider_values, function (transition_type, probability) {
-                if (probability > 0) {
-                    sign="+"
+                if (probability != 0) {
+
+                    if (probability > 0) {
+                        sign = "+"
+                    }
+                    else {
+                        sign = ""
+                    }
+                    $("#results_table_" + run).append("<tr class='probabilistic_transitions_tr_values'><td class='probabilistic_transitions_values' id='probabilistic_transitions_values_" + run + "' colspan='3'>" + transition_type + ": " + sign + (probability * 100) + "%</td></tr>");
+
                 }
-                else {
-                    sign = ""
-                }
-                $("#results_table_" + run).append("<tr class='probabilistic_transitions_tr_values'><td class='probabilistic_transitions_values' id='probabilistic_transitions_values_"  + run  + "' colspan='3'>" + transition_type + ": " + sign + (probability * 100) + "%</td></tr>");
             });
         }
         else {
@@ -376,11 +383,12 @@ $.each(veg_type_state_classes_json, function (veg_type, state_class_list) {
     veg_table_id=veg_type.replace(/ /g, "_").replace(/&/g, "__")
     $("#vegTypeSliderTable").append("<tr><td><label for='amount_veg1'><span class='imageOverlayLink'>" + veg_type + " </span></label>" +
         "<input type='text' id='veg" + veg_iteration + "_label' class='current_slider_setting' readonly>" +
-        "<span class='show_state_classes_link'> <img class='dropdown_arrows' src='/static/img/down_arrow.png'></span>" +
+        "<span class='show_state_classes_link'> <img class='dropdown_arrows_rotate' src='/static/img/down_arrow.png'></span>" +
         "<div class='slider_bars' id='veg" + veg_iteration + "_slider'></div>" +
         "<div class='sub_slider_text_inputs' style='display:none'>" +
+        "<div class='callout right'>" +
         "<table id='" + veg_table_id + "' class='sub_slider_table' title='" + veg_type  + "'><table>" +
-        "</div></td></tr>"
+        "</div></div></td></tr>"
     );
 
     // Create a slider bar
@@ -523,6 +531,8 @@ function activate_map() {
     $("#scene_button").removeClass("selected")
     $("#map").show()
     $("#scene").hide()
+    $("#step1").show()
+    $("#selected_features").hide()
 }
 
 function activate_scene(){
@@ -530,5 +540,6 @@ function activate_scene(){
     $("#scene_button").addClass("selected")
     $("#scene").show()
     $("#map").hide()
-
+    $("#step1").hide()
+    $("#selected_features").show()
 }
