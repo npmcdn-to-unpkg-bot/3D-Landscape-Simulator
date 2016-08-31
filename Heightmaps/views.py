@@ -1,102 +1,104 @@
 from __future__ import division
 
 import os
-import json
-from django.http import HttpResponse
-from django.views.decorators.csrf import csrf_exempt
+from django.http import HttpResponse, JsonResponse
 from netCDF4 import Dataset
 import numpy as np
 from PIL import Image
 from django.conf import settings
+from django.views.generic import View
 
-path = os.path.join(settings.STATICFILES_DIRS[1], 'WestUS_30AS.nc')
+nonspatial_path = os.path.join(settings.STATICFILES_DIRS[1], 'WestUS_30AS.nc')
+castle_creek_path = os.path.join(settings.STATICFILES_DIRS[1], 'castle_creek_dem_30m.nc')
 
 DEM_HEIGHT = 5000.0
 
-@csrf_exempt
-def heightmap_stats(request, nlat=None, slat=None, elon=None, wlon=None):
 
-    response = {}
+class NonspatialHeightBase(View):
 
-    if request.method == u'GET':
-        if nlat is not None and slat is not None and elon is not None and wlon is not None:
+    def __init__(self):
+        self.north_lat = None
+        self.south_lat = None
+        self.east_lon = None
+        self.west_lon = None
+        super().__init__()
 
-            #print(nlat, slat, elon, wlon)
+    def dispatch(self, request, *args, **kwargs):
 
-            north_lat = float(nlat)
-            south_lat = float(slat)
-            east_lon = float(elon)
-            west_lon = float(wlon)
+        self.north_lat = float(kwargs['nlat'])
+        self.south_lat = float(kwargs['slat'])
+        self.east_lon = float(kwargs['elon'])
+        self.west_lon = float(kwargs['wlon'])
+        return super(NonspatialHeightBase, self).dispatch(request, *args, **kwargs)
 
-            with Dataset(path, 'r') as ds:
-                    # access our variables
-                    lats = ds.variables['lat'][:]
-                    lons = ds.variables['lon'][:]
-                    if not verify_coords(lats, lons, north_lat, south_lat, east_lon, west_lon):
-                        response['data'] = False
-                    else:
-                        elev = ds.variables['elev'][:].data
-                        # collect indices
-                        indices = get_indices(lats, lons, north_lat,south_lat, east_lon, west_lon)
-                        # shape up our dem slice
-                        dem_slice = elev[indices['w']:indices['e'],indices['n']:indices['s']]
-                        dem_max = float(dem_slice.max())
-                        dem_min = float(dem_slice.min())
-                        dem_width = int(dem_slice.shape[1])
-                        dem_height = int(dem_slice.shape[0])
 
-                        #data = {'dem_min': dem_min, 'dem_max': dem_max,
-                        #        'dem_width': dem_width, 'dem_height': dem_height}
-                        data = {'dem_min': dem_min, 'dem_max': DEM_HEIGHT,
-                                'dem_width': dem_width, 'dem_height': dem_height}
+class Stats(NonspatialHeightBase):
 
-                        response['data'] = data
+    def get(self, request, *args, **kwargs):
+        response = {}
+        if all([coord is not None for coord in [self.north_lat, self.south_lat, self.west_lon, self.east_lon]]):
+            with Dataset(nonspatial_path, 'r') as ds:
+                # access our variables
+                lats = ds.variables['lat'][:]
+                lons = ds.variables['lon'][:]
+                if not verify_coords(lats, lons, self.north_lat, self.south_lat, self.east_lon, self.west_lon):
+                    response['data'] = False
+                else:
+                    elev = ds.variables['elev'][:].data
+                    # collect indices
+                    indices = get_indices(lats, lons, self.north_lat,self.south_lat, self.east_lon, self.west_lon)
+                    # shape up our dem slice
+                    dem_slice = elev[indices['w']:indices['e'],indices['n']:indices['s']]
+                    dem_max = float(dem_slice.max())
+                    dem_min = float(dem_slice.min())
+                    dem_width = int(dem_slice.shape[1])
+                    dem_height = int(dem_slice.shape[0])
 
-    return HttpResponse(json.dumps(response))
+                    #data = {'dem_min': dem_min, 'dem_max': dem_max,
+                    #        'dem_width': dem_width, 'dem_height': dem_height}
+                    data = {'dem_min': dem_min, 'dem_max': DEM_HEIGHT,
+                            'dem_width': dem_width, 'dem_height': dem_height}
 
-@csrf_exempt
-def generate_heightmap(request, nlat=None, slat=None, elon=None, wlon=None):
+                    response['data'] = data
+        print(response['data'])
+        return JsonResponse(response)
 
-    response = HttpResponse(content_type="image/png")
 
-    if request.method == u'GET':
-        if nlat is not None and slat is not None and elon is not None and wlon is not None:
+class Heightmap(NonspatialHeightBase):
 
-            #print(nlat, slat, elon, wlon)
+    def get(self, request, *args, **kwargs):
 
-            north_lat = float(nlat)
-            south_lat = float(slat)
-            east_lon = float(elon)
-            west_lon = float(wlon)
+        response = HttpResponse(content_type="image/png")
 
-            with Dataset(path, 'r') as ds:
-                    # access our variables
-                    lats = ds.variables['lat'][:]
-                    lons = ds.variables['lon'][:]
-                    if not verify_coords(lats, lons, north_lat, south_lat, east_lon, west_lon):
-                        image = Image.new('L', (64,64))
-                        image.save(response, "PNG")
-                    else:
-                        elev = ds.variables['elev'][:].data
-                        # collect indices
-                        indices = get_indices(lats, lons, north_lat,south_lat, east_lon, west_lon)
-                        # print(indices)
-                        # shape up our dem slice
-                        dem_slice = elev[indices['w']:indices['e'],indices['n']:indices['s']]
-                        # print(dem_slice.shape)
-                        dem_flat = dem_slice.ravel().tolist()
-                        dem_max = dem_slice.max()
-                        # dem_flat = [(x/dem_max) * 255 for x in dem_flat]
-                        dem_flat = [(x/DEM_HEIGHT) * 255 for x in dem_flat]
+        if all([coord is not None for coord in [self.north_lat, self.south_lat, self.west_lon, self.east_lon]]):
+            with Dataset(nonspatial_path, 'r') as ds:
+                # access our variables
+                lats = ds.variables['lat'][:]
+                lons = ds.variables['lon'][:]
+                if not verify_coords(lats, lons, self.north_lat, self.south_lat, self.east_lon, self.west_lon):
+                    image = Image.new('L', (64,64))
+                    image.save(response, "PNG")
+                else:
+                    elev = ds.variables['elev'][:].data
+                    # collect indices
+                    indices = get_indices(lats, lons, self.north_lat, self.south_lat, self.east_lon, self.west_lon)
+                    # print(indices)
+                    # shape up our dem slice
+                    dem_slice = elev[indices['w']:indices['e'],indices['n']:indices['s']]
+                    # print(dem_slice.shape)
+                    dem_flat = dem_slice.ravel().tolist()
+                    dem_max = dem_slice.max()
+                    # dem_flat = [(x/dem_max) * 255 for x in dem_flat]
+                    dem_flat = [(x/DEM_HEIGHT) * 255 for x in dem_flat]
 
-                        # write and save new image
-                        image = Image.new('L', (dem_slice.shape[1], dem_slice.shape[0]))
-                        image.putdata(dem_flat)
-                        #image = image.rotate(90, expand=True)
-                        #return {'image' : image, 'dem': dem_flat}
-                        image.save(response, "PNG")
+                    # write and save new image
+                    image = Image.new('L', (dem_slice.shape[1], dem_slice.shape[0]))
+                    image.putdata(dem_flat)
+                    #image = image.rotate(90, expand=True)
+                    #return {'image' : image, 'dem': dem_flat}
+                    image.save(response, "PNG")
 
-    return response
+        return response
 
 
 def verify_coords(lats, lons, nlat, slat, elon, wlon):
