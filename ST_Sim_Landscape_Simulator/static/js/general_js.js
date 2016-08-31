@@ -103,6 +103,11 @@ $(window).load(function(){
 $(document).ajaxStart(function(){
     $("#run_button").addClass('disabled');
     $('input:submit').attr("disabled", true);
+    $(".slider_bars").slider( "option", "disabled", true );
+});
+
+$(document).ajaxComplete(function() {
+    $(".slider_bars").slider( "option", "disabled", false);
 });
 
 function show_input_options (){
