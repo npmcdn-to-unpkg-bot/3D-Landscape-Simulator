@@ -6,28 +6,23 @@ from django.conf import settings
 from json import encoder
 from django.http import HttpResponse
 from stsimpy import STSimConsole
-from pprint import pprint
 
 # Two decimal places when dumping to JSON
 encoder.FLOAT_REPR = lambda o: format(o, '.2f')
 
 # Declare the stsim console we want to work with
-# TODO - make the library user selectable? Could be selected when we choose ecoregions...
-static_files_dir = settings.STATICFILES_DIRS[0]
-st_exe = os.path.join(static_files_dir, "deps", "st_sim", "syncrosim-linux-1-0-24-x64", "SyncroSim.Console.exe" )
-st_library_path = os.path.join(static_files_dir, "st_sim", "libraries")
-st_library_file = "ST-Sim-Sample-V3-0-24.ssim"
-st_library_orig_file = "ST-Sim-Sample-V3-0-24_Original.ssim"
-st_library = os.path.join(st_library_path, st_library_file)
-st_orig_library = os.path.join(st_library_path, st_library_orig_file)
-stsim = STSimConsole(lib_path=os.path.join(static_files_dir, st_library),
-                     orig_lib_path=os.path.join(static_files_dir, st_orig_library),
-                     exe=st_exe)
+stsim = STSimConsole(lib_path=settings.ST_SIM_WORKING_LIB,
+                     orig_lib_path=settings.ST_SIM_ORIG_LIB,
+                     exe=settings.ST_SIM_EXE)
 
-# defaults for this library. Run once and hold in memory.
+# Defaults for this library. Run once and hold in memory.
 default_sid = stsim.list_scenarios()[0]
-all_veg_state_classes = stsim.export_veg_state_classes(default_sid)
-all_transition_types = stsim.export_probabilistic_transitions_types(default_sid)
+default_sc_path = os.path.join(settings.ST_SIM_WORKING_DIR, 'state_classes', 'state_classes.csv')
+default_transitions_path = os.path.join(settings.ST_SIM_WORKING_DIR, 'probabilistic_transitions', 'original','prob_trans.csv')
+all_veg_state_classes = stsim.export_veg_state_classes(default_sid,
+                                                       state_class_path=default_sc_path)
+all_transition_types = stsim.export_probabilistic_transitions_types(default_sid,
+                                                                    transitions_path=default_transitions_path)
 
 
 class HomepageView(TemplateView):
@@ -78,8 +73,8 @@ class STSimRunnerView(View):
 def run_st_sim(st_scenario, veg_slider_values_state_class_dict, probabilistic_transitions_slider_values_dict=None):
 
     # working file path
-    st_model_init_conditions_file = os.path.join(static_files_dir,
-                                                 "st_sim", "initial_conditions",
+    st_model_init_conditions_file = os.path.join(settings.ST_SIM_WORKING_DIR,
+                                                 "initial_conditions",
                                                  "user_defined_temp" + str(time.time()) + ".csv")
 
     # initial PVT
@@ -114,7 +109,7 @@ def run_st_sim(st_scenario, veg_slider_values_state_class_dict, probabilistic_tr
 
     # run model and collect results
     st_model_output_sid = stsim.run_model(st_scenario)
-    st_model_results_dir = os.path.join(static_files_dir, "st_sim", "model_results")
+    st_model_results_dir = os.path.join(settings.ST_SIM_WORKING_DIR, "model_results")
     st_model_output_file = os.path.join(st_model_results_dir, "stateclass-summary-" + st_model_output_sid + ".csv")
     results_json = json.dumps(stsim.export_stateclass_summary(sid=st_model_output_sid,
                                                               report_path=st_model_output_file))
