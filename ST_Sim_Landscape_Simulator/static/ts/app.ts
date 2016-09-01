@@ -3,18 +3,19 @@
 import * as globals from './globals'
 import {createTerrain} from './terrain'
 import {createVegetation, VegetationOptions, Cluster} from './veg'
+import {createSpatialVegetation} from './spatialveg'
 import {detectWebGL} from './utils'
-import {Loader, Assets} from './assetloader'
+import {Loader, Assets, AssetDescription} from './assetloader'
 
-interface VegParams {		// THIS INTERFACE IS SUBJECT TO CHANGE
-	"Basin Big Sagebrush Upland"?: 				number, 
-	"Curleaf Mountain Mahogany"?: 				number, 
-	"Low Sagebrush"?: 			  				number, 
-	"Montane Sagebrush Upland"?:				number, 
-	"Montane Sagebrush Upland With Trees"?: 	number,
-	"Western Juniper Woodland & Savannah"?: 	number,
-	"Wyoming and Basin Big Sagebrush Upland"?: 	number
-}
+//interface VegParams {		// THIS INTERFACE IS SUBJECT TO CHANGE
+//	"Basin Big Sagebrush Upland"?: 				number, 
+//	"Curleaf Mountain Mahogany"?: 				number, 
+//	"Low Sagebrush"?: 			  				number, 
+//	"Montane Sagebrush Upland"?:				number, 
+//	"Montane Sagebrush Upland With Trees"?: 	number,
+//	"Western Juniper Woodland & Savannah"?: 	number,
+//	"Wyoming and Basin Big Sagebrush Upland"?: 	number
+//}
 
 interface SpatialRunControl {
 	min_step : number,
@@ -23,12 +24,11 @@ interface SpatialRunControl {
 	result_scenario_id: number
 }
 
-export default function run(container_id: string, params: VegParams) {
+export default function run(container_id: string, params: globals.VegParams) {
 
 	const vegParams = params
 	let initialized = false
 	let spatial = false
-
 
 	if (!detectWebGL) {
 		alert("Your browser does not support WebGL. Please use a different browser (I.e. Chrome, Firefox).")
@@ -36,6 +36,7 @@ export default function run(container_id: string, params: VegParams) {
 	}
 
 	let masterAssets: Assets
+	let spatialAssets: Assets
 	let terrain: THREE.Mesh
 	let srcSpatialPath = 'spatial/height/'
 	let statsSpatialPath = 'spatial/stats/'
@@ -67,20 +68,22 @@ export default function run(container_id: string, params: VegParams) {
 	const loader = Loader()
 	loader.load({
 			text: [
-				// terrain
+				/* realism shaders */
 				{name: 'terrain_vert', url: 'static/shader/terrain.vert.glsl'},
 				{name: 'terrain_frag', url: 'static/shader/terrain.frag.glsl'},
-
-				// veg
 				{name: 'veg_vert', url: 'static/shader/veg.vert.glsl'},
-				{name: 'veg_frag', url: 'static/shader/veg.frag.glsl'}
+				{name: 'veg_frag', url: 'static/shader/veg.frag.glsl'},
+				/* data shaders */
+				{name: 'data_terrain_vert', url: 'static/shader/data_terrain.vert.glsl'},
+				{name: 'data_terrain_frag', url: 'static/shader/data_terrain.frag.glsl'},
+				{name: 'data_veg_vert', url: 'static/shader/data_veg.vert.glsl'},
+				{name: 'data_veg_frag', url: 'static/shader/data_veg.frag.glsl'},
 			],
 			
 			textures: [
 				// terrain materials
 				{name: 'terrain_rock', url: 'static/img/terrain/rock-512.jpg'},
 				{name: 'terrain_grass', url: 'static/img/terrain/grass-512.jpg'},
-				//{name: 'terrain_dirt', url: 'static/img/terrain/dirt-512.jpg'},
 				{name: 'terrain_snow', url: 'static/img/terrain/snow-512.jpg'},
 				{name: 'terrain_sand', url: 'static/img/terrain/sand-512.jpg'},
 				{name: 'terrain_water', url: 'static/img/terrain/water-512.jpg'},
@@ -90,7 +93,6 @@ export default function run(container_id: string, params: VegParams) {
 				{name: 'tree_material', url: 'static/img/grass/grass_base.tga'},	// just a base green color
 				{name: 'juniper_material', url: 'static/img/juniper/pine-leaf-diff.png'},
 				// sagebrush
-				//{name: 'sagebrush_material', url: 'static/img/sagebrush/sagebrush_3.tga'}
 				{name: 'sagebrush_material', url: 'static/img/sagebrush/sagebrush_alt.png'}
 			],
 			
@@ -140,8 +142,8 @@ export default function run(container_id: string, params: VegParams) {
 			
 			let srcPath = 'heightmap/' + extent.join('/') + '/'
 			let statsPath = srcPath + 'stats/'
-
-			loader.load({
+			const tempLoader = Loader()
+			tempLoader.load({
 				textures: [
 					{name: 'heightmap', url: srcPath},
 				],
@@ -155,9 +157,6 @@ export default function run(container_id: string, params: VegParams) {
 				const heightmapTexture = loadedAssets.textures['heightmap']
 				const heightmapStats = loadedAssets.statistics['heightmap_stats']
 				const heights = computeHeights(heightmapTexture, heightmapStats)
-
-				const spatialStats = loadedAssets.statistics['spatial_stats']
-				console.log(spatialStats)
 
 				terrain = createTerrain({
 					rock: masterAssets.textures['terrain_rock'],
@@ -186,7 +185,7 @@ export default function run(container_id: string, params: VegParams) {
 					const g = Math.floor(i/maxColors * 130)
 					const vegColor = new THREE.Color(baseColor.r + r, baseColor.g + g, baseColor.b)
 
-					const vegAssetName = getVegetationAssetsName(key)
+					const vegAssetName = globals.getVegetationAssetsName(key)
 					const vegStats = getVegetationStats(key)
 
 					scene.add(createVegetation( 
@@ -223,19 +222,56 @@ export default function run(container_id: string, params: VegParams) {
 	function updateSpatialTerrain(scenario_id: string, updateVeg?: boolean) {
 		spatial = true
 		const srcSpatialTexturePath = srcSpatialTextureBase + scenario_id
-
-		loader.load({
+		const tempLoader = Loader()
+		tempLoader.load({
 				textures: [
 					{name: 'spatial_heightmap', url: srcSpatialPath},
 					{name: 'init_sc', url: srcSpatialTexturePath + '/stateclass/0'},
 					{name: 'init_veg', url: srcSpatialTexturePath + '/veg/0'}
 				],
 				statistics: [
-					{name: 'spatial_stats', url: statsSpatialPath}
+					{name: 'spatial_stats', url: statsSpatialPath},
+					{name: 'veg_stats', url: 'spatial/stats/' + scenario_id + '/' + 'veg/'}
 				],
 			},
 			function(loadedAssets: Assets) {
-				console.log('Spatial visualization here!')
+				spatialAssets = loadedAssets
+				const heightmapTexture = spatialAssets.textures['spatial_heightmap']
+				const heightmapStats = spatialAssets.statistics['spatial_stats']
+				const heights = computeHeights(heightmapTexture, heightmapStats)
+				terrain = createTerrain({
+					rock: masterAssets.textures['terrain_rock'],
+					snow: masterAssets.textures['terrain_snow'],
+					grass: masterAssets.textures['terrain_grass'],
+					sand: masterAssets.textures['terrain_sand'],
+					water: masterAssets.textures['terrain_water'],
+					vertShader: masterAssets.text['terrain_vert'],
+					fragShader: masterAssets.text['terrain_frag'],
+					data: heightmapStats,
+					heightmap: heightmapTexture,
+					heights: heights,
+					disp: 2.0 / 30.0
+				})
+				scene.add(terrain)
+
+
+				// add the vegetation
+				const vegetationStats = spatialAssets.statistics['veg_stats']
+				createSpatialVegetation(scene, {
+					strataTexture: spatialAssets.textures['init_veg'],
+					stateclassTexture: spatialAssets.textures['init_sc'],
+					heightmap: heightmapTexture,
+					vegGeometries: masterAssets.geometries,
+					vegTextures: masterAssets.textures,
+					vertShader: masterAssets.text['veg_vert'],
+					fragShader: masterAssets.text['veg_frag'],
+					data: vegetationStats,
+					heightData: heightmapStats,
+					disp: 2.0 / 30.0
+				})
+
+				// render
+				render()
 			},
 			function(progress: number) {
 				console.log("Loading spatial assets... " + progress * 100 + "%")
@@ -247,21 +283,27 @@ export default function run(container_id: string, params: VegParams) {
 		)
 	}
 
-	function updateSpatialVegetation(run_control: SpatialRunControl) {
-		console.log('Updating vegetation')
-		const sid = run_control.result_scenario_id
+	function updateSpatialVegetation(runControl: SpatialRunControl) {
+		console.log('Updating vegetation covers')
+
+		// updating the vegetation means getting the new stateclass textures to animate over
+		const sid = runControl.result_scenario_id
 		const srcSpatialTexturePath = srcSpatialTextureBase + sid
 
-		loader.load({
-				textures: [
-					{name: '5', url: srcSpatialTexturePath + '/stateclass/5'},
-					{name: '10', url: srcSpatialTexturePath + '/stateclass/10'},
-					{name: '15', url: srcSpatialTexturePath + '/stateclass/15'},
-					{name: '20', url: srcSpatialTexturePath + '/stateclass/20'},
-				],
+		let model_outputs : AssetDescription[] = new Array()
+		for (var step = runControl.min_step; step <= runControl.max_step; step += runControl.step_size) {
+			model_outputs.push({name: String(step), url: srcSpatialTexturePath + '/stateclass/' + step})
+		}
+		const tempLoader = Loader()
+		tempLoader.load({
+				textures: model_outputs,
 			},
 			function(loadedAssets: Assets) {
-				console.log('Spatial visualization here!')
+				console.log('Animation assets loaded!')
+
+				// create an animation slider and update the stateclass texture to the last one in the timeseries, poc
+
+
 			},
 			function(progress: number) {
 				console.log("Loading model assets... " + progress * 100 + "%")
@@ -301,19 +343,19 @@ export default function run(container_id: string, params: VegParams) {
 		return heights
 	}
 
-	function getVegetationAssetsName(vegname: string) : string {
-
-		if (vegname.includes("Sagebrush")) {
-			return 'sagebrush'
-		} else if (vegname.includes("Juniper")) {
-			return 'juniper'
-		}
-		else if (vegname.includes("Mahogany")) {
-			return 'tree'
-		}
-
-		return 'grass' 
-	}
+	//function getVegetationAssetsName(vegname: string) : string {
+//
+	//	if (vegname.includes("Sagebrush")) {
+	//		return 'sagebrush'
+	//	} else if (vegname.includes("Juniper")) {
+	//		return 'juniper'
+	//	}
+	//	else if (vegname.includes("Mahogany")) {
+	//		return 'tree'
+	//	}
+//
+	//	return 'grass' 
+	//}
 
 	function createClusters(heights: Float32Array, hmstats: any, vegstats: any) : Cluster[] {
 
@@ -366,7 +408,7 @@ export default function run(container_id: string, params: VegParams) {
 
 	}
 
-	function updateVegetation(newParams: VegParams) {
+	function updateVegetation(newParams: globals.VegParams) {
 
 		for (var key in newParams) {
 			if (vegParams.hasOwnProperty(key)) {

@@ -25,7 +25,7 @@ class SpatialHeightmap(View):
             height = ds.variables['y'][:].size
             elev = ds.variables['ned30m42116_snap_clip'][:]
             max = np.max(elev)
-            dem_flat = [(x/max) * 255 for x in elev.ravel().tolist()]
+            dem_flat = [(x/DEM_HEIGHT) * 255 for x in elev.ravel().tolist()]
             # write and save new image
             image = Image.new('L', (width, height))
             image.putdata(dem_flat)
@@ -49,7 +49,7 @@ class SpatialStats(View):
             dem_width = int(elev.shape[1])
             dem_height = int(elev.shape[0])
 
-            data = {'dem_min': dem_min, 'dem_max': dem_max,
+            data = {'dem_min': dem_min, 'dem_max': DEM_HEIGHT,
                     'dem_width': dem_width, 'dem_height': dem_height}
 
             response['data'] = data

@@ -44,7 +44,7 @@ export function createVegetation(params: VegetationOptions) {
 	const halfPatch = new THREE.Geometry()
 	halfPatch.merge(params.geo)
 	
-	if (useSymmetry(params.name)) {
+	if (globals.useSymmetry(params.name)) {
 		params.geo.rotateY(Math.PI)
 		halfPatch.merge(params.geo)
 	}
@@ -53,7 +53,7 @@ export function createVegetation(params: VegetationOptions) {
 	geo.fromGeometry(halfPatch)
 	halfPatch.dispose()
 
-	const scale = getVegetationScale(params.name)
+	const scale = globals.getVegetationScale(params.name)
 	geo.scale(scale,scale,scale)
 
 	// always remove the color buffer since we are using textures
@@ -86,7 +86,7 @@ export function createVegetation(params: VegetationOptions) {
 	generateOffsets()
 	
 	const vegColor = [params.color.r/255.0, params.color.g/255.0, params.color.b/255.0]
-	const lightPosition = getVegetationLightPosition(params.name)
+	const lightPosition = globals.getVegetationLightPosition(params.name)
 	const diffuseScale = getDiffuseScale(params.name)
 
 	geo.addAttribute('offset', offsets)
@@ -164,11 +164,11 @@ export function createVegetation(params: VegetationOptions) {
 
 
 /****** Vegetation helper functions ******/ 
-function useSymmetry(vegname: string) : boolean {
-	return  !(vegname.includes('Sagebrush')
-			  || vegname.includes('Mahogany') 
-			  || vegname.includes('Juniper'))
-}
+//function useSymmetry(vegname: string) : boolean {
+//	return  !(vegname.includes('Sagebrush')
+//			  || vegname.includes('Mahogany') 
+//			  || vegname.includes('Juniper'))
+//}
 
 function getDiffuseScale(vegname: string) : number {
 	if (vegname.includes("Sagebrush")) {
@@ -187,20 +187,20 @@ function getAmbientProduct(vegname: string) : THREE.Color {
 
 }
 
-function getVegetationScale(vegname: string) : number {
-	if (vegname.includes("Sagebrush")) {
-		return 10.0
-	} else if (vegname.includes("Juniper")) {
-		return 1.
-	} else if (vegname.includes("Mahogany")) {
-		return 15.0
-	}
-	return 1.0 
-}
+//function getVegetationScale(vegname: string) : number {
+//	if (vegname.includes("Sagebrush")) {
+//		return 10.0
+//	} else if (vegname.includes("Juniper")) {
+//		return 1.
+//	} else if (vegname.includes("Mahogany")) {
+//		return 15.0
+//	}
+//	return 1.0 
+//}
 
-function getVegetationLightPosition(vegname: string) : number[] {
-	if (vegname.includes("Sagebrush")) {
-		return [0.0, -5.0, 5.0]
-	}
-	return [0.0, 5.0, 0.0]
-}
+//function getVegetationLightPosition(vegname: string) : number[] {
+//	if (vegname.includes("Sagebrush")) {
+//		return [0.0, -5.0, 5.0]
+//	}
+//	return [0.0, 5.0, 0.0]
+//}

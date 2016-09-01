@@ -161,9 +161,7 @@ function run_st_sim(feature_id) {
             url: "/spatial/run_st_sim/" + scenario,
             type: "POST",
             success: function(json) {
-                console.log(json);
                 landscape_viewer.updateSpatialVegetation(json.data);
-                alert('Success!')
             },
             // handle a non-successful response
             error: function (xhr, errmsg, err) {

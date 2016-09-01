@@ -1,5 +1,5 @@
 from django.conf.urls import url, include
-from ST_Sim_Landscape_Simulator.views import HomepageView, STSimRunnerView, STSimSpatialRunnerView, STSimSpatialOutputs
+from ST_Sim_Landscape_Simulator.views import HomepageView, STSimRunnerView, STSimSpatialRunnerView, STSimSpatialOutputs, STSimSpatialStats
 from django.views.decorators.csrf import csrf_exempt
 
 
@@ -12,6 +12,7 @@ urlpatterns = [
     url(r'^run_st_sim/(?P<scenario_id>\d+)$', csrf_exempt(STSimRunnerView.as_view()), name='run_st_sim'),
     url(r'^spatial/', include([
         url(r'^run_st_sim/(?P<scenario_id>\d+)$', csrf_exempt(STSimSpatialRunnerView.as_view()), name='spatial_run_st_sim'),
-        url(r'^outputs/(?P<scenario_id>\d+)/(?P<data_type>[a-z]+)/(?P<timestep>\d+)/$', csrf_exempt(STSimSpatialOutputs.as_view()))
+        url(r'^outputs/(?P<scenario_id>\d+)/(?P<data_type>[a-z]+)/(?P<timestep>\d+)/$', STSimSpatialOutputs.as_view()),
+        url(r'^stats/(?P<scenario_id>\d+)/(?P<data_type>[a-z]+)/$', STSimSpatialStats.as_view())
     ]))
 ]
