@@ -63,6 +63,8 @@ class NonspatialHeightBase(View):
         self.south_lat = None
         self.east_lon = None
         self.west_lon = None
+        self.lats = None
+        self.lons = None
         super().__init__()
 
     def dispatch(self, request, *args, **kwargs):
@@ -73,6 +75,24 @@ class NonspatialHeightBase(View):
         self.west_lon = float(kwargs['wlon'])
         return super(NonspatialHeightBase, self).dispatch(request, *args, **kwargs)
 
+    def verify_indices(self):
+        return not (self.north_lat > self.lats[0] or self.north_lat < self.lats[-1] or self.south_lat > self.lats[0] or
+                    self.south_lat < self.lats[-1] or self.east_lon < self.lons[0] or
+                    self.east_lon > self.lons[-1] or self.west_lon < self.lons[0] or self.west_lon > self.lons[-1])
+
+    def retrieve_indices(self):
+
+        lats1 = np.where(self.lats < self.north_lat)
+        lats2 = np.where(self.lats > self.south_lat)
+        n_idx = lats1[0][0]
+        s_idx = lats2[0][-1]
+        lons1 = np.where(self.lons < self.east_lon)   # assumes elon,wlon are negative
+        lons2 = np.where(self.lons > self.west_lon)
+        e_idx = lons1[0][-1]
+        w_idx = lons2[0][0]
+        result = {'n':n_idx, 's':s_idx,'w':w_idx,'e':e_idx}
+        return result
+
 
 class Stats(NonspatialHeightBase):
 
@@ -81,14 +101,14 @@ class Stats(NonspatialHeightBase):
         if all([coord is not None for coord in [self.north_lat, self.south_lat, self.west_lon, self.east_lon]]):
             with Dataset(nonspatial_path, 'r') as ds:
                 # access our variables
-                lats = ds.variables['lat'][:]
-                lons = ds.variables['lon'][:]
-                if not verify_coords(lats, lons, self.north_lat, self.south_lat, self.east_lon, self.west_lon):
+                self.lats = ds.variables['lat'][:]
+                self.lons = ds.variables['lon'][:]
+                if not self.verify_indices():
                     response['data'] = False
                 else:
                     elev = ds.variables['elev'][:].data
                     # collect indices
-                    indices = get_indices(lats, lons, self.north_lat,self.south_lat, self.east_lon, self.west_lon)
+                    indices = self.retrieve_indices()
                     # shape up our dem slice
                     dem_slice = elev[indices['w']:indices['e'],indices['n']:indices['s']]
                     dem_max = float(dem_slice.max())
@@ -115,15 +135,15 @@ class Heightmap(NonspatialHeightBase):
         if all([coord is not None for coord in [self.north_lat, self.south_lat, self.west_lon, self.east_lon]]):
             with Dataset(nonspatial_path, 'r') as ds:
                 # access our variables
-                lats = ds.variables['lat'][:]
-                lons = ds.variables['lon'][:]
-                if not verify_coords(lats, lons, self.north_lat, self.south_lat, self.east_lon, self.west_lon):
+                self.lats = ds.variables['lat'][:]
+                self.lons = ds.variables['lon'][:]
+                if not self.verify_indices():
                     image = Image.new('L', (64,64))
                     image.save(response, "PNG")
                 else:
                     elev = ds.variables['elev'][:].data
                     # collect indices
-                    indices = get_indices(lats, lons, self.north_lat, self.south_lat, self.east_lon, self.west_lon)
+                    indices = self.retrieve_indices()
                     # print(indices)
                     # shape up our dem slice
                     dem_slice = elev[indices['w']:indices['e'],indices['n']:indices['s']]
@@ -141,22 +161,3 @@ class Heightmap(NonspatialHeightBase):
                     image.save(response, "PNG")
 
         return response
-
-
-def verify_coords(lats, lons, nlat, slat, elon, wlon):
-    return not (nlat > lats[0] or nlat < lats[-1] or slat > lats[0] or slat < lats[-1] or elon < lons[0] or
-                elon > lons[-1] or wlon < lons[0] or wlon > lons[-1])
-
-
-def get_indices(lats, lons, nlat, slat, elon, wlon):
-
-    lats1 = np.where(lats < nlat)
-    lats2 = np.where(lats > slat)
-    n_idx = lats1[0][0]
-    s_idx = lats2[0][-1]
-    lons1 = np.where(lons < elon)   # assumes elon,wlon are negative
-    lons2 = np.where(lons > wlon)
-    e_idx = lons1[0][-1]
-    w_idx = lons2[0][0]
-    result = {'n':n_idx, 's':s_idx,'w':w_idx,'e':e_idx}
-    return result
