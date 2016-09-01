@@ -16,10 +16,19 @@ interface VegParams {		// THIS INTERFACE IS SUBJECT TO CHANGE
 	"Wyoming and Basin Big Sagebrush Upland"?: 	number
 }
 
+interface SpatialRunControl {
+	min_step : number,
+	max_step : number,
+	step_size : number,
+	result_scenario_id: number
+}
+
 export default function run(container_id: string, params: VegParams) {
 
 	const vegParams = params
 	let initialized = false
+	let spatial = false
+
 
 	if (!detectWebGL) {
 		alert("Your browser does not support WebGL. Please use a different browser (I.e. Chrome, Firefox).")
@@ -28,6 +37,11 @@ export default function run(container_id: string, params: VegParams) {
 
 	let masterAssets: Assets
 	let terrain: THREE.Mesh
+	let srcSpatialPath = 'spatial/height/'
+	let statsSpatialPath = 'spatial/stats/'
+	let srcSpatialTextureBase = 'spatial/outputs/'	// scenario/data_type/timestep
+
+
 
 	// setup the THREE scene
 	const container = document.getElementById(container_id)
@@ -123,14 +137,16 @@ export default function run(container_id: string, params: VegParams) {
 					scene.remove(scene.getObjectByName(key))
 				}
 			}
+			
 			let srcPath = 'heightmap/' + extent.join('/') + '/'
 			let statsPath = srcPath + 'stats/'
+
 			loader.load({
 				textures: [
-					{name: 'heightmap', url: srcPath}
+					{name: 'heightmap', url: srcPath},
 				],
 				statistics: [
-					{name: 'heightmap_stats', url: statsPath}
+					{name: 'heightmap_stats', url: statsPath},
 				]
 			},
 	 		function(loadedAssets: Assets) {
@@ -139,6 +155,9 @@ export default function run(container_id: string, params: VegParams) {
 				const heightmapTexture = loadedAssets.textures['heightmap']
 				const heightmapStats = loadedAssets.statistics['heightmap_stats']
 				const heights = computeHeights(heightmapTexture, heightmapStats)
+
+				const spatialStats = loadedAssets.statistics['spatial_stats']
+				console.log(spatialStats)
 
 				terrain = createTerrain({
 					rock: masterAssets.textures['terrain_rock'],
@@ -199,6 +218,61 @@ export default function run(container_id: string, params: VegParams) {
 				return
 			})
 		}	
+	}
+
+	function updateSpatialTerrain(scenario_id: string, updateVeg?: boolean) {
+		spatial = true
+		const srcSpatialTexturePath = srcSpatialTextureBase + scenario_id
+
+		loader.load({
+				textures: [
+					{name: 'spatial_heightmap', url: srcSpatialPath},
+					{name: 'init_sc', url: srcSpatialTexturePath + '/stateclass/0'},
+					{name: 'init_veg', url: srcSpatialTexturePath + '/veg/0'}
+				],
+				statistics: [
+					{name: 'spatial_stats', url: statsSpatialPath}
+				],
+			},
+			function(loadedAssets: Assets) {
+				console.log('Spatial visualization here!')
+			},
+			function(progress: number) {
+				console.log("Loading spatial assets... " + progress * 100 + "%")
+			},
+			function(error: string) {
+				console.log(error)
+				return
+			}
+		)
+	}
+
+	function updateSpatialVegetation(run_control: SpatialRunControl) {
+		console.log('Updating vegetation')
+		const sid = run_control.result_scenario_id
+		const srcSpatialTexturePath = srcSpatialTextureBase + sid
+
+		loader.load({
+				textures: [
+					{name: '5', url: srcSpatialTexturePath + '/stateclass/5'},
+					{name: '10', url: srcSpatialTexturePath + '/stateclass/10'},
+					{name: '15', url: srcSpatialTexturePath + '/stateclass/15'},
+					{name: '20', url: srcSpatialTexturePath + '/stateclass/20'},
+				],
+			},
+			function(loadedAssets: Assets) {
+				console.log('Spatial visualization here!')
+			},
+			function(progress: number) {
+				console.log("Loading model assets... " + progress * 100 + "%")
+			},
+			function(error: string) {
+				console.log(error)
+				return
+			}
+		)
+
+
 	}
 
 	function computeHeights(hmTexture: THREE.Texture, stats: any) {
@@ -338,10 +412,17 @@ export default function run(container_id: string, params: VegParams) {
 		return initialized
 	}
 
+	function isSpatial() {
+		return spatial
+	}
+
 	return {
-		updateTerrain: updateTerrain,
+		updateTerrain: updateTerrain,	// non-spatial runs
 		updateVegetation: updateVegetation,
+		updateSpatialTerrain: updateSpatialTerrain,	// spatial runs
+		updateSpatialVegetation: updateSpatialVegetation,
 		isInitialized: isInitialized,
+		isSpatial: isSpatial,
 		resize: resize,
 		// debug 
 		scene: scene,

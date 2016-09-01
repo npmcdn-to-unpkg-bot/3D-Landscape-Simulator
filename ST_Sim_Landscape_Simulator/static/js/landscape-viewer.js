@@ -410,12 +410,16 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asse
     function run(container_id, params) {
         const vegParams = params;
         let initialized = false;
+        let spatial = false;
         if (!utils_1.detectWebGL) {
             alert("Your browser does not support WebGL. Please use a different browser (I.e. Chrome, Firefox).");
             return null;
         }
         let masterAssets;
         let terrain;
+        let srcSpatialPath = 'spatial/height/';
+        let statsSpatialPath = 'spatial/stats/';
+        let srcSpatialTextureBase = 'spatial/outputs/'; // scenario/data_type/timestep
         // setup the THREE scene
         const container = document.getElementById(container_id);
         const scene = new THREE.Scene();
@@ -500,10 +504,10 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asse
                 let statsPath = srcPath + 'stats/';
                 loader.load({
                     textures: [
-                        { name: 'heightmap', url: srcPath }
+                        { name: 'heightmap', url: srcPath },
                     ],
                     statistics: [
-                        { name: 'heightmap_stats', url: statsPath }
+                        { name: 'heightmap_stats', url: statsPath },
                     ]
                 }, function (loadedAssets) {
                     // compute the heights from this heightmap
@@ -511,6 +515,8 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asse
                     const heightmapTexture = loadedAssets.textures['heightmap'];
                     const heightmapStats = loadedAssets.statistics['heightmap_stats'];
                     const heights = computeHeights(heightmapTexture, heightmapStats);
+                    const spatialStats = loadedAssets.statistics['spatial_stats'];
+                    console.log(spatialStats);
                     terrain = terrain_1.createTerrain({
                         rock: masterAssets.textures['terrain_rock'],
                         snow: masterAssets.textures['terrain_snow'],
@@ -561,6 +567,47 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asse
                     return;
                 });
             }
+        }
+        function updateSpatialTerrain(scenario_id, updateVeg) {
+            spatial = true;
+            const srcSpatialTexturePath = srcSpatialTextureBase + scenario_id;
+            loader.load({
+                textures: [
+                    { name: 'spatial_heightmap', url: srcSpatialPath },
+                    { name: 'init_sc', url: srcSpatialTexturePath + '/stateclass/0' },
+                    { name: 'init_veg', url: srcSpatialTexturePath + '/veg/0' }
+                ],
+                statistics: [
+                    { name: 'spatial_stats', url: statsSpatialPath }
+                ],
+            }, function (loadedAssets) {
+                console.log('Spatial visualization here!');
+            }, function (progress) {
+                console.log("Loading spatial assets... " + progress * 100 + "%");
+            }, function (error) {
+                console.log(error);
+                return;
+            });
+        }
+        function updateSpatialVegetation(run_control) {
+            console.log('Updating vegetation');
+            const sid = run_control.result_scenario_id;
+            const srcSpatialTexturePath = srcSpatialTextureBase + sid;
+            loader.load({
+                textures: [
+                    { name: '5', url: srcSpatialTexturePath + '/stateclass/5' },
+                    { name: '10', url: srcSpatialTexturePath + '/stateclass/10' },
+                    { name: '15', url: srcSpatialTexturePath + '/stateclass/15' },
+                    { name: '20', url: srcSpatialTexturePath + '/stateclass/20' },
+                ],
+            }, function (loadedAssets) {
+                console.log('Spatial visualization here!');
+            }, function (progress) {
+                console.log("Loading model assets... " + progress * 100 + "%");
+            }, function (error) {
+                console.log(error);
+                return;
+            });
         }
         function computeHeights(hmTexture, stats) {
             const image = hmTexture.image;
@@ -675,10 +722,16 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asse
         function isInitialized() {
             return initialized;
         }
+        function isSpatial() {
+            return spatial;
+        }
         return {
             updateTerrain: updateTerrain,
             updateVegetation: updateVegetation,
+            updateSpatialTerrain: updateSpatialTerrain,
+            updateSpatialVegetation: updateSpatialVegetation,
             isInitialized: isInitialized,
+            isSpatial: isSpatial,
             resize: resize,
             // debug 
             scene: scene,
@@ -688,4 +741,6 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asse
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.default = run;
 });
+// spatialterrain.ts
+// spatialveg.ts
 //# sourceMappingURL=landscape-viewer.js.map
