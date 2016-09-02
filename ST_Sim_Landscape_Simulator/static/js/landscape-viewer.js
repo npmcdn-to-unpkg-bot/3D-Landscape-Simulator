@@ -793,6 +793,7 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "spatialveg", 
         }
         let masterAssets;
         let spatialAssets;
+        let animationAssets;
         let terrain;
         let srcSpatialPath = 'spatial/height/';
         let statsSpatialPath = 'spatial/stats/';
@@ -950,6 +951,8 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "spatialveg", 
         }
         function updateSpatialTerrain(scenario_id, updateVeg) {
             spatial = true;
+            camera.position.y = 350;
+            camera.position.z = 600;
             const srcSpatialTexturePath = srcSpatialTextureBase + scenario_id;
             const tempLoader = assetloader_1.Loader();
             tempLoader.load({
@@ -1010,7 +1013,7 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "spatialveg", 
                 const dataTerrain = terrain_1.createDataTerrain({
                     heightmap: heightmapTexture,
                     heights: heights,
-                    stateclassTexture: spatialAssets.textures['init_scj'],
+                    stateclassTexture: spatialAssets.textures['init_sc'],
                     data: heightmapStats,
                     vertShader: masterAssets.text['data_terrain_vert'],
                     fragShader: masterAssets.text['data_terrain_frag'],
@@ -1052,7 +1055,56 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "spatialveg", 
                 textures: model_outputs,
             }, function (loadedAssets) {
                 console.log('Animation assets loaded!');
+                console.log(loadedAssets.textures);
+                animationAssets = loadedAssets;
+                // show the animation controls for the outputs
+                $('#animation_container').show();
+                // activate the checkbox
+                $('#viz_type').on('change', function () {
+                    const dataGroup = scene.getObjectByName('data');
+                    const realismGroup = scene.getObjectByName('realism');
+                    if (dataGroup.visible) {
+                        dataGroup.visible = false;
+                        realismGroup.visible = true;
+                    }
+                    else {
+                        dataGroup.visible = true;
+                        realismGroup.visible = false;
+                    }
+                    render();
+                });
                 // create an animation slider and update the stateclass texture to the last one in the timeseries, poc
+                const animationSlider = $('#animation_slider');
+                animationSlider.attr('max', runControl.max_step);
+                animationSlider.attr('step', runControl.step_size);
+                animationSlider.on('input', function () {
+                    const value = animationSlider.val();
+                    let timeTexture;
+                    if (value == 0 || value == '0') {
+                        timeTexture = spatialAssets.textures['init_sc'];
+                    }
+                    else {
+                        timeTexture = animationAssets.textures[String(value)];
+                    }
+                    // update the dataGroup terrain and vegtypes
+                    let child;
+                    let dataGroup = scene.getObjectByName('data');
+                    for (var i = 0; i < dataGroup.children.length; i++) {
+                        child = dataGroup.children[i];
+                        if (child.name == 'terrain') {
+                            child.material.uniforms.tex.value = timeTexture;
+                            child.material.needsUpdate = true;
+                        }
+                        else {
+                            // iterate through the child group
+                            for (var j = 0; j < child.children.length; j++) {
+                                child.children[j].material.uniforms.sc_tex.value = timeTexture;
+                                child.children[j].material.needsUpdate = true;
+                            }
+                        }
+                    }
+                    render();
+                });
             }, function (progress) {
                 console.log("Loading model assets... " + progress * 100 + "%");
             }, function (error) {

@@ -576,7 +576,8 @@ function activate_spatial_scene() {
     landscape_viewer.updateSpatialTerrain(123, true);
     show_input_options();
 
-    // override run model button since we are testing
+    // override various things since we are testing
+    $('#input_initial_veg').hide();
     $('#run_button').removeClass("disabled");
     $('input:submit').attr("disabled", false);
     $("#run_button").val('Run Model');

@@ -37,6 +37,7 @@ export default function run(container_id: string, params: globals.VegParams) {
 
 	let masterAssets: Assets
 	let spatialAssets: Assets
+	let animationAssets: Assets
 	let terrain: THREE.Mesh
 	let srcSpatialPath = 'spatial/height/'
 	let statsSpatialPath = 'spatial/stats/'
@@ -223,6 +224,9 @@ export default function run(container_id: string, params: globals.VegParams) {
 
 	function updateSpatialTerrain(scenario_id: string, updateVeg?: boolean) {
 		spatial = true
+		camera.position.y = 350
+		camera.position.z = 600
+
 		const srcSpatialTexturePath = srcSpatialTextureBase + scenario_id
 		const tempLoader = Loader()
 		tempLoader.load({
@@ -289,7 +293,7 @@ export default function run(container_id: string, params: globals.VegParams) {
 				const dataTerrain = createDataTerrain({
 					heightmap: heightmapTexture,
 					heights: heights,
-					stateclassTexture: spatialAssets.textures['init_scj'],
+					stateclassTexture: spatialAssets.textures['init_sc'],
 					data: heightmapStats,
 					vertShader: masterAssets.text['data_terrain_vert'],
 					fragShader: masterAssets.text['data_terrain_frag'],
@@ -340,9 +344,62 @@ export default function run(container_id: string, params: globals.VegParams) {
 			},
 			function(loadedAssets: Assets) {
 				console.log('Animation assets loaded!')
+				console.log(loadedAssets.textures)
+				animationAssets = loadedAssets
+
+				// show the animation controls for the outputs
+    			$('#animation_container').show();
+
+				// activate the checkbox
+				$('#viz_type').on('change', function() {
+					const dataGroup = scene.getObjectByName('data')
+					const realismGroup = scene.getObjectByName('realism')
+					if (dataGroup.visible) {
+						dataGroup.visible = false
+						realismGroup.visible = true
+					} else {
+						dataGroup.visible = true
+						realismGroup.visible = false
+					}
+					render()
+				})
 
 				// create an animation slider and update the stateclass texture to the last one in the timeseries, poc
+				const animationSlider = $('#animation_slider')
+				animationSlider.attr('max', runControl.max_step)
+				animationSlider.attr('step', runControl.step_size)
+				animationSlider.on('input', function() {
+					const value = animationSlider.val()
+					let timeTexture: THREE.Texture
 
+					if (value == 0 || value == '0') {
+						timeTexture = spatialAssets.textures['init_sc']
+					}
+					else {
+						timeTexture = animationAssets.textures[String(value)]
+					}
+
+					// update the dataGroup terrain and vegtypes
+					let child: THREE.Object3D
+					let dataGroup = scene.getObjectByName('data') as THREE.Group
+					for (var i = 0; i < dataGroup.children.length; i++) {
+						child = dataGroup.children[i]
+						if (child.name == 'terrain') {
+							child.material.uniforms.tex.value = timeTexture
+							child.material.needsUpdate = true
+						}
+						else {
+							// iterate through the child group
+							for (var j = 0; j < child.children.length; j++) {
+								child.children[j].material.uniforms.sc_tex.value = timeTexture
+								child.children[j].material.needsUpdate = true
+							}
+						}
+	
+					}
+
+					render()
+				})
 
 			},
 			function(progress: number) {

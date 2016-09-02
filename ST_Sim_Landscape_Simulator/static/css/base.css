@@ -73,6 +73,24 @@ canvas {
     margin-right:1px;
 }
 
+#animation_container {
+	/*background-color: #0092D1;*/
+	background-color: #E9E9E9;
+	font-weight: bold;
+	padding: 9px 0px 9px 9px;
+	border-radius: 5px;
+	display: none;
+	position: absolute;
+	bottom: 30px;
+	left: 30px;
+	z-index: 1000;
+	width: 243px;
+}
+/*
+.animation_label {
+	color: white;
+}
+*/
 #selected_features {
 	float: right;
 	position: absolute;
