@@ -40,7 +40,8 @@ class HomepageView(TemplateView):
         probabilistic_transition_types = ["Replacement Fire",
                                           "Annual Grass Invasion",
                                           "Insect/Disease",
-                                          "Wind/Weather/Stress"]
+                                          "Native Grazing",
+                                          "Excessive-Herbivory"]
 
         if not all(value in all_transition_types for value in probabilistic_transition_types):
             raise KeyError("Invalid transition type specified for this library. Supplied values: " +

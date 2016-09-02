@@ -48,8 +48,7 @@
 
         <div id="input">
             <!-- TODO - remove the anchor tag below and the onclick call since this is purely just for development -->
-            <div class="steps"><a onclick="activate_spatial_scene()">1. Click a County or Draw a Box</a></div>
-            <div id="selected_features"></div>
+            <div id="step1" class="steps"><a onclick="activate_spatial_scene()">1. Click a County or Draw a Box</a></div>
             <!--<table style="width:100%" id="initial_conditions_table"><tr></tr></table>-->
             <div style="display:none" id="input_initial_veg">
                 <div class="steps">2. Specify Initial Vegetation Cover</div>
@@ -86,6 +85,7 @@
             </ul>
                 <div id="map"></div>
                 <div id="scene" style="display:none"></div>
+                <span id="selected_features"></span>
         </div>
 
         <div id="output" style="display:block">
