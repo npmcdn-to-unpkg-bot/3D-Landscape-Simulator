@@ -1,9 +1,7 @@
-// veg.vert
+// data_veg.vert
 
-//precision highp float;
-// include PI and other nice things
-#include <common>   
-
+// include PI and other nice things from the THREE ShaderLib
+#include <common>
 
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
@@ -17,23 +15,10 @@ attribute vec2 offset;
 attribute vec2 hCoord;
 attribute vec2 uv;
 attribute float rotation;
-//attribute float vibration;
-//attribute vec3 normal;
 
 varying vec2 vUV;
 varying vec2 scUV; 
-//varying float vAmount;
 
-
-//// light uniforms
-//uniform vec3 lightPosition;
-//
-//// light varyings
-//varying vec3 fN;
-//varying vec3 negfN;
-//varying vec3 fE;
-//varying vec3 fL;
-//
 // Rotate by angle
 vec2 rotate (float x, float y, float r) {
     float c = cos(r);
@@ -44,34 +29,13 @@ vec2 rotate (float x, float y, float r) {
 void main() {
     vUV = uv;
     scUV = hCoord;
-    //vAmount = texture2D(heightmap, hCoord).r;
     float vAmount = texture2D(heightmap, hCoord).r;
     vec3 newPosition = position;
-    //vec3 newNormal = normal;
 
     // rotate around the y axis
     newPosition.xz = rotate(newPosition.x, newPosition.z, PI * rotation);
-    //newPosition *= (vibration * 2.);
-    //newNormal.xz = rotate(newNormal.x, newNormal.z, PI * rotation);
-    //
-    //// now translate to the offset position
+
+    // now translate to the offset position
     newPosition += vec3(offset.x, vAmount * maxHeight * disp, offset.y);
-//
-    //// implement phong lighting
-    //vec4 pos = vec4(newPosition,1.0);
-//
-    //// use for light in eye position. This makes things stand out more when the user is looking directly at it.
-    //fN = normalize( modelViewMatrix*vec4(newNormal, 0.0) ).xyz;
-    //negfN = fN * -1.0;
-    //fE = -(modelViewMatrix*pos).xyz;
-    //fL = lightPosition - (modelViewMatrix*pos).xyz;
-//
-    //gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
-
-    //vec3 newPosition = position;
-    //newPosition.xz += offset;
-    //newPosition.y += vAmount * 5.0 * 255.0;
-
     gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
-
 }
