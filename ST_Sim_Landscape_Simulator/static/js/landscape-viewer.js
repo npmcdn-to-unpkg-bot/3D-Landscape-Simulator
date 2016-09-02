@@ -12,6 +12,53 @@ define("globals", ["require", "exports"], function (require, exports) {
     exports.MAX_CLUSTER_RADIUS = 30.0; // max radius to grow around a cluster
     // global colors
     exports.WHITE = 'rgb(255,255,255)';
+    function getVegetationAssetsName(vegname) {
+        if (vegname.includes("Sagebrush")) {
+            return 'sagebrush';
+        }
+        else if (vegname.includes("Juniper")) {
+            return 'juniper';
+        }
+        else if (vegname.includes("Mahogany")) {
+            return 'tree';
+        }
+        return 'grass';
+    }
+    exports.getVegetationAssetsName = getVegetationAssetsName;
+    function useSymmetry(vegname) {
+        return !(vegname.includes('Sagebrush')
+            || vegname.includes('Mahogany')
+            || vegname.includes('Juniper'));
+    }
+    exports.useSymmetry = useSymmetry;
+    function getVegetationScale(vegname) {
+        if (vegname.includes("Sagebrush")) {
+            return 10.0;
+        }
+        else if (vegname.includes("Juniper")) {
+            return 1.;
+        }
+        else if (vegname.includes("Mahogany")) {
+            return 15.0;
+        }
+        return 1.0;
+    }
+    exports.getVegetationScale = getVegetationScale;
+    function getRenderOrder(vegname) {
+        // sagebrush should always be rendered first
+        if (!vegname.includes('Sagebrush')) {
+            return 1;
+        }
+        return 0;
+    }
+    exports.getRenderOrder = getRenderOrder;
+    function getVegetationLightPosition(vegname) {
+        if (vegname.includes("Sagebrush")) {
+            return [0.0, -5.0, 5.0];
+        }
+        return [0.0, 5.0, 0.0];
+    }
+    exports.getVegetationLightPosition = getVegetationLightPosition;
 });
 // terrain.ts
 define("terrain", ["require", "exports", "globals"], function (require, exports, globals_1) {
@@ -94,14 +141,14 @@ define("veg", ["require", "exports", "globals"], function (require, exports, glo
     function createVegetation(params) {
         const halfPatch = new THREE.Geometry();
         halfPatch.merge(params.geo);
-        if (useSymmetry(params.name)) {
+        if (globals.useSymmetry(params.name)) {
             params.geo.rotateY(Math.PI);
             halfPatch.merge(params.geo);
         }
         const geo = new THREE.InstancedBufferGeometry();
         geo.fromGeometry(halfPatch);
         halfPatch.dispose();
-        const scale = getVegetationScale(params.name);
+        const scale = globals.getVegetationScale(params.name);
         geo.scale(scale, scale, scale);
         // always remove the color buffer since we are using textures
         if (geo.attributes['color']) {
@@ -125,7 +172,7 @@ define("veg", ["require", "exports", "globals"], function (require, exports, glo
         const rotations = new THREE.InstancedBufferAttribute(new Float32Array(numVegInstances * 1), 1);
         generateOffsets();
         const vegColor = [params.color.r / 255.0, params.color.g / 255.0, params.color.b / 255.0];
-        const lightPosition = getVegetationLightPosition(params.name);
+        const lightPosition = globals.getVegetationLightPosition(params.name);
         const diffuseScale = getDiffuseScale(params.name);
         geo.addAttribute('offset', offsets);
         geo.addAttribute('hCoord', hCoords);
@@ -195,11 +242,11 @@ define("veg", ["require", "exports", "globals"], function (require, exports, glo
     }
     exports.createVegetation = createVegetation;
     /****** Vegetation helper functions ******/
-    function useSymmetry(vegname) {
-        return !(vegname.includes('Sagebrush')
-            || vegname.includes('Mahogany')
-            || vegname.includes('Juniper'));
-    }
+    //function useSymmetry(vegname: string) : boolean {
+    //	return  !(vegname.includes('Sagebrush')
+    //			  || vegname.includes('Mahogany') 
+    //			  || vegname.includes('Juniper'))
+    //}
     function getDiffuseScale(vegname) {
         if (vegname.includes("Sagebrush")) {
             return 0.7;
@@ -212,23 +259,226 @@ define("veg", ["require", "exports", "globals"], function (require, exports, glo
         }
         return AMBIENT;
     }
-    function getVegetationScale(vegname) {
-        if (vegname.includes("Sagebrush")) {
-            return 10.0;
+});
+//function getVegetationScale(vegname: string) : number {
+//	if (vegname.includes("Sagebrush")) {
+//		return 10.0
+//	} else if (vegname.includes("Juniper")) {
+//		return 1.
+//	} else if (vegname.includes("Mahogany")) {
+//		return 15.0
+//	}
+//	return 1.0 
+//}
+//function getVegetationLightPosition(vegname: string) : number[] {
+//	if (vegname.includes("Sagebrush")) {
+//		return [0.0, -5.0, 5.0]
+//	}
+//	return [0.0, 5.0, 0.0]
+//}
+define("spatialveg", ["require", "exports", "globals"], function (require, exports, globals) {
+    "use strict";
+    const RESOLUTION = 30; // 30 meter resolution
+    const AMBIENT = new THREE.Color(globals.WHITE);
+    const DIFFUSE = new THREE.Color(globals.WHITE);
+    const SPEC = new THREE.Color(globals.WHITE);
+    const INTENSITY = 1.0;
+    const KA = 0.63;
+    //const KA = 0.2
+    const KD = 1.0;
+    const KS = 0.2;
+    const SHINY = 20.0;
+    AMBIENT.multiplyScalar(KA * INTENSITY);
+    DIFFUSE.multiplyScalar(KD * INTENSITY);
+    SPEC.multiplyScalar(KS * INTENSITY);
+    function createSpatialVegetation(scene, params) {
+        console.log('Generating vegetation positions...');
+        const strata_map = params.strataTexture;
+        const vegtypes = params.data;
+        const image = strata_map.image;
+        let w = image.naturalWidth;
+        let h = image.naturalHeight;
+        let canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        let ctx = canvas.getContext('2d');
+        ctx.drawImage(image, 0, 0, w, h);
+        let strata_data = ctx.getImageData(0, 0, w, h).data;
+        const strata_positions = computeStrataPositions(vegtypes, strata_data, w, h);
+        let i = 0;
+        const maxColors = 7;
+        let baseColor = new THREE.Color(55, 80, 100); // TODO - better colors
+        for (var name in vegtypes) {
+            const assetName = globals.getVegetationAssetsName(name);
+            const veg_geo = params.vegGeometries[assetName];
+            const veg_tex = params.vegTextures[assetName + '_material'];
+            const r = Math.floor(i / maxColors * 200);
+            const g = Math.floor(i / maxColors * 130);
+            i++;
+            const vegColor = new THREE.Color(baseColor.r + r, baseColor.g + g, baseColor.b);
+            const vegtypePositions = computeVegtypePositions(vegtypes[name], strata_positions, strata_data, w, h);
+            scene.add(createVegtype(name, params.heightmap, params.stateclassTexture, vegtypePositions.map, vegtypePositions.numValid, params.heightData, {
+                geo: veg_geo,
+                tex: veg_tex,
+                width: w,
+                height: h,
+                vertShader: params.vertShader,
+                fragShader: params.fragShader,
+                vegColor: vegColor
+            }));
         }
-        else if (vegname.includes("Juniper")) {
-            return 1.;
-        }
-        else if (vegname.includes("Mahogany")) {
-            return 15.0;
-        }
-        return 1.0;
+        strata_data = ctx = canvas = null;
+        console.log('Vegetation generated!');
     }
-    function getVegetationLightPosition(vegname) {
-        if (vegname.includes("Sagebrush")) {
-            return [0.0, -5.0, 5.0];
+    exports.createSpatialVegetation = createSpatialVegetation;
+    function computeStrataPositions(vegtypes, data, w, h) {
+        let strata_map = new Array(); // declare boolean array
+        let strata_data = data.slice();
+        // calculate max from strata indices
+        let max = 0;
+        for (var key in vegtypes) {
+            max = vegtypes[key] > max ? vegtypes[key] : max;
         }
-        return [0.0, 5.0, 0.0];
+        // scale the indices to max 8bit integer
+        for (var i = 0; i < strata_data.length; i++) {
+            strata_data[i] = strata_data[i] / max * 255;
+        }
+        // compute the dither
+        // Adapted from http://blog.ivank.net/floyd-steinberg-dithering-in-javascript.html
+        let idx, cc, rc, err;
+        for (let y = 0; y < h; ++y) {
+            for (let x = 0; x < w; ++x) {
+                idx = (x + y * w);
+                cc = strata_data[idx];
+                rc = (cc < 128 ? 0 : 255);
+                err = cc - rc;
+                strata_data[idx] = rc;
+                if (x + 1 < w) {
+                    strata_data[idx + 1] += (err * 7) >> 4; // right neighbor
+                }
+                if (y + 1 == h) {
+                    continue; // last line, go back to top
+                }
+                if (x > 0) {
+                    strata_data[idx + w - 1] += (err * 3) >> 4; // bottom left neighbor
+                }
+                strata_data[idx + w] += (err * 5) >> 4; // bottom neighbor
+                if (x + 1 < w) {
+                    strata_data[idx + w + 1] += (err * 1) >> 4; // bottom right neighbor
+                }
+            }
+        }
+        // convert to boolean and return the map
+        for (var i = 0; i < strata_data.length; i++) {
+            strata_map.push(strata_data[i] == 0 ? true : false);
+        }
+        return strata_map;
+    }
+    function computeVegtypePositions(id, position_map, type_data, w, h) {
+        let vegtype_map = new Array(); // declare boolean array
+        let idx;
+        let valid;
+        let numValid = 0;
+        for (let y = 0; y < h; ++y) {
+            for (let x = 0; x < w; x++) {
+                // idx in the image
+                idx = (x + y * w) * 4; // get the r channel only since it's greyscale
+                // update vegtype map
+                valid = type_data[idx] == id && position_map[idx / 4];
+                // how many are valid? This informs the number of instances to do
+                if (valid)
+                    numValid++;
+                vegtype_map.push(valid);
+            }
+        }
+        return { map: vegtype_map, numValid: numValid };
+    }
+    function createVegtype(name, heightmap, init_tex, map, numValid, heightData, params) {
+        const halfPatch = new THREE.Geometry();
+        halfPatch.merge(params.geo);
+        if (globals.useSymmetry(name)) {
+            params.geo.rotateY(Math.PI);
+            halfPatch.merge(params.geo);
+        }
+        const inst_geo = new THREE.InstancedBufferGeometry();
+        inst_geo.fromGeometry(halfPatch);
+        halfPatch.dispose();
+        const s = globals.getVegetationScale(name);
+        inst_geo.scale(s, s, s);
+        // always remove the color buffer since we are using textures
+        if (inst_geo.attributes['color']) {
+            inst_geo.removeAttribute('color');
+        }
+        inst_geo.maxInstancedCount = numValid;
+        const offsets = new THREE.InstancedBufferAttribute(new Float32Array(numValid * 2), 2);
+        const hCoords = new THREE.InstancedBufferAttribute(new Float32Array(numValid * 2), 2);
+        const rotations = new THREE.InstancedBufferAttribute(new Float32Array(numValid), 1);
+        inst_geo.addAttribute('offset', offsets);
+        inst_geo.addAttribute('hCoord', hCoords);
+        inst_geo.addAttribute('rotation', rotations);
+        // generate offsets
+        let i = 0;
+        let x, y, idx, posx, posy, tx, ty;
+        for (y = 0; y < params.height; y++) {
+            for (x = 0; x < params.width; x++) {
+                idx = (x + y * params.width);
+                if (map[idx]) {
+                    posx = (x - params.width / 2);
+                    posy = (y - params.height / 2);
+                    tx = x / params.width;
+                    ty = y / params.height;
+                    offsets.setXY(i, posx, posy);
+                    hCoords.setXY(i, tx, 1 - ty);
+                    rotations.setX(i, Math.random() * 2.0);
+                    i++;
+                }
+            }
+        }
+        const maxHeight = heightData.dem_max;
+        const lightPosition = globals.getVegetationLightPosition(name);
+        const diffuseScale = getDiffuseScale(name);
+        const vegColor = [params.vegColor.r / 255.0, params.vegColor.g / 255.0, params.vegColor.b / 255.0];
+        const mat = new THREE.RawShaderMaterial({
+            uniforms: {
+                // heights
+                heightmap: { type: "t", value: heightmap },
+                maxHeight: { type: "f", value: maxHeight },
+                disp: { type: "f", value: 2.0 / 30.0 },
+                // coloring texture
+                tex: { type: "t", value: params.tex },
+                vegColor: { type: "3f", value: vegColor },
+                // elevation drawing bands - TODO, remove when going to spatial
+                //vegMaxHeight: {type: "f", value: 5000.0},
+                //vegMinHeight: {type: "f", value: 0.0},
+                // lighting
+                lightPosition: { type: "3f", value: lightPosition },
+                ambientProduct: { type: "c", value: getAmbientProduct(name) },
+                diffuseProduct: { type: "c", value: DIFFUSE },
+                diffuseScale: { type: "f", value: diffuseScale },
+                specularProduct: { type: "c", value: SPEC },
+                shininess: { type: "f", value: SHINY }
+            },
+            vertexShader: params.vertShader,
+            fragmentShader: params.fragShader,
+            side: THREE.DoubleSide
+        });
+        const mesh = new THREE.Mesh(inst_geo, mat);
+        mesh.name = name;
+        mesh.renderOrder = globals.getRenderOrder(name);
+        mesh.frustumCulled = false;
+        return mesh;
+    }
+    function getDiffuseScale(vegname) {
+        if (vegname.includes("Sagebrush")) {
+            return 0.7;
+        }
+        return 0.0;
+    }
+    function getAmbientProduct(vegname) {
+        if (vegname.includes("Sagebrush")) {
+            return AMBIENT.multiplyScalar(0.2);
+        }
+        return AMBIENT;
     }
 });
 // utils.ts
@@ -319,7 +569,6 @@ define("assetloader", ["require", "exports"], function (require, exports) {
                 if (req.readyState === 4) {
                     if (req.status === 200) {
                         assets.text[ad.name] = req.responseText;
-                        console.log('loaded ' + ad.name);
                         doProgress();
                     }
                     else {
@@ -405,17 +654,22 @@ define("assetloader", ["require", "exports"], function (require, exports) {
     exports.Loader = Loader; // end Loader
 });
 // app.ts
-define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "assetloader"], function (require, exports, globals, terrain_1, veg_1, utils_1, assetloader_1) {
+define("app", ["require", "exports", "globals", "terrain", "veg", "spatialveg", "utils", "assetloader"], function (require, exports, globals, terrain_1, veg_1, spatialveg_1, utils_1, assetloader_1) {
     "use strict";
     function run(container_id, params) {
         const vegParams = params;
         let initialized = false;
+        let spatial = false;
         if (!utils_1.detectWebGL) {
             alert("Your browser does not support WebGL. Please use a different browser (I.e. Chrome, Firefox).");
             return null;
         }
         let masterAssets;
+        let spatialAssets;
         let terrain;
+        let srcSpatialPath = 'spatial/height/';
+        let statsSpatialPath = 'spatial/stats/';
+        let srcSpatialTextureBase = 'spatial/outputs/'; // scenario/data_type/timestep
         // setup the THREE scene
         const container = document.getElementById(container_id);
         const scene = new THREE.Scene();
@@ -437,18 +691,24 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asse
         const loader = assetloader_1.Loader();
         loader.load({
             text: [
-                // terrain
+                /* realism shaders */
                 { name: 'terrain_vert', url: 'static/shader/terrain.vert.glsl' },
                 { name: 'terrain_frag', url: 'static/shader/terrain.frag.glsl' },
-                // veg
                 { name: 'veg_vert', url: 'static/shader/veg.vert.glsl' },
-                { name: 'veg_frag', url: 'static/shader/veg.frag.glsl' }
+                { name: 'veg_frag', url: 'static/shader/veg.frag.glsl' },
+                /* data shaders */
+                { name: 'data_terrain_vert', url: 'static/shader/data_terrain.vert.glsl' },
+                { name: 'data_terrain_frag', url: 'static/shader/data_terrain.frag.glsl' },
+                { name: 'data_veg_vert', url: 'static/shader/data_veg.vert.glsl' },
+                { name: 'data_veg_frag', url: 'static/shader/data_veg.frag.glsl' },
+                /* spatial veg shaders - TODO: remove these and replace with a modular system */
+                { name: 'spatial_veg_vert', url: 'static/shader/spatial_veg.vert.glsl' },
+                { name: 'spatial_veg_frag', url: 'static/shader/spatial_veg.frag.glsl' },
             ],
             textures: [
                 // terrain materials
                 { name: 'terrain_rock', url: 'static/img/terrain/rock-512.jpg' },
                 { name: 'terrain_grass', url: 'static/img/terrain/grass-512.jpg' },
-                //{name: 'terrain_dirt', url: 'static/img/terrain/dirt-512.jpg'},
                 { name: 'terrain_snow', url: 'static/img/terrain/snow-512.jpg' },
                 { name: 'terrain_sand', url: 'static/img/terrain/sand-512.jpg' },
                 { name: 'terrain_water', url: 'static/img/terrain/water-512.jpg' },
@@ -457,13 +717,11 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asse
                 { name: 'tree_material', url: 'static/img/grass/grass_base.tga' },
                 { name: 'juniper_material', url: 'static/img/juniper/pine-leaf-diff.png' },
                 // sagebrush
-                //{name: 'sagebrush_material', url: 'static/img/sagebrush/sagebrush_3.tga'}
                 { name: 'sagebrush_material', url: 'static/img/sagebrush/sagebrush_alt.png' }
             ],
             geometries: [
                 { name: 'grass', url: 'static/json/geometry/grass.json' },
                 { name: 'tree', url: 'static/json/geometry/tree.json' },
-                //{name: 'juniper', url: 'static/json/geometry/juniper2.json'},
                 { name: 'juniper', url: 'static/json/geometry/tree_simple.json' },
                 { name: 'sagebrush', url: 'static/json/geometry/sagebrush_simple4.json' }
             ] /*,
@@ -498,12 +756,13 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asse
                 }
                 let srcPath = 'heightmap/' + extent.join('/') + '/';
                 let statsPath = srcPath + 'stats/';
-                loader.load({
+                const tempLoader = assetloader_1.Loader();
+                tempLoader.load({
                     textures: [
-                        { name: 'heightmap', url: srcPath }
+                        { name: 'heightmap', url: srcPath },
                     ],
                     statistics: [
-                        { name: 'heightmap_stats', url: statsPath }
+                        { name: 'heightmap_stats', url: statsPath },
                     ]
                 }, function (loadedAssets) {
                     // compute the heights from this heightmap
@@ -534,7 +793,7 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asse
                         const r = Math.floor(i / maxColors * 200);
                         const g = Math.floor(i / maxColors * 130);
                         const vegColor = new THREE.Color(baseColor.r + r, baseColor.g + g, baseColor.b);
-                        const vegAssetName = getVegetationAssetsName(key);
+                        const vegAssetName = globals.getVegetationAssetsName(key);
                         const vegStats = getVegetationStats(key);
                         scene.add(veg_1.createVegetation({
                             heightmap: loadedAssets.textures['heightmap'],
@@ -562,6 +821,84 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asse
                 });
             }
         }
+        function updateSpatialTerrain(scenario_id, updateVeg) {
+            spatial = true;
+            const srcSpatialTexturePath = srcSpatialTextureBase + scenario_id;
+            const tempLoader = assetloader_1.Loader();
+            tempLoader.load({
+                textures: [
+                    { name: 'spatial_heightmap', url: srcSpatialPath },
+                    { name: 'init_sc', url: srcSpatialTexturePath + '/stateclass/0' },
+                    { name: 'init_veg', url: srcSpatialTexturePath + '/veg/0' }
+                ],
+                statistics: [
+                    { name: 'spatial_stats', url: statsSpatialPath },
+                    { name: 'veg_stats', url: 'spatial/stats/' + scenario_id + '/veg/' }
+                ],
+            }, function (loadedAssets) {
+                spatialAssets = loadedAssets;
+                const heightmapTexture = spatialAssets.textures['spatial_heightmap'];
+                const heightmapStats = spatialAssets.statistics['spatial_stats'];
+                const heights = computeHeights(heightmapTexture, heightmapStats);
+                terrain = terrain_1.createTerrain({
+                    rock: masterAssets.textures['terrain_rock'],
+                    snow: masterAssets.textures['terrain_snow'],
+                    grass: masterAssets.textures['terrain_grass'],
+                    sand: masterAssets.textures['terrain_sand'],
+                    water: masterAssets.textures['terrain_water'],
+                    vertShader: masterAssets.text['terrain_vert'],
+                    fragShader: masterAssets.text['terrain_frag'],
+                    data: heightmapStats,
+                    heightmap: heightmapTexture,
+                    heights: heights,
+                    disp: 2.0 / 30.0
+                });
+                scene.add(terrain);
+                // add the vegetation
+                const vegetationStats = spatialAssets.statistics['veg_stats'];
+                spatialveg_1.createSpatialVegetation(scene, {
+                    strataTexture: spatialAssets.textures['init_veg'],
+                    stateclassTexture: spatialAssets.textures['init_sc'],
+                    heightmap: heightmapTexture,
+                    vegGeometries: masterAssets.geometries,
+                    vegTextures: masterAssets.textures,
+                    vertShader: masterAssets.text['spatial_veg_vert'],
+                    fragShader: masterAssets.text['spatial_veg_frag'],
+                    data: vegetationStats,
+                    heightData: heightmapStats,
+                    disp: 2.0 / 30.0
+                });
+                // render
+                render();
+            }, function (progress) {
+                console.log("Loading spatial assets... " + progress * 100 + "%");
+            }, function (error) {
+                console.log(error);
+                return;
+            });
+        }
+        function updateSpatialVegetation(runControl) {
+            console.log('Updating vegetation covers');
+            // updating the vegetation means getting the new stateclass textures to animate over
+            const sid = runControl.result_scenario_id;
+            const srcSpatialTexturePath = srcSpatialTextureBase + sid;
+            let model_outputs = new Array();
+            for (var step = runControl.min_step; step <= runControl.max_step; step += runControl.step_size) {
+                model_outputs.push({ name: String(step), url: srcSpatialTexturePath + '/stateclass/' + step });
+            }
+            const tempLoader = assetloader_1.Loader();
+            tempLoader.load({
+                textures: model_outputs,
+            }, function (loadedAssets) {
+                console.log('Animation assets loaded!');
+                // create an animation slider and update the stateclass texture to the last one in the timeseries, poc
+            }, function (progress) {
+                console.log("Loading model assets... " + progress * 100 + "%");
+            }, function (error) {
+                console.log(error);
+                return;
+            });
+        }
         function computeHeights(hmTexture, stats) {
             const image = hmTexture.image;
             let w = image.naturalWidth;
@@ -586,18 +923,19 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asse
             data = ctx = canvas = null;
             return heights;
         }
-        function getVegetationAssetsName(vegname) {
-            if (vegname.includes("Sagebrush")) {
-                return 'sagebrush';
-            }
-            else if (vegname.includes("Juniper")) {
-                return 'juniper';
-            }
-            else if (vegname.includes("Mahogany")) {
-                return 'tree';
-            }
-            return 'grass';
-        }
+        //function getVegetationAssetsName(vegname: string) : string {
+        //
+        //	if (vegname.includes("Sagebrush")) {
+        //		return 'sagebrush'
+        //	} else if (vegname.includes("Juniper")) {
+        //		return 'juniper'
+        //	}
+        //	else if (vegname.includes("Mahogany")) {
+        //		return 'tree'
+        //	}
+        //
+        //	return 'grass' 
+        //}
         function createClusters(heights, hmstats, vegstats) {
             const numClusters = Math.floor(Math.random() * globals.MAX_CLUSTERS_PER_VEG);
             const finalClusters = new Array();
@@ -675,10 +1013,16 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asse
         function isInitialized() {
             return initialized;
         }
+        function isSpatial() {
+            return spatial;
+        }
         return {
             updateTerrain: updateTerrain,
             updateVegetation: updateVegetation,
+            updateSpatialTerrain: updateSpatialTerrain,
+            updateSpatialVegetation: updateSpatialVegetation,
             isInitialized: isInitialized,
+            isSpatial: isSpatial,
             resize: resize,
             // debug 
             scene: scene,
@@ -688,4 +1032,25 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "utils", "asse
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.default = run;
 });
+// spatialterrain.ts
+//import {AssetDescription} from './assetloader'
+/*
+    We should create two types of vegetation
+    1) uses the standard 'realism' shaders that the non-spatial version uses, and
+    2) one that uses the data-based shaders, to highlight the state class textures that are
+    actually being shown, which dictate the change over time.
+
+
+interface SpatialTerrainParams {
+    strataTexture: THREE.Texture,
+    stateclassTexture: THREE.Texture,
+    heightmap: THREE.Texture,
+    vegGeometries: {[id: string]: THREE.Texture},
+    vegTextures: {[id: string]: THREE.Geometry}
+    vertShader: string,
+    fragShader: string,
+    data: any,
+    disp: number,	// possibly unnecessary?
+}
+*/
 //# sourceMappingURL=landscape-viewer.js.map

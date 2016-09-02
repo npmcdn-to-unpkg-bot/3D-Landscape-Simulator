@@ -1,11 +1,16 @@
 from django.conf.urls import url, include
-from Heightmaps.views import generate_heightmap, heightmap_stats
+from Heightmaps.views import Heightmap, Stats, SpatialHeightmap, SpatialStats
+
 
 heightmap_path = r'^heightmap/(?P<nlat>\d+\.\d+)/(?P<slat>\d+\.\d+)/(?P<elon>\-\d+\.\d+)/(?P<wlon>\-\d+\.\d+)/'
 
 urlpatterns = [
     url(heightmap_path, include([
-        url('^$', generate_heightmap, name='heightmap-src'),
-        url('^stats/$', heightmap_stats, name='heightmap-stats'),
+        url('^$', Heightmap.as_view(), name='heightmap-src'),
+        url('^stats/$', Stats.as_view(), name='heightmap-stats'),
+    ])),
+    url('^spatial/', include([
+            url('^height/$', SpatialHeightmap.as_view(), name='spatial-heightmap-src'),
+            url('^stats/$', SpatialStats.as_view(), name='spatial-heightmap-stats'),
     ]))
 ]

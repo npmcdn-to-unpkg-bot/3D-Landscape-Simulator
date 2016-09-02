@@ -4,8 +4,9 @@ import time
 from django.views.generic import TemplateView, View
 from django.conf import settings
 from json import encoder
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from stsimpy import STSimConsole
+from PIL import Image
 
 # Two decimal places when dumping to JSON
 encoder.FLOAT_REPR = lambda o: format(o, '.2f')
@@ -49,6 +50,111 @@ class HomepageView(TemplateView):
         probabilistic_transition_dict = {value: 0 for value in probabilistic_transition_types}
         context['probabilistic_transitions_json'] = json.dumps(probabilistic_transition_dict)
         return context
+
+
+class STSimSpatialStats(View):
+
+    DATA_TYPES = ['veg', 'stateclass']
+
+    def __init__(self):
+
+        self.scenario_id = None
+        self.data_type = None
+        super().__init__()
+
+    def dispatch(self, request, *args, **kwargs):
+        self.scenario_id = kwargs.get('scenario_id')
+        self.data_type = kwargs.get('data_type')
+
+        if self.data_type not in self.DATA_TYPES:
+            raise ValueError(self.data_type + ' is not a valid data type. Types are "veg" or "stateclass".')
+
+        return super(STSimSpatialStats, self).dispatch(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+
+        # TODO - obtain from veg_state_class dictionary (from stsimpy)
+        return HttpResponse(json.dumps(
+            {
+                'data':
+                {
+                    'Basin Big Sagebrush Upland': 2,
+                    'Curleaf Mountain Mahogany': 3,
+                    'Low Sagebrush': 4,
+                    'Montane Sagebrush Upland':	5,
+                    'Montane Sagebrush Upland With Trees': 6,
+                    'Western Juniper Woodland & Savannah': 7,
+                    'Wyoming and Basin Big Sagebrush Upland': 8
+                }
+            }
+        ))
+
+
+class STSimSpatialOutputs(View):
+
+    DATA_TYPES = ['veg', 'stateclass']
+
+    def __init__(self):
+
+        self.scenario_id = None
+        self.timestep = None
+        self.data_type = None
+        super(STSimSpatialOutputs, self).__init__()
+
+    def dispatch(self, request, *args, **kwargs):
+        self.scenario_id = kwargs.get('scenario_id')
+        self.data_type = kwargs.get('data_type')
+        self.timestep = kwargs.get('timestep')
+
+        if self.data_type not in self.DATA_TYPES:
+            raise ValueError(self.data_type + ' is not a valid data type. Types are "veg" or "stateclass".')
+
+        return super(STSimSpatialOutputs, self).dispatch(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+
+        # TODO - construct a path to the actual directory serving the output tifs from STSim
+        image_directory = os.path.join(settings.ST_SIM_WORKING_DIR, 'initial_conditions', 'spatial')
+        if self.data_type == 'veg':
+            image_path = 'veg.png'
+        else:
+            image_path = 'stateclass_{timestep}.png'.format(timestep=self.timestep)
+
+        image_path = os.path.join(image_directory, image_path)
+        response = HttpResponse(content_type="image/png")
+
+        # TODO - take the clipped area for this scenario and create the image dynamically
+
+        image = Image.open(image_path)
+        image.save(response, 'PNG')
+        return response
+
+
+class STSimSpatialRunnerView(View):
+
+    def __init__(self):
+
+        self.sid = None
+        super().__init__()
+
+    def post(self, request, *args, **kwargs):
+
+        # TODO - Integrate ST-Sim and actually run the model.
+        # Return the completed spatial run id, and use that ID for obtaining the resulting output timesteps' rasters
+        response = {'min_step': 5,
+                    'max_step': 20,
+                    'step_size': 5,
+                    'result_scenario_id': 123}  # TODO - replace with an actual result_scenario_id
+
+        return JsonResponse({'data': response})
+
+    def dispatch(self, request, *args, **kwargs):
+        self.sid = kwargs.get('scenario_id')
+
+        #if int(self.sid) != 10:   # TODO - generalize to other areas
+        #    raise ValueError('Area selected for model run does not exist.')
+
+        return super(STSimSpatialRunnerView, self).dispatch(request, *args, **kwargs)
 
 
 class STSimRunnerView(View):
