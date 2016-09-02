@@ -1,9 +1,9 @@
 // app.ts
 
 import * as globals from './globals'
-import {createTerrain} from './terrain'
+import {createTerrain, createDataTerrain} from './terrain'
 import {createVegetation, VegetationOptions, Cluster} from './veg'
-import {createSpatialVegetation} from './spatialveg'
+import {createSpatialVegetation, createDataVegetation} from './spatialveg'
 import {detectWebGL} from './utils'
 import {Loader, Assets, AssetDescription} from './assetloader'
 
@@ -241,6 +241,13 @@ export default function run(container_id: string, params: globals.VegParams) {
 				const heightmapTexture = spatialAssets.textures['spatial_heightmap']
 				const heightmapStats = spatialAssets.statistics['spatial_stats']
 				const heights = computeHeights(heightmapTexture, heightmapStats)
+				const vegetationStats = spatialAssets.statistics['veg_stats']
+
+				// define the realism group
+				let realismGroup = new THREE.Group()
+				realismGroup.name = 'realism'
+
+				// create normal terrain
 				terrain = createTerrain({
 					rock: masterAssets.textures['terrain_rock'],
 					snow: masterAssets.textures['terrain_snow'],
@@ -254,12 +261,10 @@ export default function run(container_id: string, params: globals.VegParams) {
 					heights: heights,
 					disp: 2.0 / 30.0
 				})
-				scene.add(terrain)
-
+				realismGroup.add(terrain)
 
 				// add the vegetation
-				const vegetationStats = spatialAssets.statistics['veg_stats']
-				createSpatialVegetation(scene, {
+				const realismVegetation = createSpatialVegetation({
 					strataTexture: spatialAssets.textures['init_veg'],
 					stateclassTexture: spatialAssets.textures['init_sc'],
 					heightmap: heightmapTexture,
@@ -271,9 +276,42 @@ export default function run(container_id: string, params: globals.VegParams) {
 					heightData: heightmapStats,
 					disp: 2.0 / 30.0
 				})
+				realismGroup.add(realismVegetation)
+				scene.add(realismGroup)
 
-				// render
+				// render the scene since the data group won't be rendered first.
 				render()
+
+				// define the data group
+				let dataGroup = new THREE.Group()
+				dataGroup.name = 'data'
+				dataGroup.visible = false	// initially set to false
+				const dataTerrain = createDataTerrain({
+					heightmap: heightmapTexture,
+					heights: heights,
+					stateclassTexture: spatialAssets.textures['init_scj'],
+					data: heightmapStats,
+					vertShader: masterAssets.text['data_terrain_vert'],
+					fragShader: masterAssets.text['data_terrain_frag'],
+					disp: 2.0/ 30.0
+				})
+				dataGroup.add(dataTerrain)
+				const dataVegetation = createDataVegetation({
+					strataTexture: spatialAssets.textures['init_veg'],
+					stateclassTexture: spatialAssets.textures['init_sc'],
+					heightmap: heightmapTexture,
+					vegGeometries: masterAssets.geometries,
+					vegTextures: masterAssets.textures,
+					vertShader: masterAssets.text['data_veg_vert'],
+					fragShader: masterAssets.text['data_veg_frag'],
+					data: vegetationStats,
+					heightData: heightmapStats,
+					disp: 2.0 / 30.0
+				})
+				dataGroup.add(dataVegetation)
+				scene.add(dataGroup)
+
+
 			},
 			function(progress: number) {
 				console.log("Loading spatial assets... " + progress * 100 + "%")

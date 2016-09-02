@@ -95,3 +95,53 @@ export function createTerrain(params: TerrainParams) {
 
 	return mesh
 }
+
+interface DataTerrainParams {
+	heightmap: THREE.Texture,
+	heights: Float32Array,
+	stateclassTexture: THREE.Texture,
+	vertShader: string,
+	fragShader: string,
+	disp: number,
+	data: any
+}
+
+export function createDataTerrain(params: DataTerrainParams) {
+
+	const width = params.data.dem_width
+	const height = params.data.dem_height
+
+	// make sure the textures repeat wrap
+	params.heightmap.wrapS = params.heightmap.wrapT = THREE.RepeatWrapping
+
+	const geo = new THREE.PlaneBufferGeometry(width, height, width-1, height-1)
+	geo.rotateX(-Math.PI / 2)
+
+	let vertices = geo.getAttribute('position')
+
+	for (var i = 0; i < vertices.count; i++) {
+		vertices.setY(i, params.heights[i] * params.disp)
+	}
+
+	geo.computeVertexNormals()
+
+	const mat = new THREE.ShaderMaterial({
+		uniforms: {
+			// textures for color blending
+			heightmap: {type: "t", value: params.heightmap},
+			tex: {type: "t", value: params.stateclassTexture}
+			},
+		vertexShader: params.vertShader,
+		fragmentShader: params.fragShader,
+		side: THREE.DoubleSide
+	})
+
+	const mesh = new THREE.Mesh(geo, mat)
+	mesh.name = 'terrain'
+
+	// never reuse
+	geo.dispose()
+	mat.dispose()
+
+	return mesh
+}

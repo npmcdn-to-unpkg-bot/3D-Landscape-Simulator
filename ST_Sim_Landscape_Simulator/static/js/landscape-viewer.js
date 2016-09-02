@@ -121,6 +121,36 @@ define("terrain", ["require", "exports", "globals"], function (require, exports,
         return mesh;
     }
     exports.createTerrain = createTerrain;
+    function createDataTerrain(params) {
+        const width = params.data.dem_width;
+        const height = params.data.dem_height;
+        // make sure the textures repeat wrap
+        params.heightmap.wrapS = params.heightmap.wrapT = THREE.RepeatWrapping;
+        const geo = new THREE.PlaneBufferGeometry(width, height, width - 1, height - 1);
+        geo.rotateX(-Math.PI / 2);
+        let vertices = geo.getAttribute('position');
+        for (var i = 0; i < vertices.count; i++) {
+            vertices.setY(i, params.heights[i] * params.disp);
+        }
+        geo.computeVertexNormals();
+        const mat = new THREE.ShaderMaterial({
+            uniforms: {
+                // textures for color blending
+                heightmap: { type: "t", value: params.heightmap },
+                tex: { type: "t", value: params.stateclassTexture }
+            },
+            vertexShader: params.vertShader,
+            fragmentShader: params.fragShader,
+            side: THREE.DoubleSide
+        });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.name = 'terrain';
+        // never reuse
+        geo.dispose();
+        mat.dispose();
+        return mesh;
+    }
+    exports.createDataTerrain = createDataTerrain;
 });
 define("veg", ["require", "exports", "globals"], function (require, exports, globals) {
     "use strict";
@@ -291,8 +321,44 @@ define("spatialveg", ["require", "exports", "globals"], function (require, expor
     AMBIENT.multiplyScalar(KA * INTENSITY);
     DIFFUSE.multiplyScalar(KD * INTENSITY);
     SPEC.multiplyScalar(KS * INTENSITY);
-    function createSpatialVegetation(scene, params) {
-        console.log('Generating vegetation positions...');
+    function createDataVegetation(params) {
+        console.log('Generating data-driven vegetation...');
+        let vegGroup = new THREE.Group();
+        const strata_map = params.strataTexture;
+        const vegtypes = params.data;
+        const image = strata_map.image;
+        let w = image.naturalWidth;
+        let h = image.naturalHeight;
+        let canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        let ctx = canvas.getContext('2d');
+        ctx.drawImage(image, 0, 0, w, h);
+        let strata_data = ctx.getImageData(0, 0, w, h).data;
+        const strata_positions = computeStrataPositions(vegtypes, strata_data, w, h);
+        for (var name in vegtypes) {
+            const assetName = globals.getVegetationAssetsName(name);
+            const veg_geo = params.vegGeometries[assetName];
+            const veg_tex = params.vegTextures[assetName + '_material'];
+            const vegtypePositions = computeVegtypePositions(vegtypes[name], strata_positions, strata_data, w, h);
+            vegGroup.add(createDataVegtype(name, params.heightmap, params.stateclassTexture, vegtypePositions.map, vegtypePositions.numValid, params.heightData, {
+                geo: veg_geo,
+                tex: veg_tex,
+                width: w,
+                height: h,
+                vertShader: params.vertShader,
+                fragShader: params.fragShader,
+            }));
+        }
+        strata_data = ctx = canvas = null;
+        console.log('Vegetation generated!');
+        return vegGroup;
+    }
+    exports.createDataVegetation = createDataVegetation;
+    // returns a THREE.Group of vegetation
+    function createSpatialVegetation(params) {
+        console.log('Generating realistic vegetation...');
+        let vegGroup = new THREE.Group();
         const strata_map = params.strataTexture;
         const vegtypes = params.data;
         const image = strata_map.image;
@@ -317,7 +383,7 @@ define("spatialveg", ["require", "exports", "globals"], function (require, expor
             i++;
             const vegColor = new THREE.Color(baseColor.r + r, baseColor.g + g, baseColor.b);
             const vegtypePositions = computeVegtypePositions(vegtypes[name], strata_positions, strata_data, w, h);
-            scene.add(createVegtype(name, params.heightmap, params.stateclassTexture, vegtypePositions.map, vegtypePositions.numValid, params.heightData, {
+            vegGroup.add(createVegtype(name, params.heightmap, params.stateclassTexture, vegtypePositions.map, vegtypePositions.numValid, params.heightData, {
                 geo: veg_geo,
                 tex: veg_tex,
                 width: w,
@@ -329,6 +395,7 @@ define("spatialveg", ["require", "exports", "globals"], function (require, expor
         }
         strata_data = ctx = canvas = null;
         console.log('Vegetation generated!');
+        return vegGroup;
     }
     exports.createSpatialVegetation = createSpatialVegetation;
     function computeStrataPositions(vegtypes, data, w, h) {
@@ -457,6 +524,66 @@ define("spatialveg", ["require", "exports", "globals"], function (require, expor
                 diffuseScale: { type: "f", value: diffuseScale },
                 specularProduct: { type: "c", value: SPEC },
                 shininess: { type: "f", value: SHINY }
+            },
+            vertexShader: params.vertShader,
+            fragmentShader: params.fragShader,
+            side: THREE.DoubleSide
+        });
+        const mesh = new THREE.Mesh(inst_geo, mat);
+        mesh.name = name;
+        mesh.renderOrder = globals.getRenderOrder(name);
+        mesh.frustumCulled = false;
+        return mesh;
+    }
+    function createDataVegtype(name, heightmap, init_tex, map, numValid, heightData, params) {
+        const halfPatch = new THREE.Geometry();
+        halfPatch.merge(params.geo);
+        if (globals.useSymmetry(name)) {
+            params.geo.rotateY(Math.PI);
+            halfPatch.merge(params.geo);
+        }
+        const inst_geo = new THREE.InstancedBufferGeometry();
+        inst_geo.fromGeometry(halfPatch);
+        halfPatch.dispose();
+        const s = globals.getVegetationScale(name);
+        inst_geo.scale(s, s, s);
+        // always remove the color buffer since we are using textures
+        if (inst_geo.attributes['color']) {
+            inst_geo.removeAttribute('color');
+        }
+        inst_geo.maxInstancedCount = numValid;
+        const offsets = new THREE.InstancedBufferAttribute(new Float32Array(numValid * 2), 2);
+        const hCoords = new THREE.InstancedBufferAttribute(new Float32Array(numValid * 2), 2);
+        const rotations = new THREE.InstancedBufferAttribute(new Float32Array(numValid), 1);
+        inst_geo.addAttribute('offset', offsets);
+        inst_geo.addAttribute('hCoord', hCoords);
+        inst_geo.addAttribute('rotation', rotations);
+        // generate offsets
+        let i = 0;
+        let x, y, idx, posx, posy, tx, ty;
+        for (y = 0; y < params.height; y++) {
+            for (x = 0; x < params.width; x++) {
+                idx = (x + y * params.width);
+                if (map[idx]) {
+                    posx = (x - params.width / 2);
+                    posy = (y - params.height / 2);
+                    tx = x / params.width;
+                    ty = y / params.height;
+                    offsets.setXY(i, posx, posy);
+                    hCoords.setXY(i, tx, 1 - ty);
+                    rotations.setX(i, Math.random() * 2.0);
+                    i++;
+                }
+            }
+        }
+        const maxHeight = heightData.dem_max;
+        const mat = new THREE.RawShaderMaterial({
+            uniforms: {
+                heightmap: { type: "t", value: heightmap },
+                maxHeight: { type: "f", value: maxHeight },
+                disp: { type: "f", value: 2.0 / 30.0 },
+                tex: { type: "t", value: params.tex },
+                sc_tex: { type: "t", value: init_tex },
             },
             vertexShader: params.vertShader,
             fragmentShader: params.fragShader,
@@ -840,6 +967,11 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "spatialveg", 
                 const heightmapTexture = spatialAssets.textures['spatial_heightmap'];
                 const heightmapStats = spatialAssets.statistics['spatial_stats'];
                 const heights = computeHeights(heightmapTexture, heightmapStats);
+                const vegetationStats = spatialAssets.statistics['veg_stats'];
+                // define the realism group
+                let realismGroup = new THREE.Group();
+                realismGroup.name = 'realism';
+                // create normal terrain
                 terrain = terrain_1.createTerrain({
                     rock: masterAssets.textures['terrain_rock'],
                     snow: masterAssets.textures['terrain_snow'],
@@ -853,10 +985,9 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "spatialveg", 
                     heights: heights,
                     disp: 2.0 / 30.0
                 });
-                scene.add(terrain);
+                realismGroup.add(terrain);
                 // add the vegetation
-                const vegetationStats = spatialAssets.statistics['veg_stats'];
-                spatialveg_1.createSpatialVegetation(scene, {
+                const realismVegetation = spatialveg_1.createSpatialVegetation({
                     strataTexture: spatialAssets.textures['init_veg'],
                     stateclassTexture: spatialAssets.textures['init_sc'],
                     heightmap: heightmapTexture,
@@ -868,8 +999,38 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "spatialveg", 
                     heightData: heightmapStats,
                     disp: 2.0 / 30.0
                 });
-                // render
+                realismGroup.add(realismVegetation);
+                scene.add(realismGroup);
+                // render the scene since the data group won't be rendered first.
                 render();
+                // define the data group
+                let dataGroup = new THREE.Group();
+                dataGroup.name = 'data';
+                dataGroup.visible = false; // initially set to false
+                const dataTerrain = terrain_1.createDataTerrain({
+                    heightmap: heightmapTexture,
+                    heights: heights,
+                    stateclassTexture: spatialAssets.textures['init_scj'],
+                    data: heightmapStats,
+                    vertShader: masterAssets.text['data_terrain_vert'],
+                    fragShader: masterAssets.text['data_terrain_frag'],
+                    disp: 2.0 / 30.0
+                });
+                dataGroup.add(dataTerrain);
+                const dataVegetation = spatialveg_1.createDataVegetation({
+                    strataTexture: spatialAssets.textures['init_veg'],
+                    stateclassTexture: spatialAssets.textures['init_sc'],
+                    heightmap: heightmapTexture,
+                    vegGeometries: masterAssets.geometries,
+                    vegTextures: masterAssets.textures,
+                    vertShader: masterAssets.text['data_veg_vert'],
+                    fragShader: masterAssets.text['data_veg_frag'],
+                    data: vegetationStats,
+                    heightData: heightmapStats,
+                    disp: 2.0 / 30.0
+                });
+                dataGroup.add(dataVegetation);
+                scene.add(dataGroup);
             }, function (progress) {
                 console.log("Loading spatial assets... " + progress * 100 + "%");
             }, function (error) {

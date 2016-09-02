@@ -9,7 +9,7 @@
 
 uniform sampler2D tex;
 uniform sampler2D heightmap;
-uniform float opacity;
+//uniform float opacity;
 
 // texel varyings
 //varying float vAmount;
@@ -70,5 +70,6 @@ void main() {
     //gl_FragColor = sc_color;
     if (sc_color.rgb == vec3(0.)) discard;
     
-    gl_FragColor = mix(hcolor, sc_color, opacity);
+    //gl_FragColor = mix(hcolor, sc_color, opacity);
+    gl_FragColor = mix(hcolor, sc_color, 1.0);
 }

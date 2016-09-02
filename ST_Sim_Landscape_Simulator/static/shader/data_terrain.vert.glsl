@@ -24,7 +24,7 @@ void main()
     // vertical amount based on heightmap texture
     vec4 pos = vec4(position, 1.0);
 
-    pos.y += vAmount * 5.0 * 255.0;
+    //pos.y += vAmount * 5.0 * 255.0;
     
     // use this fN for lighting based on the eye position
     //fN = normalize( modelViewMatrix*vec4(normal, 0.0) ).xyz;

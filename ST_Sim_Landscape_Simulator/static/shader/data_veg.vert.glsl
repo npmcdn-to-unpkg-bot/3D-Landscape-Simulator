@@ -9,15 +9,15 @@ uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
 uniform mat4 normalMatrix;
 uniform sampler2D heightmap;
-//uniform float disp;
-//uniform float maxHeight;
+uniform float disp;
+uniform float maxHeight;
 
 attribute vec3 position;
 attribute vec2 offset;
 attribute vec2 hCoord;
 attribute vec2 uv;
 attribute float rotation;
-attribute float vibration;
+//attribute float vibration;
 //attribute vec3 normal;
 
 varying vec2 vUV;
@@ -51,11 +51,11 @@ void main() {
 
     // rotate around the y axis
     newPosition.xz = rotate(newPosition.x, newPosition.z, PI * rotation);
-    newPosition *= (vibration * 2.);
+    //newPosition *= (vibration * 2.);
     //newNormal.xz = rotate(newNormal.x, newNormal.z, PI * rotation);
     //
     //// now translate to the offset position
-    //newPosition += vec3(offset.x, vAmount * maxHeight * disp, offset.y);
+    newPosition += vec3(offset.x, vAmount * maxHeight * disp, offset.y);
 //
     //// implement phong lighting
     //vec4 pos = vec4(newPosition,1.0);
@@ -69,8 +69,8 @@ void main() {
     //gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
 
     //vec3 newPosition = position;
-    newPosition.xz += offset;
-    newPosition.y += vAmount * 5.0 * 255.0;
+    //newPosition.xz += offset;
+    //newPosition.y += vAmount * 5.0 * 255.0;
 
     gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
 

@@ -8,8 +8,8 @@ uniform sampler2D sc_tex;
 //uniform float maxHeight;
 //uniform vec3 vegColor;
 
-uniform float opacity;
-uniform float veg_opacity;
+//uniform float opacity;
+//uniform float veg_opacity;
 
 //uniform float vegMaxHeight;
 //uniform float vegMinHeight;
@@ -77,15 +77,15 @@ void main() {
     vec4 tex_color = texture2D(tex, vUV);
     vec4 sc_color = texture2D(sc_tex, scUV);
 
-    float opacity_actual = min(opacity, veg_opacity);
+    //float opacity_actual = min(opacity, veg_opacity);
 
     if (tex_color.a <= 0.3) {
         discard;
     } else {
         //vec3 final_color = tex_color.rgb * sc_color.rgb;
         //gl_FragColor = vec4(final_color, 1.0);
-        //gl_FragColor = vec4(sc_color.rgb * normalize((tex_color.rgb * .2)), 1.0);
-        gl_FragColor = vec4(sc_color.rgb * normalize((tex_color.rgb * .2)), opacity_actual);
+        gl_FragColor = vec4(sc_color.rgb * normalize((tex_color.rgb * .2)), 1.0);
+        //gl_FragColor = vec4(sc_color.rgb * normalize((tex_color.rgb * .2)), opacity_actual);
         //gl_FragColor = vec4(sc_color.rgb * normalize((tex_color.rgb * .2)), opacity);
         //gl_FragColor = vec4(sc_color.rgb * normalize((tex_color.rgb * .2)), veg_opacity);
     }
