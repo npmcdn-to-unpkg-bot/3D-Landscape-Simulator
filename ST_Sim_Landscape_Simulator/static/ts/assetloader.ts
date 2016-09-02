@@ -94,7 +94,6 @@ export function Loader() {
 			if (req.readyState === 4) {
 				if (req.status === 200) {
 					assets.text[ad.name] = req.responseText
-					console.log('loaded '+ad.name)
 					doProgress()
 				} else {
 					doError("Error "+req.status+" loading "+ad.url)

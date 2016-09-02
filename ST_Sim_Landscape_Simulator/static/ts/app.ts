@@ -78,6 +78,9 @@ export default function run(container_id: string, params: globals.VegParams) {
 				{name: 'data_terrain_frag', url: 'static/shader/data_terrain.frag.glsl'},
 				{name: 'data_veg_vert', url: 'static/shader/data_veg.vert.glsl'},
 				{name: 'data_veg_frag', url: 'static/shader/data_veg.frag.glsl'},
+				/* spatial veg shaders - TODO: remove these and replace with a modular system */
+				{name: 'spatial_veg_vert', url: 'static/shader/spatial_veg.vert.glsl'},
+				{name: 'spatial_veg_frag', url: 'static/shader/spatial_veg.frag.glsl'},
 			],
 			
 			textures: [
@@ -99,7 +102,6 @@ export default function run(container_id: string, params: globals.VegParams) {
 			geometries: [
 				{name: 'grass', url: 'static/json/geometry/grass.json'},
 				{name: 'tree', url: 'static/json/geometry/tree.json'},
-				//{name: 'juniper', url: 'static/json/geometry/juniper2.json'},
 				{name: 'juniper', url: 'static/json/geometry/tree_simple.json'},
 				{name: 'sagebrush', url: 'static/json/geometry/sagebrush_simple4.json'}
 			]/*,
@@ -231,7 +233,7 @@ export default function run(container_id: string, params: globals.VegParams) {
 				],
 				statistics: [
 					{name: 'spatial_stats', url: statsSpatialPath},
-					{name: 'veg_stats', url: 'spatial/stats/' + scenario_id + '/' + 'veg/'}
+					{name: 'veg_stats', url: 'spatial/stats/' + scenario_id + '/veg/'}
 				],
 			},
 			function(loadedAssets: Assets) {
@@ -263,8 +265,8 @@ export default function run(container_id: string, params: globals.VegParams) {
 					heightmap: heightmapTexture,
 					vegGeometries: masterAssets.geometries,
 					vegTextures: masterAssets.textures,
-					vertShader: masterAssets.text['veg_vert'],
-					fragShader: masterAssets.text['veg_frag'],
+					vertShader: masterAssets.text['spatial_veg_vert'],
+					fragShader: masterAssets.text['spatial_veg_frag'],
 					data: vegetationStats,
 					heightData: heightmapStats,
 					disp: 2.0 / 30.0

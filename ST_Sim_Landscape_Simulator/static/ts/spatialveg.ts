@@ -63,14 +63,11 @@ export function createSpatialVegetation(scene: THREE.Scene, params: SpatialVeget
 	let ctx = canvas.getContext('2d')
 	ctx.drawImage(image, 0, 0, w, h)
 	let strata_data = ctx.getImageData(0, 0, w, h).data
-
 	const strata_positions = computeStrataPositions(vegtypes, strata_data, w, h)
-	//console.log(strata_positions)
 
 	let i = 0
 	const maxColors = 7
 	let baseColor = new THREE.Color(55,80,100)	// TODO - better colors
-	console.log(params.data)
 
 	for (var name in vegtypes) {
 		const assetName = globals.getVegetationAssetsName(name)
@@ -79,8 +76,8 @@ export function createSpatialVegetation(scene: THREE.Scene, params: SpatialVeget
 
 		const r = Math.floor(i/maxColors * 200)
 		const g = Math.floor(i/maxColors * 130)
+		i++
 		const vegColor = new THREE.Color(baseColor.r + r, baseColor.g + g, baseColor.b)
-
 		const vegtypePositions = computeVegtypePositions(vegtypes[name], strata_positions, strata_data, w, h)
 		scene.add(createVegtype(name, params.heightmap, params.stateclassTexture, 
 			vegtypePositions.map,  vegtypePositions.numValid, params.heightData, {
@@ -94,7 +91,6 @@ export function createSpatialVegetation(scene: THREE.Scene, params: SpatialVeget
 			})
 		)
 	}
-
 	
 	strata_data = ctx = canvas = null
 
@@ -171,7 +167,6 @@ function computeVegtypePositions(id: number, position_map: boolean[], type_data:
 			vegtype_map.push(valid)
 		}
 	}
-	console.log(numValid)
 	return {map: vegtype_map, numValid: numValid}
 }
 
@@ -216,8 +211,8 @@ function createVegtype(name: string, heightmap: THREE.Texture, init_tex: THREE.T
 			idx = (x + y * params.width)
 
 			if (map[idx]) {
-				posx = (x - params.width/2) * RESOLUTION
-				posy = (y - params.height/2) * RESOLUTION
+				posx = (x - params.width/2)
+				posy = (y - params.height/2)
 				
 				tx = x / params.width
 				ty = y / params.height
@@ -229,10 +224,10 @@ function createVegtype(name: string, heightmap: THREE.Texture, init_tex: THREE.T
 			}
 		}
 	}
-
 	const maxHeight = heightData.dem_max
 	const lightPosition = globals.getVegetationLightPosition(name)
 	const diffuseScale = getDiffuseScale(name)
+	const vegColor = [params.vegColor.r/255.0, params.vegColor.g/255.0, params.vegColor.b/255.0]
 
 	const mat = new THREE.RawShaderMaterial({
 		uniforms: {
@@ -242,10 +237,10 @@ function createVegtype(name: string, heightmap: THREE.Texture, init_tex: THREE.T
 			disp: {type: "f", value: 2.0 / 30.0},
 			// coloring texture
 			tex: {type: "t", value: params.tex},
-			vegColor: {type: "3f", value: params.vegColor},	// implicit vec3 in shaders
+			vegColor: {type: "3f", value: vegColor},	// implicit vec3 in shaders
 			// elevation drawing bands - TODO, remove when going to spatial
-			vegMaxHeight: {type: "f", value: 5000.0},
-			vegMinHeight: {type: "f", value: 0.0},
+			//vegMaxHeight: {type: "f", value: 5000.0},
+			//vegMinHeight: {type: "f", value: 0.0},
 			// lighting
 			lightPosition: {type: "3f", value: lightPosition},
 			ambientProduct: {type: "c", value: getAmbientProduct(name)},

@@ -305,17 +305,16 @@ define("spatialveg", ["require", "exports", "globals"], function (require, expor
         ctx.drawImage(image, 0, 0, w, h);
         let strata_data = ctx.getImageData(0, 0, w, h).data;
         const strata_positions = computeStrataPositions(vegtypes, strata_data, w, h);
-        //console.log(strata_positions)
         let i = 0;
         const maxColors = 7;
         let baseColor = new THREE.Color(55, 80, 100); // TODO - better colors
-        console.log(params.data);
         for (var name in vegtypes) {
             const assetName = globals.getVegetationAssetsName(name);
             const veg_geo = params.vegGeometries[assetName];
             const veg_tex = params.vegTextures[assetName + '_material'];
             const r = Math.floor(i / maxColors * 200);
             const g = Math.floor(i / maxColors * 130);
+            i++;
             const vegColor = new THREE.Color(baseColor.r + r, baseColor.g + g, baseColor.b);
             const vegtypePositions = computeVegtypePositions(vegtypes[name], strata_positions, strata_data, w, h);
             scene.add(createVegtype(name, params.heightmap, params.stateclassTexture, vegtypePositions.map, vegtypePositions.numValid, params.heightData, {
@@ -392,7 +391,6 @@ define("spatialveg", ["require", "exports", "globals"], function (require, expor
                 vegtype_map.push(valid);
             }
         }
-        console.log(numValid);
         return { map: vegtype_map, numValid: numValid };
     }
     function createVegtype(name, heightmap, init_tex, map, numValid, heightData, params) {
@@ -425,8 +423,8 @@ define("spatialveg", ["require", "exports", "globals"], function (require, expor
             for (x = 0; x < params.width; x++) {
                 idx = (x + y * params.width);
                 if (map[idx]) {
-                    posx = (x - params.width / 2) * RESOLUTION;
-                    posy = (y - params.height / 2) * RESOLUTION;
+                    posx = (x - params.width / 2);
+                    posy = (y - params.height / 2);
                     tx = x / params.width;
                     ty = y / params.height;
                     offsets.setXY(i, posx, posy);
@@ -439,6 +437,7 @@ define("spatialveg", ["require", "exports", "globals"], function (require, expor
         const maxHeight = heightData.dem_max;
         const lightPosition = globals.getVegetationLightPosition(name);
         const diffuseScale = getDiffuseScale(name);
+        const vegColor = [params.vegColor.r / 255.0, params.vegColor.g / 255.0, params.vegColor.b / 255.0];
         const mat = new THREE.RawShaderMaterial({
             uniforms: {
                 // heights
@@ -447,10 +446,10 @@ define("spatialveg", ["require", "exports", "globals"], function (require, expor
                 disp: { type: "f", value: 2.0 / 30.0 },
                 // coloring texture
                 tex: { type: "t", value: params.tex },
-                vegColor: { type: "3f", value: params.vegColor },
+                vegColor: { type: "3f", value: vegColor },
                 // elevation drawing bands - TODO, remove when going to spatial
-                vegMaxHeight: { type: "f", value: 5000.0 },
-                vegMinHeight: { type: "f", value: 0.0 },
+                //vegMaxHeight: {type: "f", value: 5000.0},
+                //vegMinHeight: {type: "f", value: 0.0},
                 // lighting
                 lightPosition: { type: "3f", value: lightPosition },
                 ambientProduct: { type: "c", value: getAmbientProduct(name) },
@@ -570,7 +569,6 @@ define("assetloader", ["require", "exports"], function (require, exports) {
                 if (req.readyState === 4) {
                     if (req.status === 200) {
                         assets.text[ad.name] = req.responseText;
-                        console.log('loaded ' + ad.name);
                         doProgress();
                     }
                     else {
@@ -703,6 +701,9 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "spatialveg", 
                 { name: 'data_terrain_frag', url: 'static/shader/data_terrain.frag.glsl' },
                 { name: 'data_veg_vert', url: 'static/shader/data_veg.vert.glsl' },
                 { name: 'data_veg_frag', url: 'static/shader/data_veg.frag.glsl' },
+                /* spatial veg shaders - TODO: remove these and replace with a modular system */
+                { name: 'spatial_veg_vert', url: 'static/shader/spatial_veg.vert.glsl' },
+                { name: 'spatial_veg_frag', url: 'static/shader/spatial_veg.frag.glsl' },
             ],
             textures: [
                 // terrain materials
@@ -721,7 +722,6 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "spatialveg", 
             geometries: [
                 { name: 'grass', url: 'static/json/geometry/grass.json' },
                 { name: 'tree', url: 'static/json/geometry/tree.json' },
-                //{name: 'juniper', url: 'static/json/geometry/juniper2.json'},
                 { name: 'juniper', url: 'static/json/geometry/tree_simple.json' },
                 { name: 'sagebrush', url: 'static/json/geometry/sagebrush_simple4.json' }
             ] /*,
@@ -833,7 +833,7 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "spatialveg", 
                 ],
                 statistics: [
                     { name: 'spatial_stats', url: statsSpatialPath },
-                    { name: 'veg_stats', url: 'spatial/stats/' + scenario_id + '/' + 'veg/' }
+                    { name: 'veg_stats', url: 'spatial/stats/' + scenario_id + '/veg/' }
                 ],
             }, function (loadedAssets) {
                 spatialAssets = loadedAssets;
@@ -862,8 +862,8 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "spatialveg", 
                     heightmap: heightmapTexture,
                     vegGeometries: masterAssets.geometries,
                     vegTextures: masterAssets.textures,
-                    vertShader: masterAssets.text['veg_vert'],
-                    fragShader: masterAssets.text['veg_frag'],
+                    vertShader: masterAssets.text['spatial_veg_vert'],
+                    fragShader: masterAssets.text['spatial_veg_frag'],
                     data: vegetationStats,
                     heightData: heightmapStats,
                     disp: 2.0 / 30.0
