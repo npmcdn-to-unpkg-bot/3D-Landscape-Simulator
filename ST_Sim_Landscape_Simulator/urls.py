@@ -11,8 +11,8 @@ urlpatterns = [
     # ST-Sim Model Runners
     url(r'^run_st_sim/(?P<scenario_id>\d+)$', csrf_exempt(STSimRunnerView.as_view()), name='run_st_sim'),
     url(r'^spatial/', include([
-        url(r'^run_st_sim/(?P<scenario_id>\d+)$', csrf_exempt(STSimSpatialRunnerView.as_view()), name='spatial_run_st_sim'),
-        url(r'^outputs/(?P<scenario_id>\d+)/(?P<data_type>[a-z]+)/(?P<timestep>\d+)/$', STSimSpatialOutputs.as_view()),
-        url(r'^stats/(?P<scenario_id>\d+)/(?P<data_type>[a-z]+)/$', STSimSpatialStats.as_view())
+        url(r'^run_st_sim/(?P<project_id>\d+)/(?P<scenario_id>\d+)/$', csrf_exempt(STSimSpatialRunnerView.as_view()), name='spatial_run_st_sim'),
+        url(r'^outputs/(?P<project_id>\d+)/(?P<scenario_id>\d+)/(?P<data_type>[a-z]+)/(?P<timestep>\d+)/$', STSimSpatialOutputs.as_view()),
+        url(r'^stats/(?P<project_id>\d+)/(?P<data_type>[a-z]+)/$', STSimSpatialStats.as_view())
     ]))
 ]

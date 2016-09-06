@@ -164,11 +164,14 @@ function run_st_sim(feature_id) {
 
     if (landscape_viewer.isSpatial()) {
         // spatial run
-
+        scenario = '210';   // hard code since we are working with exactly one scenario for castle creek
+        var project = '2';
         $.ajax({
-            url: "/spatial/run_st_sim/" + scenario,
+            url: "/spatial/run_st_sim/" + project + '/' + scenario + '/',
             type: "POST",
             success: function(json) {
+                $("#running_st_sim").html("ST-Sim Model Results (Use Slider)");
+                $("#results_loading").empty()
                 landscape_viewer.updateSpatialVegetation(json.data);
             },
             // handle a non-successful response
@@ -573,10 +576,11 @@ function activate_scene(){
 // TODO - remove and replace with better options. Dev only.
 function activate_spatial_scene() {
     feature_id = 'Castle Creek';
-    landscape_viewer.updateSpatialTerrain(123, true);
+    landscape_viewer.updateSpatialTerrain(2, true);
     show_input_options();
 
-    // override run model button since we are testing
+    // override various things since we are testing
+    $('#input_initial_veg').hide();
     $('#run_button').removeClass("disabled");
     $('input:submit').attr("disabled", false);
     $("#run_button").val('Run Model');

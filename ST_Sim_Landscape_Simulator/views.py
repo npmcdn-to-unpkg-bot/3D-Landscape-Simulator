@@ -7,6 +7,7 @@ from json import encoder
 from django.http import HttpResponse, JsonResponse
 from stsimpy import STSimConsole
 from PIL import Image
+from OutputProcessing import texture_utils
 
 # Two decimal places when dumping to JSON
 encoder.FLOAT_REPR = lambda o: format(o, '.2f')
@@ -15,6 +16,13 @@ encoder.FLOAT_REPR = lambda o: format(o, '.2f')
 stsim = STSimConsole(lib_path=settings.ST_SIM_WORKING_LIB,
                      orig_lib_path=settings.ST_SIM_ORIG_LIB,
                      exe=settings.ST_SIM_EXE)
+
+# TODO - need a way to initialize various stsim consoles
+spatial_stsim = STSimConsole(
+    lib_path=os.path.join(settings.ST_SIM_WORKING_DIR, 'libraries', 'ST-Sim-Spatial-Sample-V2-4-6.ssim'),
+    orig_lib_path=os.path.join(settings.ST_SIM_WORKING_DIR, 'libraries', 'ST-Sim-Spatial-Sample-V2-4-6_orig.ssim'),
+    exe=settings.ST_SIM_EXE)
+default_run_control_path = os.path.join(settings.ST_SIM_WORKING_DIR, 'run_control', 'run_ctrl.csv')
 
 # Defaults for this library. Run once and hold in memory.
 default_sid = stsim.list_scenarios()[0]
@@ -57,37 +65,38 @@ class STSimSpatialStats(View):
     DATA_TYPES = ['veg', 'stateclass']
 
     def __init__(self):
-
-        self.scenario_id = None
+        self.project_id = None
         self.data_type = None
         super().__init__()
 
     def dispatch(self, request, *args, **kwargs):
-        self.scenario_id = kwargs.get('scenario_id')
+        self.project_id = kwargs.get('project_id')
         self.data_type = kwargs.get('data_type')
 
         if self.data_type not in self.DATA_TYPES:
-            raise ValueError(self.data_type + ' is not a valid data type. Types are "veg" or "stateclass".')
+            raise ValueError('Invalid data type')
 
         return super(STSimSpatialStats, self).dispatch(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
 
-        # TODO - obtain from veg_state_class dictionary (from stsimpy)
-        return HttpResponse(json.dumps(
-            {
-                'data':
-                {
-                    'Basin Big Sagebrush Upland': 2,
-                    'Curleaf Mountain Mahogany': 3,
-                    'Low Sagebrush': 4,
-                    'Montane Sagebrush Upland':	5,
-                    'Montane Sagebrush Upland With Trees': 6,
-                    'Western Juniper Woodland & Savannah': 7,
-                    'Wyoming and Basin Big Sagebrush Upland': 8
-                }
-            }
-        ))
+        data = dict()
+        if self.data_type == 'veg':
+
+            data = spatial_stsim.export_vegtype_definitions(
+                pid=self.project_id,
+                working_path=default_sc_path,
+                orig=True)
+
+        elif self.data_type == 'stateclass':
+
+            data = spatial_stsim.export_stateclass_definitions(
+                pid=self.project_id,
+                working_path=default_sc_path,
+                orig=True)
+        return JsonResponse({
+            'data': {name: data[name]['ID'] for name in data.keys()}
+            })
 
 
 class STSimSpatialOutputs(View):
@@ -116,15 +125,14 @@ class STSimSpatialOutputs(View):
         # TODO - construct a path to the actual directory serving the output tifs from STSim
         image_directory = os.path.join(settings.ST_SIM_WORKING_DIR, 'initial_conditions', 'spatial')
         if self.data_type == 'veg':
-            image_path = 'veg.png'
+            image_path = os.path.join(image_directory, 'veg.png')          # TODO - replace with the selected area of interest
+        elif self.timestep == 0 or self.timestep == '0':
+            image_path = os.path.join(image_directory, 'stateclass_0.png')   # TODO - ^^
         else:
-            image_path = 'stateclass_{timestep}.png'.format(timestep=self.timestep)
+            image_path = os.path.join(spatial_stsim.lib + '.output', 'Scenario-'+str(self.scenario_id),
+                                      'Spatial', 'stateclass_{timestep}.png'.format(timestep=self.timestep))
 
-        image_path = os.path.join(image_directory, image_path)
         response = HttpResponse(content_type="image/png")
-
-        # TODO - take the clipped area for this scenario and create the image dynamically
-
         image = Image.open(image_path)
         image.save(response, 'PNG')
         return response
@@ -134,26 +142,52 @@ class STSimSpatialRunnerView(View):
 
     def __init__(self):
 
-        self.sid = None
+        self.scenario_id = None
+        self.project_id = None
         super().__init__()
 
     def post(self, request, *args, **kwargs):
 
-        # TODO - Integrate ST-Sim and actually run the model.
-        # Return the completed spatial run id, and use that ID for obtaining the resulting output timesteps' rasters
-        response = {'min_step': 5,
-                    'max_step': 20,
-                    'step_size': 5,
-                    'result_scenario_id': 123}  # TODO - replace with an actual result_scenario_id
+        # TODO - setup an interface to set this via. Include this as ajax'd data into the view.
+        run_config = {
+            'min_step': 0,
+            'max_step': 20,
+            'step_size': 1,
+        }
 
-        return JsonResponse({'data': response})
+        # set the run control for the spatial model
+        spatial_stsim.update_run_control(
+            sid=self.scenario_id, working_path=default_run_control_path,
+            spatial=True, iterations=0, start_timestep=0, end_timestep=20
+        )
+
+        spatial_stsim.set_output_options(self.scenario_id, default_run_control_path,
+                                         SummaryOutputSC=True, SummaryOutputSCTimesteps=1,
+                                         SummaryOutputTR=True, SummaryOutputTRTimesteps=1,
+                                         RasterOutputSC=True, RasterOutputSCTimesteps=1)
+
+        # run spatial stsim model at self.scenario_id
+        result_scenario_id = spatial_stsim.run_model(sid=self.scenario_id)
+        run_config['result_scenario_id'] = result_scenario_id
+
+        # process each output raster in the output directory
+        stateclass_definitions = spatial_stsim.export_stateclass_definitions(
+            pid=self.project_id,
+            working_path=default_sc_path,
+            orig=True
+        )
+
+        texture_utils.process_stateclass_directory(
+            dir_path=os.path.join(spatial_stsim.lib + '.output', 'Scenario-'+str(result_scenario_id), 'Spatial'),
+            sc_defs=stateclass_definitions
+        )
+
+        # Return the completed spatial run id, and use that ID for obtaining the resulting output timesteps' rasters
+        return JsonResponse({'data': run_config})
 
     def dispatch(self, request, *args, **kwargs):
-        self.sid = kwargs.get('scenario_id')
-
-        #if int(self.sid) != 10:   # TODO - generalize to other areas
-        #    raise ValueError('Area selected for model run does not exist.')
-
+        self.scenario_id = kwargs.get('scenario_id')
+        self.project_id = kwargs.get('project_id')
         return super(STSimSpatialRunnerView, self).dispatch(request, *args, **kwargs)
 
 
