@@ -358,6 +358,12 @@ export default function run(container_id: string, params: globals.VegParams) {
 					render()
 				})
 
+				const dataGroup = scene.getObjectByName('data') as THREE.Group
+				const realismGroup = scene.getObjectByName('realism') as THREE.Group
+				dataGroup.visible = true
+				realismGroup.visible = false
+				render()
+
 				// create an animation slider and update the stateclass texture to the last one in the timeseries, poc
 				const animationSlider = $('#animation_slider')
 				animationSlider.attr('max', runControl.max_step)
@@ -375,7 +381,7 @@ export default function run(container_id: string, params: globals.VegParams) {
 
 					// update the dataGroup terrain and vegtypes
 					let child: THREE.Object3D
-					let dataGroup = scene.getObjectByName('data') as THREE.Group
+					const dataGroup = scene.getObjectByName('data') as THREE.Group
 					for (var i = 0; i < dataGroup.children.length; i++) {
 						child = dataGroup.children[i]
 						if (child.name == 'terrain') {

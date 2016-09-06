@@ -170,6 +170,8 @@ function run_st_sim(feature_id) {
             url: "/spatial/run_st_sim/" + project + '/' + scenario + '/',
             type: "POST",
             success: function(json) {
+                $("#running_st_sim").html("ST-Sim Model Results (Use Slider)");
+                $("#results_loading").empty()
                 landscape_viewer.updateSpatialVegetation(json.data);
             },
             // handle a non-successful response

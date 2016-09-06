@@ -7,7 +7,7 @@ from json import encoder
 from django.http import HttpResponse, JsonResponse
 from stsimpy import STSimConsole
 from PIL import Image
-from OutputProcessing.texture_utils import process_stateclass_directory
+from OutputProcessing import texture_utils
 
 # Two decimal places when dumping to JSON
 encoder.FLOAT_REPR = lambda o: format(o, '.2f')
@@ -132,7 +132,6 @@ class STSimSpatialOutputs(View):
             image_path = os.path.join(spatial_stsim.lib + '.output', 'Scenario-'+str(self.scenario_id),
                                       'Spatial', 'stateclass_{timestep}.png'.format(timestep=self.timestep))
 
-        #image_path = os.path.join(image_directory, image_path)
         response = HttpResponse(content_type="image/png")
         image = Image.open(image_path)
         image.save(response, 'PNG')
@@ -153,19 +152,22 @@ class STSimSpatialRunnerView(View):
         run_config = {
             'min_step': 0,
             'max_step': 20,
-            'step_size': 5,
-            # 'result_scenario_id': self.scenario_id
+            'step_size': 1,
         }
 
         # set the run control for the spatial model
         spatial_stsim.update_run_control(
             sid=self.scenario_id, working_path=default_run_control_path,
-            spatial=True, iterations=5, start_timestep=1, end_timestep=5
+            spatial=True, iterations=0, start_timestep=0, end_timestep=20
         )
 
+        spatial_stsim.set_output_options(self.scenario_id, default_run_control_path,
+                                         SummaryOutputSC=True, SummaryOutputSCTimesteps=1,
+                                         SummaryOutputTR=True, SummaryOutputTRTimesteps=1,
+                                         RasterOutputSC=True, RasterOutputSCTimesteps=1)
+
         # run spatial stsim model at self.scenario_id
-        #result_scenario_id = spatial_stsim.run_model(sid=self.scenario_id)
-        result_scenario_id = 264
+        result_scenario_id = spatial_stsim.run_model(sid=self.scenario_id)
         run_config['result_scenario_id'] = result_scenario_id
 
         # process each output raster in the output directory
@@ -175,7 +177,7 @@ class STSimSpatialRunnerView(View):
             orig=True
         )
 
-        process_stateclass_directory(
+        texture_utils.process_stateclass_directory(
             dir_path=os.path.join(spatial_stsim.lib + '.output', 'Scenario-'+str(result_scenario_id), 'Spatial'),
             sc_defs=stateclass_definitions
         )

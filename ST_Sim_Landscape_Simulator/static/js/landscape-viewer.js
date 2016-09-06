@@ -1076,6 +1076,11 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "spatialveg", 
                     }
                     render();
                 });
+                const dataGroup = scene.getObjectByName('data');
+                const realismGroup = scene.getObjectByName('realism');
+                dataGroup.visible = true;
+                realismGroup.visible = false;
+                render();
                 // create an animation slider and update the stateclass texture to the last one in the timeseries, poc
                 const animationSlider = $('#animation_slider');
                 animationSlider.attr('max', runControl.max_step);
@@ -1091,7 +1096,7 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "spatialveg", 
                     }
                     // update the dataGroup terrain and vegtypes
                     let child;
-                    let dataGroup = scene.getObjectByName('data');
+                    const dataGroup = scene.getObjectByName('data');
                     for (var i = 0; i < dataGroup.children.length; i++) {
                         child = dataGroup.children[i];
                         if (child.name == 'terrain') {
