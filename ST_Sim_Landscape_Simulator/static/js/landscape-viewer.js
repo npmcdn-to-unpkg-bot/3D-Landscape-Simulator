@@ -437,7 +437,7 @@ define("spatialveg", ["require", "exports", "globals"], function (require, expor
         }
         // convert to boolean and return the map
         for (var i = 0; i < strata_data.length; i++) {
-            strata_map.push(strata_data[i] == 0 ? true : false);
+            strata_map.push(strata_data[i] == 0 && i % 3 == 0 ? true : false);
         }
         return strata_map;
     }
@@ -795,8 +795,9 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "spatialveg", 
         let spatialAssets;
         let animationAssets;
         let terrain;
+        let _project_id;
         let srcSpatialPath = 'spatial/height/';
-        let statsSpatialPath = 'spatial/stats/';
+        let statsSpatialPath = srcSpatialPath + 'stats/';
         let srcSpatialTextureBase = 'spatial/outputs/'; // scenario/data_type/timestep
         // setup the THREE scene
         const container = document.getElementById(container_id);
@@ -949,28 +950,30 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "spatialveg", 
                 });
             }
         }
-        function updateSpatialTerrain(scenario_id, updateVeg) {
+        function updateSpatialTerrain(project_id, updateVeg) {
+            _project_id = project_id;
             spatial = true;
             camera.position.y = 350;
             camera.position.z = 600;
-            const srcSpatialTexturePath = srcSpatialTextureBase + scenario_id;
+            const scenario_id = 210; // TODO - replace with a way to get this from the library
+            const srcSpatialTexturePath = srcSpatialTextureBase + project_id + '/' + scenario_id;
             const tempLoader = assetloader_1.Loader();
             tempLoader.load({
                 textures: [
                     { name: 'spatial_heightmap', url: srcSpatialPath },
-                    { name: 'init_sc', url: srcSpatialTexturePath + '/stateclass/0' },
-                    { name: 'init_veg', url: srcSpatialTexturePath + '/veg/0' }
+                    { name: 'init_sc', url: srcSpatialTexturePath + '/stateclass/0/' },
+                    { name: 'init_veg', url: srcSpatialTexturePath + '/veg/0/' }
                 ],
                 statistics: [
                     { name: 'spatial_stats', url: statsSpatialPath },
-                    { name: 'veg_stats', url: 'spatial/stats/' + scenario_id + '/veg/' }
+                    { name: 'veg_class_stats', url: 'spatial/stats/' + project_id + '/veg/' }
                 ],
             }, function (loadedAssets) {
                 spatialAssets = loadedAssets;
                 const heightmapTexture = spatialAssets.textures['spatial_heightmap'];
                 const heightmapStats = spatialAssets.statistics['spatial_stats'];
                 const heights = computeHeights(heightmapTexture, heightmapStats);
-                const vegetationStats = spatialAssets.statistics['veg_stats'];
+                const vegetationStats = spatialAssets.statistics['veg_class_stats'];
                 // define the realism group
                 let realismGroup = new THREE.Group();
                 realismGroup.name = 'realism';
@@ -1045,10 +1048,10 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "spatialveg", 
             console.log('Updating vegetation covers');
             // updating the vegetation means getting the new stateclass textures to animate over
             const sid = runControl.result_scenario_id;
-            const srcSpatialTexturePath = srcSpatialTextureBase + sid;
+            const srcSpatialTexturePath = srcSpatialTextureBase + _project_id + '/' + sid;
             let model_outputs = new Array();
             for (var step = runControl.min_step; step <= runControl.max_step; step += runControl.step_size) {
-                model_outputs.push({ name: String(step), url: srcSpatialTexturePath + '/stateclass/' + step });
+                model_outputs.push({ name: String(step), url: srcSpatialTexturePath + '/stateclass/' + step + '/' });
             }
             const tempLoader = assetloader_1.Loader();
             tempLoader.load({
@@ -1136,19 +1139,6 @@ define("app", ["require", "exports", "globals", "terrain", "veg", "spatialveg", 
             data = ctx = canvas = null;
             return heights;
         }
-        //function getVegetationAssetsName(vegname: string) : string {
-        //
-        //	if (vegname.includes("Sagebrush")) {
-        //		return 'sagebrush'
-        //	} else if (vegname.includes("Juniper")) {
-        //		return 'juniper'
-        //	}
-        //	else if (vegname.includes("Mahogany")) {
-        //		return 'tree'
-        //	}
-        //
-        //	return 'grass' 
-        //}
         function createClusters(heights, hmstats, vegstats) {
             const numClusters = Math.floor(Math.random() * globals.MAX_CLUSTERS_PER_VEG);
             const finalClusters = new Array();

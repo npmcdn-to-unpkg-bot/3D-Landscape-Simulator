@@ -164,9 +164,10 @@ function run_st_sim(feature_id) {
 
     if (landscape_viewer.isSpatial()) {
         // spatial run
-
+        scenario = '210';   // hard code since we are working with exactly one scenario for castle creek
+        var project = '2';
         $.ajax({
-            url: "/spatial/run_st_sim/" + scenario,
+            url: "/spatial/run_st_sim/" + project + '/' + scenario + '/',
             type: "POST",
             success: function(json) {
                 landscape_viewer.updateSpatialVegetation(json.data);
@@ -573,7 +574,7 @@ function activate_scene(){
 // TODO - remove and replace with better options. Dev only.
 function activate_spatial_scene() {
     feature_id = 'Castle Creek';
-    landscape_viewer.updateSpatialTerrain(123, true);
+    landscape_viewer.updateSpatialTerrain(2, true);
     show_input_options();
 
     // override various things since we are testing

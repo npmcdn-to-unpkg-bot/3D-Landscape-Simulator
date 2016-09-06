@@ -7,16 +7,6 @@ import {createSpatialVegetation, createDataVegetation} from './spatialveg'
 import {detectWebGL} from './utils'
 import {Loader, Assets, AssetDescription} from './assetloader'
 
-//interface VegParams {		// THIS INTERFACE IS SUBJECT TO CHANGE
-//	"Basin Big Sagebrush Upland"?: 				number, 
-//	"Curleaf Mountain Mahogany"?: 				number, 
-//	"Low Sagebrush"?: 			  				number, 
-//	"Montane Sagebrush Upland"?:				number, 
-//	"Montane Sagebrush Upland With Trees"?: 	number,
-//	"Western Juniper Woodland & Savannah"?: 	number,
-//	"Wyoming and Basin Big Sagebrush Upland"?: 	number
-//}
-
 interface SpatialRunControl {
 	min_step : number,
 	max_step : number,
@@ -39,8 +29,11 @@ export default function run(container_id: string, params: globals.VegParams) {
 	let spatialAssets: Assets
 	let animationAssets: Assets
 	let terrain: THREE.Mesh
+
+	let _project_id: number
+
 	let srcSpatialPath = 'spatial/height/'
-	let statsSpatialPath = 'spatial/stats/'
+	let statsSpatialPath = srcSpatialPath + 'stats/'
 	let srcSpatialTextureBase = 'spatial/outputs/'	// scenario/data_type/timestep
 
 
@@ -222,22 +215,23 @@ export default function run(container_id: string, params: globals.VegParams) {
 		}	
 	}
 
-	function updateSpatialTerrain(scenario_id: string, updateVeg?: boolean) {
+	function updateSpatialTerrain(project_id: any, updateVeg?: boolean) {
+		_project_id = project_id
 		spatial = true
 		camera.position.y = 350
 		camera.position.z = 600
-
-		const srcSpatialTexturePath = srcSpatialTextureBase + scenario_id
+		const scenario_id = 210	// TODO - replace with a way to get this from the library
+		const srcSpatialTexturePath = srcSpatialTextureBase + project_id + '/' + scenario_id
 		const tempLoader = Loader()
 		tempLoader.load({
 				textures: [
 					{name: 'spatial_heightmap', url: srcSpatialPath},
-					{name: 'init_sc', url: srcSpatialTexturePath + '/stateclass/0'},
-					{name: 'init_veg', url: srcSpatialTexturePath + '/veg/0'}
+					{name: 'init_sc', url: srcSpatialTexturePath + '/stateclass/0/'},
+					{name: 'init_veg', url: srcSpatialTexturePath + '/veg/0/'}
 				],
 				statistics: [
 					{name: 'spatial_stats', url: statsSpatialPath},
-					{name: 'veg_stats', url: 'spatial/stats/' + scenario_id + '/veg/'}
+					{name: 'veg_class_stats', url: 'spatial/stats/' + project_id + '/veg/'}
 				],
 			},
 			function(loadedAssets: Assets) {
@@ -245,7 +239,7 @@ export default function run(container_id: string, params: globals.VegParams) {
 				const heightmapTexture = spatialAssets.textures['spatial_heightmap']
 				const heightmapStats = spatialAssets.statistics['spatial_stats']
 				const heights = computeHeights(heightmapTexture, heightmapStats)
-				const vegetationStats = spatialAssets.statistics['veg_stats']
+				const vegetationStats = spatialAssets.statistics['veg_class_stats']
 
 				// define the realism group
 				let realismGroup = new THREE.Group()
@@ -332,11 +326,11 @@ export default function run(container_id: string, params: globals.VegParams) {
 
 		// updating the vegetation means getting the new stateclass textures to animate over
 		const sid = runControl.result_scenario_id
-		const srcSpatialTexturePath = srcSpatialTextureBase + sid
+		const srcSpatialTexturePath = srcSpatialTextureBase + _project_id + '/' + sid 
 
 		let model_outputs : AssetDescription[] = new Array()
 		for (var step = runControl.min_step; step <= runControl.max_step; step += runControl.step_size) {
-			model_outputs.push({name: String(step), url: srcSpatialTexturePath + '/stateclass/' + step})
+			model_outputs.push({name: String(step), url: srcSpatialTexturePath + '/stateclass/' + step + '/'})
 		}
 		const tempLoader = Loader()
 		tempLoader.load({
@@ -410,8 +404,6 @@ export default function run(container_id: string, params: globals.VegParams) {
 				return
 			}
 		)
-
-
 	}
 
 	function computeHeights(hmTexture: THREE.Texture, stats: any) {
@@ -439,20 +431,6 @@ export default function run(container_id: string, params: globals.VegParams) {
 		data = ctx = canvas = null
 		return heights
 	}
-
-	//function getVegetationAssetsName(vegname: string) : string {
-//
-	//	if (vegname.includes("Sagebrush")) {
-	//		return 'sagebrush'
-	//	} else if (vegname.includes("Juniper")) {
-	//		return 'juniper'
-	//	}
-	//	else if (vegname.includes("Mahogany")) {
-	//		return 'tree'
-	//	}
-//
-	//	return 'grass' 
-	//}
 
 	function createClusters(heights: Float32Array, hmstats: any, vegstats: any) : Cluster[] {
 

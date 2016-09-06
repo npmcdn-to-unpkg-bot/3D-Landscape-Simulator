@@ -9,8 +9,8 @@ urlpatterns = [
         url('^$', Heightmap.as_view(), name='heightmap-src'),
         url('^stats/$', Stats.as_view(), name='heightmap-stats'),
     ])),
-    url('^spatial/', include([
-            url('^height/$', SpatialHeightmap.as_view(), name='spatial-heightmap-src'),
+    url('^spatial/height/', include([
+            url('^$', SpatialHeightmap.as_view(), name='spatial-heightmap-src'),
             url('^stats/$', SpatialStats.as_view(), name='spatial-heightmap-stats'),
     ]))
 ]
